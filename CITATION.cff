@@ -1,0 +1,25 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: krypton
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Rak
+    family-names: Laptudirm
+    email: rak@laptudirm.com
+repository-code: 'https://github.com/kryptonlang/krypton'
+url: 'https://krypton.laptudirm.com'
+abstract: >-
+  Krypton is a modern, high-performant, and compiled
+  programming language which aims to provide speed along
+  with simplicity and safety.
+keywords:
+  - programming language
+  - compiler
+  - standard library
+  - llvm
+license: Apache-2.0
