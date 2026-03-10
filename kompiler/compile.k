@@ -760,19 +760,17 @@ func compileFunc(tokens, pos, ntoks) {
 // === C Runtime (embedded in output) ===
 
 func cRuntime() {
+    print("DEBUG: cRuntime start")
     let r = ""
+    print("DEBUG: r initialized")
     r = r + "#include <stdio.h>\n"
+    print("DEBUG: first concat done")
     r = r + "#include <stdlib.h>\n"
     r = r + "#include <string.h>\n\n"
-    r = r + "static char _arena[256*1024*1024];\n"
-    r = r + "static int _apos = 0;\n"
     r = r + "static int _argc; static char** _argv;\n\n"
     r = r + "static char* _alloc(int n) {\n"
-    r = r + "    if (_apos + n > 256*1024*1024) {\n"
-    r = r + "        fprintf(stderr, \"arena overflow\\n\"); exit(1);\n"
-    r = r + "    }\n"
-    r = r + "    char* p = _arena + _apos;\n"
-    r = r + "    _apos += n;\n"
+    r = r + "    char* p = (char*)malloc(n);\n"
+    r = r + "    if (!p) { fprintf(stderr, \"out of memory\\n\"); exit(1); }\n"
     r = r + "    return p;\n"
     r = r + "}\n\n"
     r = r + "static char* kr_str(const char* s) {\n"
