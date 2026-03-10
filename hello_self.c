@@ -1,5 +1,83 @@
-ERROR: undefined variable: r
-ERROR: undefined variable: r
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+static int _argc; static char** _argv;
+
+static char* _alloc(int n) {
+    char* p = (char*)malloc(n);
+    if (!p) { fprintf(stderr, "out of memory\n"); exit(1); }
+    return p;
+}
+
+static char* kr_str(const char* s) {
+    int n = (int)strlen(s) + 1;
+    char* p = _alloc(n);
+    memcpy(p, s, n);
+    return p;
+}
+
+static char* kr_cat(const char* a, const char* b) {
+    int la = (int)strlen(a), lb = (int)strlen(b);
+    char* p = _alloc(la + lb + 1);
+    memcpy(p, a, la);
+    memcpy(p + la, b, lb + 1);
+    return p;
+}
+
+static int kr_isnum(const char* s) {
+    if (!*s) return 0;
+    const char* p = s;
+    if (*p == '-') p++;
+    if (!*p) return 0;
+    while (*p) { if (*p < '0' || *p > '9') return 0; p++; }
+    return 1;
+}
+
+static char* kr_itoa(int v) {
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%d", v);
+    return kr_str(buf);
+}
+
+static int kr_atoi(const char* s) { return atoi(s); }
+
+static char* kr_plus(const char* a, const char* b) {
+    if (kr_isnum(a) && kr_isnum(b))
+        return kr_itoa(atoi(a) + atoi(b));
+    return kr_cat(a, b);
+}
+
+static char* kr_sub(const char* a, const char* b) { return kr_itoa(atoi(a) - atoi(b)); }
+static char* kr_mul(const char* a, const char* b) { return kr_itoa(atoi(a) * atoi(b)); }
+static char* kr_div(const char* a, const char* b) { return kr_itoa(atoi(a) / atoi(b)); }
+static char* kr_mod(const char* a, const char* b) { return kr_itoa(atoi(a) % atoi(b)); }
+static char* kr_neg(const char* a) { return kr_itoa(-atoi(a)); }
+static char* kr_not(const char* a) { return kr_str(atoi(a) ? "0" : "1"); }
+
+static char* kr_eq(const char* a, const char* b) {
+    return kr_str(strcmp(a, b) == 0 ? "1" : "0");
+}
+static char* kr_neq(const char* a, const char* b) {
+    return kr_str(strcmp(a, b) != 0 ? "1" : "0");
+}
+static char* kr_lt(const char* a, const char* b) {
+    if (kr_isnum(a) && kr_isnum(b)) return kr_str(atoi(a) < atoi(b) ? "1" : "0");
+    return kr_str(strcmp(a, b) < 0 ? "1" : "0");
+}
+static char* kr_gt(const char* a, const char* b) {
+    if (kr_isnum(a) && kr_isnum(b)) return kr_str(atoi(a) > atoi(b) ? "1" : "0");
+    return kr_str(strcmp(a, b) > 0 ? "1" : "0");
+}
+static char* kr_lte(const char* a, const char* b) {
+    return kr_str(strcmp(kr_gt(a, b), "0") == 0 ? "1" : "0");
+}
+static char* kr_gte(const char* a, const char* b) {
+    return kr_str(strcmp(kr_lt(a, b), "0") == 0 ? "1" : "0");
+}
+
+static int kr_truthy(const char* s) {
+    if (!s || !*s) return 0;
     if (strcmp(s, "0") == 0) return 0;
     return 1;
 }
