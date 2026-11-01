@@ -72,9 +72,15 @@ func nsString(s) {
     emit msg_1(cls("NSString"), "stringWithUTF8String:", s)
 }
 
+// Convert an object's description while it is alive; nil becomes empty text.
+func nsToStr(obj) {
+    if obj == 0 { emit "" }
+    emit msg(msg(obj, "description"), "UTF8String")
+}
+
 // Caller drains the pool at scope exit; callbacks need their own pool.
 func newPool() {
-    emit allocInit(NSAutoreleasePool_cls)
+    emit allocInit("NSAutoreleasePool")
 }
 
 func drainPool(pool) {

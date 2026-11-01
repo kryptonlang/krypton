@@ -74,6 +74,16 @@ No Cocoa, Foundation, AppKit, UIKit, or libobjc imports belong to this core.
 Existing GUI adapters still use native Apple frameworks. Choc/OKUI changes
 the app-facing API; it does not yet replace Apple's windowing implementation.
 
+GUI apps using `k:okui` still link to `libobjc`, Foundation, and AppKit; the
+K-owned core's no-framework contract does not apply to those apps. Pure-Krypton
+source does not mean static framework linkage. See the runtime guide's
+[native GUI boundary](docs/objk_runtime_macos.md#native-gui-boundary).
+
+`k:objk_process_macos` provides literal argv execution and combined text-output
+capture through Foundation without generating C/Objective-C or using a shell
+for the argv path. This is a macOS adapter, not a portable replacement for
+`k:proc`. See [process capture](docs/objk_runtime_macos.md#macos-process-capture).
+
 ### Public API
 
 | API | Contract |
