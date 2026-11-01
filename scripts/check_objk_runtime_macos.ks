@@ -18,6 +18,11 @@ func compileCheck(root, work, source, name) {
         kp(readFile(log))
         exit("1")
     }
+    let buildLog = readFile(log)
+    if contains(buildLog, "objk: ") && !contains(buildLog, "dylib(s)\nmacho_arm64_self: wrote") {
+        kp("FAIL compiler diagnostic line boundary " + name)
+        exit("1")
+    }
     emit binary
 }
 
@@ -76,6 +81,12 @@ just run {
     let work = trim(exec("mktemp -d /tmp/check_objk_macos.XXXXXX"))
     if work == "" { kp("FAIL temporary directory"); exit("1") }
     let log = work + "/run.log"
+    let processStatusBinary = compileCheck(root, work, "tests/macos/test_process_status.k", "process-status")
+    runCheck(processStatusBinary, "process status", log)
+    let text = compileCheck(root, work, "tests/macos/test_objc_text.k", "objc-text")
+    runCheck(text, "Objective-C object text conversion", log)
+    let captured = compileCheck(root, work, "tests/macos/test_objk_process.k", "process-capture")
+    runCheck(captured, "Objective-K process capture", log)
     let globals = compileCheck(root, work, "tests/macos/test_imported_globals.k", "globals")
     runCheck(globals, "imported globals", log)
     let pointers = compileCheck(root, work, "tests/macos/test_callptr.k", "pointers")

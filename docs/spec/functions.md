@@ -115,8 +115,11 @@ Reads a line from stdin with no prompt. Python-facing code lowers to the same sc
 ### deleteFile(path) — (C path)
 Removes a file. Returns `"1"` on success.
 
-### shellRun(cmd) — (C path)
-Runs `cmd` via the system shell; returns the captured stdout.
+### shellRun(cmd) — (native)
+Runs `cmd` via the system shell and returns its exit code as text (`"0"`
+means success). The child inherits stdout and stderr; neither is captured.
+Use `exec(cmd)` to capture stdout instead. Both take shell command strings,
+not argument arrays; quote untrusted arguments before constructing a command.
 
 ### environ(name) — (C path)
 Returns the value of an environment variable, or `""` if not set.
@@ -450,7 +453,8 @@ pipeline to be safe.
 - `structAddr(obj)` / `toHandle(p)` / `handleInt(h)` / `handleGet(h)` /
   `handleOut(h)` / `handleValid(h)` — handle / pointer interop helpers.
 - `sizeOf(typeName)` — C-type size lookup.
-- `exec(cmd)` — execute and return exit code.
+- `exec(cmd)` — run a shell command and return stdout verbatim, including
+  trailing newlines. Does not return the exit code or capture stderr.
 
 ---
 

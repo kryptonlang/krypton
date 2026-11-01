@@ -169,12 +169,9 @@ func osrenamek(src, dst) {
     emit ""
 }
 
-// os.system(cmd) -- run via shell, return exit code (best-effort).
-// Today: exec() captures stdout but the exit code surfaces via
-// shellRun if available; degrade to "0" on success.
+// os.system(cmd) -- run via shell, inherit output, return exit-code text.
 func ossystemk(cmd) {
-    exec(cmd)
-    emit "0"
+    emit shellRun(cmd)
 }
 
 

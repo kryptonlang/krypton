@@ -8,6 +8,54 @@ Krypton. It does not import Cocoa, UIKit, Foundation, or `libobjc`. Existing
 Objective-K GUI apps still use their Apple adapters; this core does not replace
 those adapters yet.
 
+## Native GUI Boundary
+
+The no-Apple-framework claim above applies only to the K-owned object core.
+An app importing `k:okui` uses the macOS adapter and links dynamically to
+Apple's `libobjc`, Foundation, and AppKit. Objective-K replaces Objective-C
+source and compilation, not those system libraries. No generated C or
+Objective-C source or Clang invocation is required. macOS executables receive
+an ad-hoc signature; distribution signing and notarization are separate steps.
+
+In `k:objc`, `msg` and `msg_1` through `msg_6` return raw ABI values, not
+automatically converted Krypton text. Pass selector names as text, for example
+`msg(bundle, "bundleIdentifier")`, not `msg(bundle, sel("bundleIdentifier"))`.
+Use `nsString(text)` to create an NSString and `nsToStr(object)` to read an
+object's description as UTF-8 text. `nsToStr(0)` returns empty text. Consume
+that text before releasing the object or draining its autorelease pool.
+
+## macOS Process Capture
+
+Import `k:objk_process_macos` for synchronous Foundation-backed process calls.
+These helpers are macOS-only and do not change Windows `k:proc`.
+
+```krypton
+import "k:objk_process_macos"
+just run {
+    let pool = newPool()
+    let args = okProcessArgs()
+    doProcessArg(args, "a b")
+    let result = okRunArgvCaptured("/bin/echo", args)
+    print(result) // "0\na b\n"
+    drainPool(pool)
+}
+```
+
+`executable` is a path, not a shell command or PATH lookup. `args` excludes
+argv[0]; add each argument separately. Arguments are passed literally, including
+spaces, quotes, newlines, and shell metacharacters. Use a caller-owned
+autorelease pool. The result is `<status>\n<combined stdout/stderr>`; split at
+the first newline only, preserving the rest verbatim. Signal exits use
+`128 + signal`. Status `-1` means launch failed; `-2` means output was not UTF-8.
+Input is the null device. Output is drained before waiting to avoid pipe-buffer
+deadlocks. Calls block and buffer all output in memory: use bounded commands,
+not long-running services or GUI-main-thread jobs. Timeouts, cancellation,
+streaming, and binary output remain future work.
+
+`okRunCaptured(cmd)` explicitly uses `/bin/sh -c` and returns the same format.
+Prefer the argv helper for paths or user-provided values. This Foundation path
+does not require raw argv-pointer marshalling or `ptrAdd` support.
+
 The [repo spec](../spec.md) contains API contracts, arena layout, compiler
 prerequisites, validation gates, and outstanding work. Compiler declarations
 lower to this runtime; direct runtime calls remain supported.
