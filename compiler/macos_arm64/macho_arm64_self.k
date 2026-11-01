@@ -7524,7 +7524,7 @@ just run {
         }
         irOps = parseFullIR(ir)
         detectForeign(irOps)
-        if g_NFOREIGN > 0 { printErr("objk: " + g_NFOREIGN + " foreign sym(s) [" + g_FORSYMS + "] across " + lineCount(g_DYLIBS) + " dylib(s)") }
+        if g_NFOREIGN > 0 { printErr("objk: " + g_NFOREIGN + " foreign sym(s) [" + g_FORSYMS + "] across " + lineCount(g_DYLIBS) + " dylib(s)\n") }
         g_funcStartCache = buildFuncStartCache(irOps)
         irStrOffsets = computeStringOffsets(irOps)
         g_TEXT_SIZE = computeTextSize(irOps)
@@ -7689,5 +7689,5 @@ just run {
 
     let machoBytes = body + sig
     writeBytes(outFile, machoBytes)
-    printErr("macho_arm64_self: wrote " + outFile + " (" + (hexBytesLen(machoBytes)) + " bytes, ad-hoc signed)")
+    printErr("macho_arm64_self: wrote " + outFile + " (" + (hexBytesLen(machoBytes)) + " bytes, ad-hoc signed)\n")
 }
