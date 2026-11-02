@@ -3284,7 +3284,12 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             instrIdx = instrIdx + 3
         } else if opTok == "FUNCPTR" {
             // push the __text vaddr of function `restTok` (objk: use as an objc IMP).
-            let fOff = textOff + findLabel(funcTable, restTok) * 4
+            let pointerTarget = findLabel(funcTable, restTok)
+            if pointerTarget < 0 {
+                printErr("macho_arm64_self: unknown function '" + restTok + "' referenced by funcptr in '" + funcName(parsed, fIdx) + "'\n")
+                exit("1")
+            }
+            let fOff = textOff + pointerTarget * 4
             let fImm = fOff / 4096 - (textOff + instrIdx * 4) / 4096
             s = sbAppend(s, arm64_adrp(0, fImm))
             s = sbAppend(s, arm64_add_imm(0, 0, fOff % 4096))
@@ -6229,6 +6234,10 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             // bl <target> — foreign symbol routes to its __stubs entry (C ABI: args already in x0..xN)
             let fidx = foreignIdx(cname)
             let targetInstr = findLabel(funcTable, cname)
+            if fidx < 0 && targetInstr < 0 {
+                printErr("macho_arm64_self: unknown function '" + cname + "' called from '" + funcName(parsed, fIdx) + "'\n")
+                exit("1")
+            }
             if fidx >= 0 { targetInstr = textSz / 4 + fidx * 3 }   // stub i at __text_end + i*12
             let delta = targetInstr - instrIdx
             s = sbAppend(s, arm64_bl(delta))

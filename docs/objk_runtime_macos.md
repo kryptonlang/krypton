@@ -24,6 +24,27 @@ Use `nsString(text)` to create an NSString and `nsToStr(object)` to read an
 object's description as UTF-8 text. `nsToStr(0)` returns empty text. Consume
 that text before releasing the object or draining its autorelease pool.
 
+## AppKit Callback And Class Safety
+
+`okClick(control, funcptr(handler))` now gives each registration a unique native
+target class, including rebindings. Controls retain their target through an
+associated object. Call on the AppKit main thread. Handler ABI remains
+`(self, commandSelector, sender)`; incorrect callback signatures remain unsafe.
+`okOn(control, key, handler)` keeps its keyed behavior: distinct handlers must
+use distinct keys. Do not intentionally reuse a key for different handlers.
+
+`okClass(name)` and `okViewClass(name)` reuse an already registered class with a named diagnostic.
+`okRegister` skips duplicate registration, rejects nil, and returns `"1"` or
+`"0"`. `okMethod` checks `class_addMethod` and returns `"0"` with a named
+diagnostic on failure instead of claiming success. Existing methods are not
+replaced. These checks do not validate arbitrary pointers or method encodings.
+
+Segmented controls: `okSegmented(win,x,y,w,h)`, `okSegCount(seg,n)`,
+`okSegLabel(seg,label,index)`, `okSegAdd(seg,label)`, `okSegSelect(seg,index)`,
+`okSegIndex(seg)`, and `okSegOnChange(seg,callback)`. Add returns the zero-based
+index (`-1` for nil); select returns `"0"` for an invalid index without changing
+selection. Index `-1` deselects. Change callbacks use the same ABI as `okClick`.
+
 ## macOS Process Capture
 
 Import `k:objk_process_macos` for synchronous Foundation-backed process calls.
@@ -59,6 +80,11 @@ does not require raw argv-pointer marshalling or `ptrAdd` support.
 The [repo spec](../spec.md) contains API contracts, arena layout, compiler
 prerequisites, validation gates, and outstanding work. Compiler declarations
 lower to this runtime; direct runtime calls remain supported.
+
+Outstanding app/API requests: [Cortex tracker](objk_cortex_followup.md) and
+[Synapse tracker](objk_synapse_followup.md). Unknown native macOS direct calls
+and `funcptr` targets now fail code generation with the symbol and containing
+function. Source-line hints and a frontend-only check mode remain pending.
 
 ## Compiler Declaration Syntax
 
