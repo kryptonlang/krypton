@@ -271,10 +271,20 @@ func formatDurationLong(seconds) {
 
 // ── Hex / binary helpers ─────────────────────────────────────────────
 
-// Format an int as a hex string with at least `width` digits, lowercase,
-// no "0x" prefix. Use Krypton's `hex` builtin for raw conversion.
+// Format a nonnegative int as lowercase hex, padded to at least width digits.
 func formatHex(n, width) {
-    let h = hex(toInt(n))
+    let value = toInt(n)
+    let h = ""
+    let digits = "0123456789abcdef"
+    if value == 0 { h = "0" }
+    while value > 0 {
+        let digit = value % 16
+        let next = sbNew()
+        next = sbAppend(next, substring(digits, digit, digit + 1))
+        next = sbAppend(next, h)
+        h = sbToString(next)
+        value = value / 16
+    }
     while len(h) < width {
         let b = sbNew()
         b = sbAppend(b, "0")

@@ -28,7 +28,7 @@ func compileCheck(root, work, source, name) {
 
 func runCheck(binary, name, log) {
     let rc = shellRun(q(binary) + " >" + q(log) + " 2>&1")
-    if rc != "0" || contains(readFile(log), "[FAIL]") {
+    if rc != "0" || contains(readFile(log), "[FAIL]") || !contains(readFile(log), "[PASS]") {
         kp("FAIL " + name + " rc=" + rc)
         kp(readFile(log))
         exit("1")
@@ -81,12 +81,22 @@ just run {
     let work = trim(exec("mktemp -d /tmp/check_objk_macos.XXXXXX"))
     if work == "" { kp("FAIL temporary directory"); exit("1") }
     let log = work + "/run.log"
+    syntaxReject(root, "tests/macos/fixtures/unknown_call.k",
+        "unknown function 'definitelyNotAFunction'", log)
+    syntaxReject(root, "tests/macos/fixtures/unknown_call_import.k",
+        "unknown function 'definitelyNotAFunction'", log)
+    syntaxReject(root, "tests/macos/fixtures/unknown_funcptr.k",
+        "unknown function 'definitelyNotAFunction'", log)
     let processStatusBinary = compileCheck(root, work, "tests/macos/test_process_status.k", "process-status")
     runCheck(processStatusBinary, "process status", log)
+    let formatting = compileCheck(root, work, "tests/macos/test_format.k", "format")
+    runCheck(formatting, "format helpers", log)
     let text = compileCheck(root, work, "tests/macos/test_objc_text.k", "objc-text")
     runCheck(text, "Objective-C object text conversion", log)
     let captured = compileCheck(root, work, "tests/macos/test_objk_process.k", "process-capture")
     runCheck(captured, "Objective-K process capture", log)
+    let callbacks = compileCheck(root, work, "tests/macos/test_objk_callbacks.k", "callbacks")
+    runCheck(callbacks, "callback isolation and class guards", log)
     let globals = compileCheck(root, work, "tests/macos/test_imported_globals.k", "globals")
     runCheck(globals, "imported globals", log)
     let pointers = compileCheck(root, work, "tests/macos/test_callptr.k", "pointers")

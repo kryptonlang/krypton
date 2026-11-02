@@ -166,19 +166,31 @@ func chocAlert(title, message) {
 // IMP callbacks receive (self, _cmd, sender) in x0..x2, matching K's ABI.
 // Use a distinct key per handler: pointer-to-string conversion loses identity.
 func chocOnClickKeyed(control, keyName, fnPtr) {
+    if control == 0 || fnPtr == 0 { printErr("Objective-K: click needs a control and callback\n"); emit "0" }
     let nm = "KryptonObjkCB_" + _classSafe(keyName)
     let c = objc_lookUpClass(nm)
     if c == 0 {
         c = objc_allocateClassPair(cls("NSObject"), nm, 0)
-        class_addMethod(c, sel("objk_dispatch:"), fnPtr, "v@:@")
+        if c == 0 { printErr("Objective-K: cannot allocate callback class '" + nm + "'\n"); emit "0" }
+        if chocClassAddMethod(c, "objk_dispatch:", fnPtr, "v@:@") == "0" { emit "0" }
         objc_registerClassPair(c)
     }
     let target = msg(msg(c, "alloc"), "init")
     msg_1(control, "setTarget:", target)
     msg_1(control, "setAction:", sel("objk_dispatch:"))
+    chocSetAssocKey(control, "kr.objk.clickTarget", target)
+    msg(target, "release")
     emit "1"
 }
-func chocOnClick(control, fnPtr) { emit chocOnClickKeyed(control, "default", fnPtr) }
+// Registration is main-thread-only, like the AppKit controls it modifies.
+func chocOnClick(control, fnPtr) {
+    if control == 0 || fnPtr == 0 { printErr("Objective-K: click needs a control and callback\n"); emit "0" }
+    let owner = cls("NSObject")
+    let counter = chocNumberVal(chocGetAssocKey(owner, "kr.objk.clickSequence")) + 1
+    while objc_lookUpClass("KryptonObjkCB_auto_" + counter) != 0 { counter += 1 }
+    chocSetAssocKey(owner, "kr.objk.clickSequence", chocNumber(counter))
+    emit chocOnClickKeyed(control, "auto_" + counter, fnPtr)
+}
 
 // Intern selectors as association keys; separate string literals can differ.
 func chocSetAssoc(control, value) {
@@ -210,7 +222,7 @@ func chocSegCount(seg, n)        { msg_1(seg, "setSegmentCount:", n)  emit "1" }
 func chocSegLabel(seg, lbl, i)   { msg_2(seg, "setLabel:forSegment:", nsString(lbl), i)  emit "1" }
 func chocSegSelect(seg, i)       { msg_1(seg, "setSelectedSegment:", i)  emit "1" }
 func chocSegSelected(seg)        { emit msg(seg, "selectedSegment") }
-func chocSegOnChange(seg, fnPtr) { chocOnClick(seg, fnPtr)  emit "1" }
+func chocSegOnChange(seg, fnPtr) { emit chocOnClick(seg, fnPtr) }
 
 // Return the text view; attach its scroll view to the window.
 func chocScrollText(win, x, y, w, h) {
@@ -446,11 +458,21 @@ func chocSetFont(view, font){ msg_1(view, "setFont:", font)  emit "1" }
 //   chocClassAddMethod(c, "numberOfRowsInTableView:", funcptr(nrows), "q@:@")
 //   chocClassRegister(c)
 //   let inst = chocNew(c)
-func chocClassNew(name)            { emit objc_allocateClassPair(cls("NSObject"), name, 0) }
+func _chocClassNew(name, parentName) {
+    let existing = objc_lookUpClass(name)
+    if existing != 0 {
+        printErr("Objective-K: reusing registered class '" + name + "'\n")
+        emit existing
+    }
+    let c = objc_allocateClassPair(cls(parentName), name, 0)
+    if c == 0 { printErr("Objective-K: cannot allocate class '" + name + "'\n") }
+    emit c
+}
+func chocClassNew(name) { emit _chocClassNew(name, "NSObject") }
 // Subclass NSView (for a custom-drawn view: add a drawRect: method whose IMP is a
 // Krypton func). The drawRect: dirtyRect arrives in d0..d3 (FP regs) and is simply
 // ignored by the Krypton handler (it reads x0=self, x1=_cmd).
-func chocViewClassNew(name)        { emit objc_allocateClassPair(cls("NSView"), name, 0) }
+func chocViewClassNew(name) { emit _chocClassNew(name, "NSView") }
 // Fill the current colour into a rect (call [color set] first). NSBezierPath fillRect:
 // takes only the NSRect -> d0..d3, so it's msg_frame.
 func chocFillRect(x, y, w, h)      { msg_frame(cls("NSBezierPath"), "fillRect:", x, y, w, h)  emit "1" }
@@ -515,8 +537,27 @@ func chocPumpEvents(app) {
     while chocPumpEvent(app) == 1 { }
     emit "1"
 }
-func chocClassAddMethod(c, selName, fnPtr, types) { class_addMethod(c, sel(selName), fnPtr, types)  emit "1" }
-func chocClassRegister(c)          { objc_registerClassPair(c)  emit "1" }
+func chocClassAddMethod(c, selName, fnPtr, types) {
+    if c == 0 || fnPtr == 0 {
+        printErr("Objective-K: cannot add method '" + selName + "' to a nil class or callback\n")
+        emit "0"
+    }
+    if class_addMethod(c, sel(selName), fnPtr, types) == 0 {
+        printErr("Objective-K: cannot add method '" + selName + "' to class '" + class_getName(c) + "'\n")
+        emit "0"
+    }
+    emit "1"
+}
+func chocClassRegister(c) {
+    if c == 0 { printErr("Objective-K: cannot register nil class\n"); emit "0" }
+    let name = class_getName(c)
+    if objc_lookUpClass(name) == c {
+        printErr("Objective-K: class '" + name + "' already registered\n")
+        emit "1"
+    }
+    objc_registerClassPair(c)
+    emit "1"
+}
 func chocNew(c)                    { emit msg(msg(c, "alloc"), "init") }
 
 func chocTable(win, x, y, w, h) {

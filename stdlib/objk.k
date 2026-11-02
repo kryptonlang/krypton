@@ -32,6 +32,23 @@ func okTable(win, x, y, w, h)              { emit chocTable(win, x, y, w, h) }
 func okSplit(win, x, y, w, h)              { emit chocSplit(win, x, y, w, h) }
 func okSplitAdd(split, view)               { emit chocSplitAdd(split, view) }
 
+func okSegmented(win, x, y, w, h)         { emit chocSegmented(win, x, y, w, h) }
+func okSegCount(seg, n)                   { emit chocSegCount(seg, n) }
+func okSegLabel(seg, label, index)        { emit chocSegLabel(seg, label, index) }
+func okSegAdd(seg, label) {
+    if seg == 0 { emit -1 }
+    let index = msg(seg, "segmentCount")
+    chocSegCount(seg, index + 1)
+    chocSegLabel(seg, label, index)
+    emit index
+}
+func okSegSelect(seg, index) {
+    if seg == 0 || index < -1 || index >= msg(seg, "segmentCount") { emit "0" }
+    emit chocSegSelect(seg, index)
+}
+func okSegIndex(seg)                      { emit chocSegSelected(seg) }
+func okSegOnChange(seg, fnPtr)            { emit chocOnClick(seg, fnPtr) }
+
 func okText(control)                 { emit chocGetText(control) }
 func okSetText(control, text)        { emit chocSetText(control, text) }
 func okAppend(tv, text)              { emit chocTVAppend(tv, text) }
