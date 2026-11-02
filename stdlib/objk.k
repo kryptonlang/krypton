@@ -177,3 +177,23 @@ func okImagePNG(image, path) {
     if png == 0 { emit 0 }
     emit msg_2(png, "writeToFile:atomically:", nsString(path), 1)
 }
+
+// Scroll constructors return document views. Lay out/hide their enclosing
+// container without moving the document origin or leaving an empty scroll view.
+func okScrollFrame(document, x, y, w, h) {
+    let scroll = msg(document, "enclosingScrollView")
+    if scroll == 0 { emit "0" }
+    emit chocSetFrame(scroll, x, y, w, h)
+}
+func okScrollHidden(document, hidden) {
+    let scroll = msg(document, "enclosingScrollView")
+    if scroll == 0 { emit "0" }
+    emit chocSetHidden(scroll, hidden)
+}
+
+// CGFloat/NSRect values must use the struct-return ABI rather than msg().
+func okViewWidth(view) { emit msgRectWidth(view, "bounds") }
+func okViewHeight(view) { emit msgRectHeight(view, "bounds") }
+
+// Generic == treats high addresses as text. Compare foreign handles numerically.
+func okSameHandle(a, b) { emit (a - b) == 0 }
