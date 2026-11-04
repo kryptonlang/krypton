@@ -82,3 +82,5 @@ extensions/krypton-language-2.4.8.vsix
 InstallationLog.txt
 kompiler/macos_arm64/macho_host
 x64.ir
+docs/objk_cortex_followup.md
+docs/objk_cortex_followup.md

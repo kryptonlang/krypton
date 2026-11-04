@@ -1,5 +1,5 @@
-// security.krh -- macOS Security.framework declarations.
-// Usage: import "head:security"
+// security_macos.krh -- macOS Security.framework declarations.
+// Usage: import "head:security_macos"
 //
 // dylib: /System/Library/Frameworks/Security.framework/Security
 // Pipeline: native Mach-O. Symbols are allowlisted in
