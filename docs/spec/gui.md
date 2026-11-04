@@ -10,6 +10,14 @@ outside integer fields. Wire state release to quit; window close is separate.
 See [core guide](../objk_runtime_macos.md) and [spec](../../spec.md).
 Historical C-emitter/DLL descriptions below do not describe this core.
 
+The macOS development facade now includes retained table data sources, native
+index-set selection, keyboard callbacks with default navigation fallback, and
+live field-change delegates. These are not additions to the Windows widget
+catalog below. See [AppKit event contracts](../objk_appkit_events_macos.md),
+[tutorial](../../tutorial/macos/README.md), and
+[filter-table example](../../examples/objk/table_filter.ks). These additions
+are queued for the next release; no version or cross-platform parity is implied.
+
 High-level Win32 wrapper. Lets a Krypton program build a native
 Windows GUI in 30-50 lines instead of 300+. All strings are UTF-8
 end-to-end; the library converts to UTF-16 internally and uses the

@@ -15,6 +15,31 @@
 ![Linux](https://img.shields.io/badge/Linux-x86__64%202.4.4-yellow)
 ![Windows](https://img.shields.io/badge/Windows-x86__64%202.3.0-orange)
 
+## Objective-K Development Preview
+
+The current checkout adds macOS AppKit table selection, per-table keyboard
+handlers, and live text-field events through `k:okui`. Native arrow navigation
+remains active for unhandled keys. This is source work for the next release,
+not an update to the published 2.4.8 installer or a Windows/Linux parity claim.
+
+- [Objective-K: start here](docs/objective_k.md)
+- [API and ownership contracts](docs/objk_appkit_events_macos.md)
+- [Native macOS tutorials](tutorial/macos/README.md)
+- [Table/filter example](examples/objk/table_filter.ks)
+- [Objective-K examples](examples/objk/README.md)
+
+From the checkout root on macOS arm64:
+
+```sh
+export KRYPTON_ROOT="$PWD"
+./bootstrap/kcc_driver_macos_aarch64 examples/objk/table_filter.ks -o /tmp/objk-table-filter
+/tmp/objk-table-filter
+```
+
+The focused Objective-K checker passes 93 checks; the demo's actual typing,
+filter clearing, Down, Return and Escape were verified. This is separate from
+the full compiler/platform test suite and does not close the remaining handoffs.
+
 ## File extensions
 
 Krypton recognises two sibling source extensions. **Same compiler, same
@@ -144,7 +169,7 @@ run, imports, and self-host on macOS (arm64), Linux (x86-64), and Windows
 - **KryptScript** — `.ks` everywhere the toolchain accepts `.k`. Installer +
   VS Code extension associate both. `kcc` derives output basenames
   correctly for either extension.
-- **WASM playground** — every tutorial lesson compiles to `.wasm` via the
+- **WASM playground** — the numbered core tutorial lessons compile to `.wasm` via the
   Krypton-side emitter (`compiler/wasm32/wasm_self.k`) and ships into
   `web/site/dist/learn/`. The lesson "Run" button picks up the precompiled
   module via `wasm_runner.js` and falls back to the JS bridge when the code
@@ -732,7 +757,7 @@ krypton/
 ├── stdlib/                # Standard library modules (~30 files: result, option, json, math_utils, …)
 ├── examples/              # Showcase programs (84 files: hello, fibonacci, calculator, hex_dump, …)
 ├── algorithms/            # Textbook algorithm reference impls (35 files: sorts, DP, graph, KMP, …)
-├── tutorial/              # Step-by-step language intro (25 numbered lessons)
+├── tutorial/              # 34 core lessons plus platform-specific tutorials
 ├── tools/                 # Single-file CLI utilities written in Krypton (cat, grep, head, fmt, …)
 ├── headers/               # .krh module headers (Win32, libc bindings)
 ├── tests/                 # Test suite (38 tests, run via ./build.sh test)

@@ -1,13 +1,36 @@
 # objk demos — pure-Krypton native GUI
 
-Native Cocoa apps written in pure Krypton, no Obj-C source, on the objk FFI
-(`compiler/macos_arm64/macho_arm64_self.k` + `stdlib/cocoa.k` + `stdlib/objc.k`).
+## Development AppKit Examples
+
+`table_filter.ks` uses the current macOS `k:okui` APIs: retained table data
+source, selection snapshots, independent key handlers, and a live filter field.
+Empty query restores all rows. Native arrows still navigate; Return displays a
+selected item and Escape clears selection. All callbacks/data-source logic are
+Krypton. Run on a macOS desktop from this checkout, not the published 2.4.8 stdlib:
+
+```sh
+export KRYPTON_ROOT="$PWD"
+./bootstrap/kcc_driver_macos_aarch64 examples/objk/table_filter.ks -o /tmp/objk-table-filter
+/tmp/objk-table-filter
+```
+
+First steps: [live field tutorial](../../tutorial/macos/README.md).
+API/lifetimes: [AppKit event guide](../../docs/objk_appkit_events_macos.md).
+Tests: `tests/macos/test_objk_table_events.k`; the full focused checker is
+`scripts/check_objk_runtime_macos.ks`. These additions have no Windows/Linux
+parity claim and do not change the grammar or the released compiler version.
+
+## Existing Demos
+
+Native macOS apps written in Krypton, with no Objective-C source. AppKit and
+Foundation remain Apple's system frameworks, accessed through Objective-K.
+Start with the [Objective-K guide](../../docs/objective_k.md).
 
 Build + run (dev tree):
 
-    KRYPTON_ROOT="$PWD" compiler/macos_arm64/kcc-arm64 examples/objk/kryedit.ks > /tmp/x.kir
-    compiler/macos_arm64/macho_host --ir /tmp/x.kir /tmp/x   # (host built by `kcc`)
-    chmod +x /tmp/x && /tmp/x src/buf.k
+    export KRYPTON_ROOT="$PWD"
+    ./bootstrap/kcc_driver_macos_aarch64 examples/objk/kryedit.ks -o /tmp/objk-kryedit
+    /tmp/objk-kryedit examples/objk/kryedit.ks
 
 - **kryedit.ks** — a syntax-highlighting text editor (open a file as arg, edit, Save).
 - **kshell.ks** — kcode-style shell: menu + file-table sidebar + editor, row-click loads the editor (Krypton data source + delegate).
