@@ -4,6 +4,21 @@ Source: cortex-mac `KRYPTON-LANG-HANDOFF.md`, measured against installed 2.4.8.
 Keep this work alongside [Synapse follow-up](objk_synapse_followup.md), not
 instead of it. This tracker describes development sources, not a shipped update.
 
+## Next AppKit Work
+
+Queued by the owner; implementation is deferred until the current design
+discussion is finished. Preserve the correctness gates and both handoffs.
+
+- [ ] First slice: table selection, keyboard callbacks, and live filtering.
+- [ ] Complete columns, double-click, and native drag/drop behavior.
+- [ ] Strengthen method-signature checks, callback ownership, and cleanup.
+- [ ] Add close/open-file hooks, session restoration, and frame persistence.
+- [ ] Finish live text events, menu state, image views, and confirmation sheets.
+- [ ] Add cancellable background processes and main-thread progress delivery.
+- [ ] For each API, provide a runnable Krypton example, automated checks, and
+  documentation; test actual native interaction where unit tests are insufficient.
+- [ ] Keep platform adapters distinct and document untested platform behavior.
+
 ## Contract Corrections
 
 - `shellRun` returns exit-code text and inherits output. Changing it to return

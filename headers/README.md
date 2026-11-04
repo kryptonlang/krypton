@@ -147,3 +147,17 @@ C in the loop.
 
 Cross-platform headers (rare — most `.krh` files are platform-tagged)
 should be coordinated through Brian.
+## macOS native bindings
+
+The macOS Security.framework and CommonCrypto declarations are reusable
+language bindings, not Krypton Vault application code:
+
+```text
+headers/security_macos.krh
+headers/commoncrypto_macos.krh
+```
+
+Applications can import them with `head:security_macos` and
+`head:commoncrypto_macos`.
+Vault-specific formats and key-management policy belong in the application
+repository that uses these bindings.

@@ -1,5 +1,5 @@
-// commoncrypto.krh -- macOS CommonCrypto declarations.
-// Usage: import "head:commoncrypto"
+// commoncrypto_macos.krh -- macOS CommonCrypto declarations.
+// Usage: import "head:commoncrypto_macos"
 //
 // dylib: /usr/lib/libSystem.B.dylib (dyld shared cache on modern macOS)
 // Pipeline: native Mach-O. Symbols are allowlisted in

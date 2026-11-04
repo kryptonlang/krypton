@@ -15,6 +15,10 @@
 
 module json_emit
 
+func _jsonHexDigit(n) {
+    emit "0123456789abcdef"[n]
+}
+
 func jeStr(s) {
     let sb = sbNew()
     sb = sbAppend(sb, "\"")
@@ -32,8 +36,8 @@ func jeStr(s) {
             // Control char — emit \u00XX.
             let v = charCode(c)
             sb = sbAppend(sb, "\\u00")
-            sb = sbAppend(sb, hex(v / 16))
-            sb = sbAppend(sb, hex(v % 16))
+            sb = sbAppend(sb, _jsonHexDigit(v / 16))
+            sb = sbAppend(sb, _jsonHexDigit(v % 16))
         }
         else { sb = sbAppend(sb, c) }
         i += 1
