@@ -29,6 +29,25 @@ func okSpinner(win, x, y, w, h)            { emit chocProgressSpinner(win, x, y,
 func okSlider(win, x, y, w, h, mn, mx, v)  { emit chocSlider(win, x, y, w, h, mn, mx, v) }
 func okCombo(win, x, y, w, h)              { emit chocComboBox(win, x, y, w, h) }
 func okTable(win, x, y, w, h)              { emit chocTable(win, x, y, w, h) }
+func okDataSource(table, source)          { emit chocSetDataSource(table, source) }
+func okReload(table)                      { emit chocReload(table) }
+func okMultiSelect(table, enabled)        { if table == 0 { emit "0" } msg_1(table, "setAllowsMultipleSelection:", enabled) emit "1" }
+func okSelectionNew()                     { emit chocSelectionNew() }
+func okSelection(table)                   { emit chocSelection(table) }
+func okSelectionCount(rows)               { emit chocSelectionCount(rows) }
+func okSelectionAdd(rows, row)            { emit chocSelectionAdd(rows, row) }
+func okSelectionAt(rows, offset)          { emit chocSelectionAt(rows, offset) }
+func okSelect(table, rows)                { emit chocSelect(table, rows, 0) }
+func okSelectExtend(table, rows, extend)  { emit chocSelect(table, rows, extend) }
+func okSelectRow(table, row, extend)      { emit chocSelectRow(table, row, extend) }
+func okSelectNone(table)                  { if table == 0 { emit "0" } msg_1(table, "deselectAll:", 0) emit "1" }
+func okSelectAll(table)                   { if table == 0 { emit "0" } msg_1(table, "selectAll:", 0) emit "1" }
+func okScrollTo(table, row)              { emit chocScrollTo(table, row) }
+func okOnKeyDown(table, fnPtr)            { emit chocTableOnKeyDown(table, fnPtr) }
+func okKeyCode(event)                     { emit msg(event, "keyCode") }
+func okKeyModifiers(event)                { emit msg(event, "modifierFlags") }
+func okKeyText(event)                     { emit nsToStr(msg(event, "characters")) }
+func okFieldOnChange(field, fnPtr)        { emit chocFieldOnChange(field, fnPtr) }
 func okSplit(win, x, y, w, h)              { emit chocSplit(win, x, y, w, h) }
 func okSplitAdd(split, view)               { emit chocSplitAdd(split, view) }
 
