@@ -12,6 +12,8 @@ This spec covers three macOS Objective-K stages: compiler support and K-owned
 class/message core; owned/weak fields and cleanup; then storage reuse with fresh
 IDs. It excludes Windows merge and deployment work. Native verification is
 macOS arm64 only. Checkout capabilities do not establish a published version.
+The macOS AppKit event adapter is specified separately from the K-owned core.
+For a human/AI entry point, see [Objective-K: start here](docs/objective_k.md).
 
 ## Language And Compiler Contract
 
@@ -242,6 +244,43 @@ wrapping, after approximately 62 million allocations per runtime. Neither
 unbounded allocation nor thread safety is promised.
 
 ## Native GUI Boundary
+
+### macOS AppKit Event Contract
+
+The development `k:okui`/`k:objk` facade adds table selection, key handlers and
+live text-field notifications, implemented only in `stdlib/choc_macos.k`.
+These are ordinary library calls, not new grammar or K-owned object features.
+Windows/Linux adapters are unchanged; no new release version is implied.
+
+- `okTable` returns a native NSTableView subclass in its existing scroll view.
+  `okDataSource` retains its source; passing 0 detaches it. Sources must not
+  strongly retain their own table. `okReload` refreshes the current model.
+- `okSelectionNew` builds an autoreleased mutable index set; `okSelection`
+  returns an autoreleased immutable snapshot. `okSelectionCount` counts indexes
+  and `okSelectionAt` takes an ordinal, returning empty text when out of range.
+  `okSelect`, `okSelectExtend`, `okSelectRow`, `okSelectAll`, `okSelectNone` and
+  `okScrollTo` preserve native selection policy; invalid rows do not mutate
+  selection. An accepted request does not override a delegate veto.
+- `okOnKeyDown(table,funcptr(handler))` borrows `(table,event)` and consumes
+  the event only when the handler returns nonzero. Zero preserves the base
+  NSTableView method. Rebinding is per-table; callback pointer 0 detaches.
+  Arbitrary foreign tables are rejected instead of silently modified.
+- `okFieldOnChange(field,funcptr(handler))` borrows `(field)`, ignores its
+  return value, and retains its own native delegate. It supports rebinding and
+  detachment, refuses to replace a foreign delegate, and does not change the
+  field's target/action. Programmatic `okSetText` does not synthesize edits.
+- These APIs require the AppKit main thread and correctly declared callback
+  ABIs. They do not add closures, compiler signature checks, automatic lifetime
+  inference, or general protection against invalid native pointers.
+
+Full contracts: [AppKit API guide](docs/objk_appkit_events_macos.md).
+Runnable sources: [live field tutorial](tutorial/macos/01_live_field.ks) and
+[filter table](examples/objk/table_filter.ks). Regression:
+`tests/macos/test_objk_table_events.k`, included in the 93-check Objective-K
+runtime gate. Native GUI interactions were checked separately; the old full
+compiler-suite results below remain historical and are not replaced by that gate.
+
+### Model And Window Ownership
 
 The macOS counter demonstrates a K-owned model, owned state, read-only dispatch,
 native callbacks, and exactly-once cleanup on `Quit`. Native window handles must

@@ -4,6 +4,20 @@
 
 ## Objective-K Declarations
 
+### AppKit Library Calls: No Syntax Extension
+
+The macOS development APIs for tables and live text use existing imports,
+function declarations, calls, and `funcptr(name)` expressions. No new keyword,
+production, or declaration form is added. A key handler is an ordinary function
+receiving `(table,event)`; a live-field handler receives `(field)`.
+Keyboard handled/fallback results, borrowed objects, delegate ownership, and
+main-thread requirements are semantic API contracts, not grammar rules.
+See the [API guide](../objk_appkit_events_macos.md) and
+[tutorial](../../tutorial/macos/README.md). These library callbacks are separate
+from K-owned `objk object` method callbacks, which receive `(runtime,self,...)`.
+
+### K-Owned Declaration Syntax
+
 The experimental macOS compiler accepts `objk protocol` and `objk object`
 declarations. It auto-imports `k:objk_runtime_macos` and lowers declarations to
 the K-owned runtime before entry work. `.k` and `.ks` share this syntax.

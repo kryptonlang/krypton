@@ -1,5 +1,8 @@
 # Objective-K K-Owned Runtime On macOS
 
+New readers: [Objective-K entry guide](objective_k.md) distinguishes the K-owned
+model, native application facade, and platform adapters before their APIs.
+
 Status: experimental object core. macOS arm64 only verified. Windows is not
 available for testing and is not part of this stage.
 

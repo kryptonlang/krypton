@@ -4,6 +4,26 @@
 
 ## Objective-K macOS Addendum
 
+### AppKit Events: Library APIs
+
+In the development checkout, `k:okui`/`k:objk` expose `okDataSource`, `okReload`,
+`okMultiSelect`, the `okSelection*` index-set helpers, `okSelect` /
+`okSelectExtend` / `okSelectRow` / `okSelectAll` / `okSelectNone`, `okScrollTo`,
+`okOnKeyDown`, `okKeyCode` / `okKeyModifiers` / `okKeyText`, and
+`okFieldOnChange`. They are macOS library functions, not compiler builtins or
+portable support promises. Imported ordinary functions use existing grammar.
+
+Keyboard handlers take `(table,event)` and return nonzero to consume the event;
+zero preserves native behavior. Field handlers take `(field)` with ignored
+return. Pointer 0 detaches either handler. Selection values are native index
+sets, not text lists; snapshots/builders are autoreleased. A foreign field
+delegate is preserved, not overwritten. All operations require the main thread.
+See [complete signatures and ownership](../objk_appkit_events_macos.md),
+[examples](../../examples/objk/README.md), and
+[tutorial](../../tutorial/macos/README.md). Published 2.4.8 is unchanged.
+
+### K-Owned Runtime APIs
+
 The experimental K-owned API is a library, not a collection of compiler
 builtins. Import `k:objk_runtime_macos`; see the
 [API contract](../../spec.md#public-api) and [usage guide](../objk_runtime_macos.md).
