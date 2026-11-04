@@ -97,6 +97,8 @@ just run {
     runCheck(captured, "Objective-K process capture", log)
     let callbacks = compileCheck(root, work, "tests/macos/test_objk_callbacks.k", "callbacks")
     runCheck(callbacks, "callback isolation and class guards", log)
+    let tableEvents = compileCheck(root, work, "tests/macos/test_objk_table_events.k", "table-events")
+    runCheck(tableEvents, "table selection, keys, and field changes", log)
     let globals = compileCheck(root, work, "tests/macos/test_imported_globals.k", "globals")
     runCheck(globals, "imported globals", log)
     let pointers = compileCheck(root, work, "tests/macos/test_callptr.k", "pointers")

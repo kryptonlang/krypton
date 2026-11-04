@@ -26,6 +26,9 @@ that text before releasing the object or draining its autorelease pool.
 
 ## AppKit Callback And Class Safety
 
+See [table selection, keyboard hooks, and live text changes](objk_appkit_events_macos.md)
+for the new macOS app APIs, ownership contracts, runnable example, and checks.
+
 `okClick(control, funcptr(handler))` now gives each registration a unique native
 target class, including rebindings. Controls retain their target through an
 associated object. Call on the AppKit main thread. Handler ABI remains

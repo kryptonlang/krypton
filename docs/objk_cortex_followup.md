@@ -6,18 +6,46 @@ instead of it. This tracker describes development sources, not a shipped update.
 
 ## Next AppKit Work
 
-Queued by the owner; implementation is deferred until the current design
-discussion is finished. Preserve the correctness gates and both handoffs.
+First macOS slice is implemented and verified; remaining work stays queued.
+Preserve the correctness gates and both handoffs.
 
-- [ ] First slice: table selection, keyboard callbacks, and live filtering.
+- [x] First slice: table selection, keyboard callbacks, and live filtering.
 - [ ] Complete columns, double-click, and native drag/drop behavior.
 - [ ] Strengthen method-signature checks, callback ownership, and cleanup.
 - [ ] Add close/open-file hooks, session restoration, and frame persistence.
 - [ ] Finish live text events, menu state, image views, and confirmation sheets.
 - [ ] Add cancellable background processes and main-thread progress delivery.
-- [ ] For each API, provide a runnable Krypton example, automated checks, and
-  documentation; test actual native interaction where unit tests are insufficient.
+- [x] First-slice runnable example, automated checks, API/lifetime docs, and
+  native UI verification. Apply the same requirements to later slices.
 - [ ] Keep platform adapters distinct and document untested platform behavior.
+
+API guide: [macOS table and field events](objk_appkit_events_macos.md).
+
+## Freebuff Handoff Update
+
+Reread the external handoff updated against `ed662321`. Its current baseline is
+**8 pass / 7 fail** after correcting module fixtures. It confirms unknown-call,
+default callback, duplicate registered-class and segmented-control fixes;
+module-global import failure is no longer reproducible. Earlier results below
+are historical, not the current external baseline.
+
+- [ ] P0-10: reproduce and diagnose frontend crashing on
+  `func main() void { print("main") }`. Check malformed return syntax separately
+  from valid function-only modules and executable entry handling. Do not reject
+  valid libraries merely because they have no `just run` block.
+- [ ] P0-7 residual: repeated allocation of the same class name before either
+  class is registered. Registered-name lookup alone does not cover this case;
+  add pending-name tracking only after reproducing and testing the native path.
+- [ ] Diagnostics: file, source line, containing function and short source
+  excerpt for compiler errors; optional address-to-source mapping under a
+  future `--debug` for runtime failures. No verbose tracing by default.
+- [ ] Compiler identifier collision: local `callback` lowers to empty text
+  instead of loading the variable. This slice uses `handlerBox`; add a compiler
+  regression and fix name resolution rather than treating the workaround as done.
+
+The handoff also corrects lifecycle expectations: activation of an existing
+live window already works through AppKit. Recreating a closed window and
+second-process policy remain separate, unverified requirements.
 
 ## Contract Corrections
 
@@ -100,15 +128,18 @@ Entries remain pending unless explicitly stated; this is not a completion list.
 
 - D1 public multi-column setup.
 - D2 column widths, row heights, reload.
-- D3 multiple selection, selection mutation, scrolling.
+- D3 native selection snapshots/builders, mutation and scrolling added for
+  macOS. See the API guide for index-set ownership and selection-policy limits.
 - D4 click/double-click dispatch (default callback isolation fixed separately).
-- D5 keyboard callbacks and native event handling.
+- D5 macOS table key hook added; unconsumed events retain native navigation.
+  Arbitrary foreign NSTableView instances are not silently subclassed.
 - D6 drag-source callbacks and pasteboard representations.
 - D7 drop validation/acceptance, row targeting, copy/move policy.
 
 ### E: Controls
 
-- E1 live field-change delegates.
+- E1 macOS live field-change delegates added, with rebinding/detachment and
+  refusal to overwrite another delegate.
 - E2 segmented-control wrappers added over existing Choc primitives. Native
   state and action routing are covered by the callback regression test.
 - E3 image-view creation and file loading.
@@ -143,9 +174,11 @@ working `format`, `sh`, conversion, path, AppKit, and signed-binary behavior.
 
 ## Verification
 
-Current development verification: **92 checks pass** in the macOS Objective-K
+Current development verification: **93 checks pass** in the macOS Objective-K
 runtime checker, including unknown-call/funcptr rejection, format imports,
-callback isolation/rebinding, duplicate classes, and segmented-control state.
+callback isolation/rebinding, duplicate classes, segmented-control state, table
+selection/key dispatch and live field notifications. The table example's actual
+typing, empty-filter recovery, arrow fallback, Return and Escape were verified.
 Strict symbol checking may expose other dormant library defects; audit imports
 before release rather than restoring silent unresolved calls.
 
@@ -154,7 +187,7 @@ Run `kcc -r scripts/check_objk_runtime_macos.ks` with the development
 as a secondary measured tracker, accounting for the contract corrections above.
 Do not claim drag/drop or the full Cortex app is verified from unit tests alone.
 
-Development run of the unmodified Cortex suite: **7 passed, 8 failed**. The
+Historical run of the original unmodified Cortex suite: **7 passed, 8 failed**. The
 remaining count includes the incompatible shellRun assertion and two mismatched
 import fixtures, alongside real unresolved padding, sorting, splitting and
 output-path defects. Do not report this as 15/0. Missing-import diagnostics
