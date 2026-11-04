@@ -560,12 +560,36 @@ func chocClassRegister(c) {
 }
 func chocNew(c)                    { emit msg(msg(c, "alloc"), "init") }
 
+func _chocTableKeyDown(self, command, event) {
+    let handlerBox = chocGetAssocKey(self, "kr.table.keyCallback")
+    if handlerBox != 0 {
+        let pointer = msg(handlerBox, "pointerValue")
+        if callPtr(pointer, self, event) != 0 { emit 0 }
+    }
+    let parent = msg_1(cls("NSTableView"), "instanceMethodForSelector:", command)
+    callPtr(parent, self, command, event)
+    emit 0
+}
+
+func _chocTableClass() {
+    let name = "KryptonObjkTableView"
+    let c = objc_lookUpClass(name)
+    if c != 0 { emit c }
+    c = objc_allocateClassPair(cls("NSTableView"), name, 0)
+    if c == 0 { printErr("Objective-K: cannot allocate table class\n"); emit 0 }
+    if chocClassAddMethod(c, "keyDown:", funcptr(_chocTableKeyDown), "v@:@") == "0" { emit 0 }
+    chocClassRegister(c)
+    emit c
+}
+
 func chocTable(win, x, y, w, h) {
+    let tableClass = _chocTableClass()
+    if tableClass == 0 { emit 0 }
     let sv = msg_frame(msg(cls("NSScrollView"), "alloc"), "initWithFrame:", x, y, w, h)
     msg_1(sv, "setHasVerticalScroller:", 1)
     msg_1(sv, "setBorderType:", 0)             // no bezel border
     msg_1(sv, "setFocusRingType:", 1)          // no blue focus ring
-    let tbl = msg_frame(msg(cls("NSTableView"), "alloc"), "initWithFrame:", 0, 0, w, h)
+    let tbl = msg_frame(msg(tableClass, "alloc"), "initWithFrame:", 0, 0, w, h)
     msg_1(tbl, "setFocusRingType:", 1)
     let col = msg_1(msg(cls("NSTableColumn"), "alloc"), "initWithIdentifier:", nsString("c0"))
     msg_d1(col, "setWidth:", w)
@@ -574,8 +598,107 @@ func chocTable(win, x, y, w, h) {
     _addToContentView(win, sv)
     emit tbl
 }
-func chocSetDataSource(table, ds) { msg_1(table, "setDataSource:", ds)  emit "1" }
-func chocReload(table)            { msg(table, "reloadData")            emit "1" }
+func chocSetDataSource(table, ds) {
+    if table == 0 { emit "0" }
+    msg_1(table, "setDataSource:", ds)
+    chocSetAssocKey(table, "kr.table.dataSource", ds)
+    emit "1"
+}
+func chocReload(table) {
+    if table == 0 { emit "0" }
+    msg(table, "reloadData")
+    emit "1"
+}
+
+func chocTableOnKeyDown(table, fnPtr) {
+    if table == 0 { emit "0" }
+    if msg_1(table, "isKindOfClass:", objc_lookUpClass("KryptonObjkTableView")) == 0 { emit "0" }
+    let boxed = 0
+    if fnPtr != 0 { boxed = msg_1(cls("NSValue"), "valueWithPointer:", fnPtr) }
+    chocSetAssocKey(table, "kr.table.keyCallback", boxed)
+    emit "1"
+}
+
+func chocSelectionNew() { emit msg(cls("NSMutableIndexSet"), "indexSet") }
+func chocSelection(table) {
+    let snapshot = msg(msg(table, "selectedRowIndexes"), "copy")
+    emit msg(snapshot, "autorelease")
+}
+func chocSelectionCount(rows) { emit msg(rows, "count") }
+func chocSelectionAdd(rows, row) {
+    if rows == 0 || row < 0 { emit "0" }
+    if msg_1(rows, "respondsToSelector:", sel("addIndex:")) == 0 { emit "0" }
+    msg_1(rows, "addIndex:", row)
+    emit "1"
+}
+func chocSelectionAt(rows, offset) {
+    if offset < 0 || offset >= msg(rows, "count") { emit "" }
+    let row = msg(rows, "firstIndex")
+    let i = 0
+    while i < offset {
+        row = msg_1(rows, "indexGreaterThanIndex:", row)
+        i += 1
+    }
+    emit row
+}
+func chocSelect(table, rows, extend) {
+    if table == 0 || rows == 0 { emit "0" }
+    if msg(rows, "count") > 0 {
+        if msg(rows, "lastIndex") >= msg(table, "numberOfRows") { emit "0" }
+    }
+    msg_2(table, "selectRowIndexes:byExtendingSelection:", rows, extend)
+    emit "1"
+}
+func chocSelectRow(table, row, extend) {
+    if table == 0 || row < 0 || row >= msg(table, "numberOfRows") { emit "0" }
+    let rows = msg_1(cls("NSIndexSet"), "indexSetWithIndex:", row)
+    emit chocSelect(table, rows, extend)
+}
+func chocScrollTo(table, row) {
+    if table == 0 || row < 0 || row >= msg(table, "numberOfRows") { emit "0" }
+    msg_1(table, "scrollRowToVisible:", row)
+    emit "1"
+}
+
+func _chocFieldChanged(self, command, notification) {
+    let field = msg(notification, "object")
+    let handlerBox = chocGetAssocKey(field, "kr.field.changeCallback")
+    if handlerBox != 0 { callPtr(msg(handlerBox, "pointerValue"), field) }
+    emit 0
+}
+func chocFieldOnChange(field, fnPtr) {
+    if field == 0 { emit "0" }
+    let owned = chocGetAssocKey(field, "kr.field.changeDelegate")
+    let current = msg(field, "delegate")
+    if current != 0 {
+        if owned == 0 || msg_1(current, "isEqual:", owned) == 0 {
+            printErr("Objective-K: field already has another delegate\n")
+            emit "0"
+        }
+    }
+    if fnPtr == 0 {
+        msg_1(field, "setDelegate:", 0)
+        chocSetAssocKey(field, "kr.field.changeDelegate", 0)
+        chocSetAssocKey(field, "kr.field.changeCallback", 0)
+        emit "1"
+    }
+    let name = "KryptonObjkFieldChanges"
+    let c = objc_lookUpClass(name)
+    if c == 0 {
+        c = chocClassNew(name)
+        if c == 0 { emit "0" }
+        if chocClassAddMethod(c, "controlTextDidChange:", funcptr(_chocFieldChanged), "v@:@") == "0" { emit "0" }
+        chocClassRegister(c)
+    }
+    if owned == 0 {
+        owned = msg(c, "new")
+        chocSetAssocKey(field, "kr.field.changeDelegate", owned)
+        msg(owned, "release")
+    }
+    chocSetAssocKey(field, "kr.field.changeCallback", msg_1(cls("NSValue"), "valueWithPointer:", fnPtr))
+    msg_1(field, "setDelegate:", owned)
+    emit "1"
+}
 
 func chocSplit(win, x, y, w, h) {
     let sp = msg_frame(msg(cls("NSSplitView"), "alloc"), "initWithFrame:", x, y, w, h)
