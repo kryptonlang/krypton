@@ -83,6 +83,10 @@ CallbackDecl  ::= "callback" FuncDecl ;
 
 Params        ::= Param ( "," Param )* ;
 Param         ::= Identifier ( ":" Type )? ;
+(* Keyword tokens cannot be binding/parameter identifiers. Preflight    *)
+(* rejects malformed delimiters and bare `void`; use `-> do` instead.   *)
+(* Function-only modules remain valid; executable entry is a driver     *)
+(* requirement, not a restriction on imported modules or library IR.   *)
 
 Type          ::= "do" | Identifier ( "[" Type "]" )? ;
 

@@ -1,6 +1,8 @@
 // Tutorial 13: Pairs
 // Using pairs for key-value data
 
+import "k:pair"
+
 just run {
     // Pairs store a value and a position as "value,position"
     let token = "hello,0"
