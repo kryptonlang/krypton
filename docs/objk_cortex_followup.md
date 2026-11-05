@@ -10,10 +10,12 @@ First macOS slice is implemented and verified; remaining work stays queued.
 Preserve the correctness gates and both handoffs.
 
 - [x] First slice: table selection, keyboard callbacks, and live filtering.
-- [ ] Complete columns, double-click, and native drag/drop behavior.
+- [x] Columns, row geometry, independent single/double target/action handlers.
+- [ ] Native drag/drop behavior and real double-click gesture verification.
 - [ ] Strengthen method-signature checks, callback ownership, and cleanup.
 - [ ] Add close/open-file hooks, session restoration, and frame persistence.
-- [ ] Finish live text events, menu state, image views, and confirmation sheets.
+- [x] Live text events, menu check/enabled state and image views/file loading.
+- [ ] Confirmation sheets and scrollable alerts.
 - [ ] Add cancellable background processes and main-thread progress delivery.
 - [x] First-slice runnable example, automated checks, API/lifetime docs, and
   native UI verification. Apply the same requirements to later slices.
@@ -33,9 +35,9 @@ are historical, not the current external baseline.
   `func main() void { print("main") }`. Check malformed return syntax separately
   from valid function-only modules and executable entry handling. Do not reject
   valid libraries merely because they have no `just run` block.
-- [ ] P0-7 residual: repeated allocation of the same class name before either
-  class is registered. Registered-name lookup alone does not cover this case;
-  add pending-name tracking only after reproducing and testing the native path.
+- [x] P0-7 residual: pending-name registry reuses a native class before
+  registration, rejects conflicting parents/handles, and clears on registration.
+  Native regression covers repeated allocation before registration.
 - [ ] Diagnostics: file, source line, containing function and short source
   excerpt for compiler errors; optional address-to-source mapping under a
   future `--debug` for runtime failures. No verbose tracing by default.
@@ -126,11 +128,12 @@ Entries remain pending unless explicitly stated; this is not a completion list.
 
 ### D: Tables
 
-- D1 public multi-column setup.
-- D2 column widths, row heights, reload.
+- D1 `okColumn` adds/updates named columns, retaining the existing `c0` default.
+- D2 column widths, row heights and reload implemented for macOS.
 - D3 native selection snapshots/builders, mutation and scrolling added for
   macOS. See the API guide for index-set ownership and selection-policy limits.
-- D4 click/double-click dispatch (default callback isolation fixed separately).
+- D4 independent typed table single/double actions added. Native target/action
+  routing is tested; actual gesture timing is not claimed from that test.
 - D5 macOS table key hook added; unconsumed events retain native navigation.
   Arbitrary foreign NSTableView instances are not silently subclassed.
 - D6 drag-source callbacks and pasteboard representations.
@@ -142,13 +145,14 @@ Entries remain pending unless explicitly stated; this is not a completion list.
   refusal to overwrite another delegate.
 - E2 segmented-control wrappers added over existing Choc primitives. Native
   state and action routing are covered by the callback regression test.
-- E3 image-view creation and file loading.
-- E4 menu check/enabled state.
+- E3 image-view creation/file loading added; failures preserve the prior image.
+- E4 menu check/enabled state added; enabling disables whole-menu autovalidation.
 - E5 scrollable text alerts and confirmation results.
 
 ### F: Lifecycle
 
-- F1 window frame persistence.
+- F1 explicit frame save/restore added and desktop-tested. No lifecycle delegate
+  is installed; applications choose when to save. No-display requests fail.
 - F2 close callbacks and session-save ordering.
 - F3 application open-file delegates and bundle document declarations.
 - F4 existing-instance activation and reopen behavior.
@@ -174,11 +178,14 @@ working `format`, `sh`, conversion, path, AppKit, and signed-binary behavior.
 
 ## Verification
 
-Current development verification: **93 checks pass** in the macOS Objective-K
+Current development verification: **94 checks pass** in the macOS Objective-K
 runtime checker, including unknown-call/funcptr rejection, format imports,
 callback isolation/rebinding, duplicate classes, segmented-control state, table
 selection/key dispatch and live field notifications. The table example's actual
 typing, empty-filter recovery, arrow fallback, Return and Escape were verified.
+Native tests additionally cover column/action/menu/image helpers and pending
+class registration. Frame save/restore was verified with desktop access; the
+test explicitly skips that part when no display is visible.
 Strict symbol checking may expose other dormant library defects; audit imports
 before release rather than restoring silent unresolved calls.
 

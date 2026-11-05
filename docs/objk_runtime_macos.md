@@ -40,6 +40,11 @@ associated object. Call on the AppKit main thread. Handler ABI remains
 use distinct keys. Do not intentionally reuse a key for different handlers.
 
 `okClass(name)` and `okViewClass(name)` reuse an already registered class with a named diagnostic.
+They also reuse pending names allocated through these helpers before
+registration; conflicting pending parents are rejected. Registration checks the
+pending handle and clears it after success. Native class creation requires the
+main thread; unregistered classes created directly through raw libobjc calls
+are outside this pending-name ownership contract.
 `okRegister` skips duplicate registration, rejects nil, and returns `"1"` or
 `"0"`. `okMethod` checks `class_addMethod` and returns `"0"` with a named
 diagnostic on failure instead of claiming success. Existing methods are not

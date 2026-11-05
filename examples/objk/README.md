@@ -3,7 +3,8 @@
 ## Development AppKit Examples
 
 `table_filter.ks` uses the current macOS `k:okui` APIs: retained table data
-source, selection snapshots, independent key handlers, and a live filter field.
+source, two columns, selection snapshots, independent click/double-click/key
+handlers, a live filter field, and explicit frame persistence on Quit.
 Empty query restores all rows. Native arrows still navigate; Return displays a
 selected item and Escape clears selection. All callbacks/data-source logic are
 Krypton. Run on a macOS desktop from this checkout, not the published 2.4.8 stdlib:
@@ -19,6 +20,9 @@ API/lifetimes: [AppKit event guide](../../docs/objk_appkit_events_macos.md).
 Tests: `tests/macos/test_objk_table_events.k`; the full focused checker is
 `scripts/check_objk_runtime_macos.ks`. These additions have no Windows/Linux
 parity claim and do not change the grammar or the released compiler version.
+Column/action/menu/image/frame regression coverage is in
+`tests/macos/test_objk_appkit_controls.k`. Frame checks need a desktop display;
+the example does not implement close/reopen or drag/drop.
 
 ## Existing Demos
 

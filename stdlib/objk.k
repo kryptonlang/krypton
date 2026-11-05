@@ -44,6 +44,11 @@ func okSelectNone(table)                  { if table == 0 { emit "0" } msg_1(tab
 func okSelectAll(table)                   { if table == 0 { emit "0" } msg_1(table, "selectAll:", 0) emit "1" }
 func okScrollTo(table, row)              { emit chocScrollTo(table, row) }
 func okOnKeyDown(table, fnPtr)            { emit chocTableOnKeyDown(table, fnPtr) }
+func okOnClick(table, fnPtr)              { emit chocTableOnClick(table, fnPtr, 0) }
+func okOnDoubleClick(table, fnPtr)        { emit chocTableOnClick(table, fnPtr, 1) }
+func okColumn(table, id, title, width)    { emit chocColumn(table, id, title, width) }
+func okColWidth(table, id, width)         { emit chocColWidth(table, id, width) }
+func okRowHeight(table, height)          { emit chocRowHeight(table, height) }
 func okKeyCode(event)                     { emit msg(event, "keyCode") }
 func okKeyModifiers(event)                { emit msg(event, "modifierFlags") }
 func okKeyText(event)                     { emit nsToStr(msg(event, "characters")) }
@@ -146,6 +151,10 @@ func okMonoFont(size)                { emit chocMonoFont(size) }
 func okFontFamily(base, family)      { emit chocFontFamily(base, family) }
 func okSetFont(view, font)           { emit chocSetFont(view, font) }
 func okAlert(title, message)         { emit chocAlert(title, message) }
+func okImageView(win, x, y, w, h)    { emit chocImageView(win, x, y, w, h) }
+func okImageFromFile(view, path)     { emit chocImageFromFile(view, path) }
+func okFrameSave(win, key)           { emit chocFrameSave(win, key) }
+func okFrameRestore(win, key)        { emit chocFrameRestore(win, key) }
 
 func okMenuBar(app)                  { emit chocMenuBar(app) }
 func okMenuAdd(bar, title)           { emit chocMenuAdd(bar, title) }
@@ -153,6 +162,8 @@ func okMenuAction(menu, title, key, fnPtr) { emit chocMenuItem(menu, title, key,
 func okMenuSelector(menu, title, key, selName) { emit chocMenuItemSel(menu, title, key, selName) }
 func okMenuSelectorTag(menu, title, key, selName, tag) { emit chocMenuItemSelTag(menu, title, key, selName, tag) }
 func okMenuSeparator(menu)           { emit chocMenuSeparator(menu) }
+func okMenuCheck(menu, title, on)    { emit chocMenuCheck(menu, title, on) }
+func okMenuEnabled(menu, title, on)  { emit chocMenuEnabled(menu, title, on) }
 func okSubmenu(menu, title)          { emit chocSubmenuIn(menu, title) }
 
 func okClass(name)                   { emit chocClassNew(name) }

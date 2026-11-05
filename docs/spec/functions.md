@@ -22,6 +22,13 @@ See [complete signatures and ownership](../objk_appkit_events_macos.md),
 [examples](../../examples/objk/README.md), and
 [tutorial](../../tutorial/macos/README.md). Published 2.4.8 is unchanged.
 
+Additional checkout-only helpers: `okColumn`, `okColWidth`, `okRowHeight`,
+`okOnClick`/`okOnDoubleClick` (handlers take one table argument), `okImageView`,
+`okImageFromFile`, `okMenuCheck`, `okMenuEnabled`, `okFrameSave`, `okFrameRestore`.
+Menu enabling takes over validation for the entire menu. Frame persistence needs
+a display and is not a close/reopen hook. See the API guide before mixing actions
+or retaining native objects; none of these calls extend the language grammar.
+
 ### K-Owned Runtime APIs
 
 The experimental K-owned API is a library, not a collection of compiler
