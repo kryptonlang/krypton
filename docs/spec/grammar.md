@@ -258,6 +258,7 @@ if  else  while  do  loop  until  break  continue
 for  in  match  struct  class  type  callback  objk
 try  catch  throw
 module  import  export  jxt
+static  defer  enum  interface  switch  case  default
 true  false  null
 ```
 
@@ -270,7 +271,16 @@ quantum  qpute  process  prepare  measure
 ```
 
 These are reserved by the tokenizer for the eventual quantum-computing
-backend; using any as an identifier is a tokenization error today.
+backend. The development frontend rejects keyword tokens in binding/parameter
+positions, including `callback`, `process`, `go`, `fn` and `default`; use
+`handlerBox`, `scanning` or `fallback` instead. It does not add contextual keyword
+syntax. Delimiter validation also reports unclosed or mismatched blocks before
+body scanners can run past the token stream. Imported errors name the module.
+
+`func main() void { ... }` is invalid; the return annotation is `-> do`.
+Function-only modules remain valid IR/import inputs. The macOS executable driver
+separately requires an entry point; it does not impose that requirement on
+`--ir` or imported modules. These checks do not add grammar productions.
 
 ## Notes on the grammar
 

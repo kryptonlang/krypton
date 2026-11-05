@@ -27,8 +27,14 @@ exits, launch failure, invalid UTF-8, and output beyond pipe capacity.
 
 Verified on macOS arm64: the full runtime checker passes with the rebuilt
 Mach-O backend, and foreign-import diagnostics are separated from the emitted
-binary diagnostic by a newline. The installed release and bootstrap seed
-binaries have not been replaced by this source change.
+binary diagnostic by a newline. Published installers remain unchanged.
+
+The development checkout now includes rebuilt macOS frontend, frontend seed and
+driver binaries. Successive native frontend self-host builds are byte-identical;
+101 focused checks, 16 driver-contract checks and the broader native suite
+(71 passed / 0 failed / 8 platform skips) pass. Synapse controller compilation
+was checked, not a full browser UI migration or runtime/deployment test. Release
+packaging, signing and notarization are still separate work.
 
 ## Still Open
 

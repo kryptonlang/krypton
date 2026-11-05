@@ -33,19 +33,22 @@ default callback, duplicate registered-class and segmented-control fixes;
 module-global import failure is no longer reproducible. Earlier results below
 are historical, not the current external baseline.
 
-- [ ] P0-10: reproduce and diagnose frontend crashing on
-  `func main() void { print("main") }`. Check malformed return syntax separately
-  from valid function-only modules and executable entry handling. Do not reject
-  valid libraries merely because they have no `just run` block.
+- [x] P0-10: bare `void` gets a filename-bearing syntax error before scanners;
+  malformed delimiters are rejected and block scans are bounded. Valid library
+  IR/imports still work; only macOS executable builds require an entry block.
 - [x] P0-7 residual: pending-name registry reuses a native class before
   registration, rejects conflicting parents/handles, and clears on registration.
   Native regression covers repeated allocation before registration.
 - [ ] Diagnostics: file, source line, containing function and short source
   excerpt for compiler errors; optional address-to-source mapping under a
   future `--debug` for runtime failures. No verbose tracing by default.
-- [ ] Compiler identifier collision: local `callback` lowers to empty text
-  instead of loading the variable. This slice uses `handlerBox`; add a compiler
-  regression and fix name resolution rather than treating the workaround as done.
+- [x] Compiler identifier collision: reserved names such as `callback` and
+  `process` are rejected in bindings/parameters, not silently lowered to empty
+  text. This is a diagnostic fix, not support for keyword identifiers. Existing
+  stdlib fallback parameters now use `fallback` instead of reserved `default`.
+- [x] macOS driver output failures/streams: missing directories are diagnosed
+  on stderr; staging preserves old output after frontend/backend failures.
+  Library IR remains valid and `-r`/`-e` propagate child streams/status.
 
 The handoff also corrects lifecycle expectations: activation of an existing
 live window already works through AppKit. Recreating a closed window and
@@ -183,7 +186,7 @@ working `format`, `sh`, conversion, path, AppKit, and signed-binary behavior.
 
 ## Verification
 
-Current development verification: **95 checks pass** in the macOS Objective-K
+Current development verification: **101 checks pass** in the macOS Objective-K
 runtime checker, including unknown-call/funcptr rejection, format imports,
 callback isolation/rebinding, duplicate classes, segmented-control state, table
 selection/key dispatch and live field notifications. The table example's actual
@@ -204,8 +207,16 @@ Run `kcc -r scripts/check_objk_runtime_macos.ks` with the development
 as a secondary measured tracker, accounting for the contract corrections above.
 Do not claim drag/drop or the full Cortex app is verified from unit tests alone.
 
+Rebuilt macOS toolchain: byte-identical frontend self-host fixpoint, 16 driver
+contract checks, and broader native suite 71 passed / 0 failed / 8 platform
+skips. kweb GUI, Synapse controller, Stem and Brain compile probes passed; those
+are not full UI or deployment tests. Stem/Brain's local reserved `go` loop names
+were renamed to `scanning`. Tutorial sweep still exposes unsupported macOS
+closures, Win32-only HTTP internals, and browser-only `fetch`/`nowSec`; do not
+claim every lesson works natively. Packaging and release validation remain open.
+
 Historical run of the original unmodified Cortex suite: **7 passed, 8 failed**. The
 remaining count includes the incompatible shellRun assertion and two mismatched
-import fixtures, alongside real unresolved padding, sorting, splitting and
+import fixtures, alongside then-unresolved padding, sorting, splitting and
 output-path defects. Do not report this as 15/0. Missing-import diagnostics
 should also be hardened so a bad filename is reported before symbol resolution.

@@ -83,6 +83,14 @@ Never replace existing foreign delegates to install these hooks.
 
 ## 3. Read Selection And Preserve Native Keys
 
+Use non-keyword names for handlers and locals. `callback`, `process`, `go`, `fn`
+and `default` are reserved: the development compiler reports them instead of
+silently substituting empty text. Prefer `handlerBox`, `scanning` and `fallback`.
+Use `func action() -> do { ... }` for an action-only function, never bare `void`.
+Function-only helper modules need no `just run`; the executable entry file does.
+Rebuild the checkout frontend/driver to enable these diagnostics; changing only
+`KRYPTON_ROOT` does not update a prebuilt frontend.
+
 `okSelection(table)` returns an immutable NSIndexSet snapshot, not a text list.
 `okSelectionCount` counts its rows; `okSelectionAt(snapshot,0)` returns the first
 selected row when nonempty. An out-of-range ordinal returns empty text. The

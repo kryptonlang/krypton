@@ -276,7 +276,7 @@ Windows/Linux adapters are unchanged; no new release version is implied.
 Full contracts: [AppKit API guide](docs/objk_appkit_events_macos.md).
 Runnable sources: [live field tutorial](tutorial/macos/01_live_field.ks) and
 [filter table](examples/objk/table_filter.ks). Regression:
-`tests/macos/test_objk_table_events.k`, included in the 95-check Objective-K
+`tests/macos/test_objk_table_events.k`, included in the 101-check Objective-K
 runtime gate. Native GUI interactions were checked separately; the old full
 compiler-suite results below remain historical and are not replaced by that gate.
 
@@ -305,6 +305,31 @@ Finder bundle declarations, sandbox access, automatic window recreation, or
 signature inference is implied. Window persistence on Quit remains explicit.
 `tests/macos/test_objk_lifecycle.k` covers native close behavior and direct app
 delegate dispatch. Drag/drop and asynchronous processes remain open.
+
+### Development Compiler Input And Driver Contract
+
+The shared frontend validates balanced delimiters and identifier positions
+before function/import scanners. Binding, destructuring, loop and parameter
+names must not be keyword tokens. `callback`, `process`, `go`, `fn` and `default`
+remain reserved, not new contextual aliases. Rejection reports the source file;
+an imported stream names its own module. Full source-location reporting remains
+separate work. This preflight is not a complete semantic/type checker.
+
+`func main() void { ... }` is malformed return syntax, not evidence that a valid
+library needs an executable entry. Use `-> do` for action-only functions. Valid
+function-only modules may emit `--ir` and be imported. Native `jxt` function
+declarations describe foreign imports, not Krypton function bodies.
+
+On macOS, executable builds require `just run` or `go run`; absence reports an
+entry-point error without calling codegen. Frontend/backend failure must return
+nonzero and cannot count an old executable as a successful output. The driver
+stages codegen beside the destination, checks the result, and replaces the final
+path only after success. Missing output directories and directory destinations
+are errors. `--ir` writes IR to stdout and diagnostics to stderr; warnings do not
+turn successful IR emission into failure. `-r` and `-e` inherit program stdout /
+stderr and return its exit status without adding a newline to captured output.
+These driver changes are macOS-specific; no untested Windows/Linux parity is
+implied. `scripts/check_macos_driver.ks` exercises this contract.
 
 ### Model And Window Ownership
 

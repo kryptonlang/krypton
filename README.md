@@ -38,10 +38,19 @@ export KRYPTON_ROOT="$PWD"
 /tmp/objk-table-filter
 ```
 
-The focused Objective-K checker passes 95 checks; the demo's actual typing,
+The focused Objective-K checker passes 101 checks; the demo's actual typing,
 filter clearing, single/double clicks, Down, Return, Escape and retained-window
 close/reopen were verified. This is separate from
 the full compiler/platform test suite and does not close the remaining handoffs.
+
+The development frontend rejects reserved binding/parameter names and malformed
+delimiters rather than silently producing empty values or crashing. Use
+`func action() -> do { ... }`, not `func action() void { ... }`. Function-only
+modules still support imports and `--ir`; only executable builds require an
+entry block. macOS `-r`/`-e` preserve child exit status and streams; failed builds
+preserve earlier outputs. Run `scripts/check_macos_driver.ks` with this checkout's
+rebuilt driver to verify those contracts. These changes are not installed by
+updating stdlib alone; the frontend and driver must also be rebuilt.
 
 ## File extensions
 

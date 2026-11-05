@@ -1,8 +1,7 @@
-// Tutorial 17: Modules with go
-// Using 'go' blocks for named entry points / modules
+// Tutorial 17: Entry blocks with go
+// 'go run' is an alias for the executable's 'just run' entry block.
 
-// 'go' defines a named block, like a module or named main
-go math_demo {
+go run {
     func square(n) { emit n * n }
     func cube(n) { emit n * n * n }
 

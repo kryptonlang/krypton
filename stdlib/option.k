@@ -28,11 +28,11 @@ func optUnwrap(opt) {
     emit ""
 }
 
-func optUnwrapOr(opt, default) {
+func optUnwrapOr(opt, fallback) {
     if startsWith(opt, "some:") {
         emit substring(opt, 5, len(opt))
     }
-    emit default
+    emit fallback
 }
 
 func optMap(opt, val) {
