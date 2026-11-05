@@ -101,6 +101,8 @@ just run {
     runCheck(tableEvents, "table selection, keys, and field changes", log)
     let appkitControls = compileCheck(root, work, "tests/macos/test_objk_appkit_controls.k", "appkit-controls")
     runCheck(appkitControls, "AppKit columns, actions, menus, images, and frames", log)
+    let lifecycle = compileCheck(root, work, "tests/macos/test_objk_lifecycle.k", "lifecycle")
+    runCheck(lifecycle, "AppKit window and application lifecycle", log)
     let globals = compileCheck(root, work, "tests/macos/test_imported_globals.k", "globals")
     runCheck(globals, "imported globals", log)
     let pointers = compileCheck(root, work, "tests/macos/test_callptr.k", "pointers")

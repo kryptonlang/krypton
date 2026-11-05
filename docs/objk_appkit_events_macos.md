@@ -1,4 +1,4 @@
-# Objective-K AppKit Table And Field Events
+# Objective-K AppKit Events And Lifecycle
 
 Development source APIs for macOS arm64. Import `k:okui` or `k:objk`.
 Implementation stays in `stdlib/choc_macos.k`; the framework-free object core
@@ -114,8 +114,58 @@ The extra native regression checks column geometry, independent action routing,
 menu validation, image-load failure preservation and frame restoration. Frame
 checks explicitly skip when no display is available; they were also run against
 the desktop display and passed without skipping. It creates/removes only its
-own uniquely named frame preference. Actual double-click gesture timing and
-image preview interaction are not claimed from the target/action regression.
+own uniquely named frame preference. Actual single/double-click actions were
+also verified in the native demo. Image preview interaction is not claimed from
+the target/action regression.
+
+## Window And Application Lifecycle
+
+These macOS helpers install a retained Krypton-defined native delegate, not a
+K-owned object or generated Objective-C source. They return `"1"` for an accepted
+registration/detachment and `"0"` for nil targets, allocation failure, or an
+existing foreign delegate. They never forward to or replace a foreign delegate.
+
+| Registration | Handler | Contract |
+| --- | --- | --- |
+| `okWindowShouldClose(win,funcptr(handler))` | `(win)` | Return integer 1 to permit a user close, 0 to veto. |
+| `okWindowOnClose(win,funcptr(handler))` | `(win)` | Called from `windowWillClose:`; result ignored; too late to veto. |
+| `okAppOnOpenFile(app,funcptr(handler))` | `(app,path)` | `path` is borrowed UTF-8 text; return integer 1 if handled, 0 if rejected. |
+| `okAppOnReopen(app,funcptr(handler))` | `(app,hasVisibleWindows)` | Native Boolean visibility; return integer 1 to permit AppKit's default reopen behavior, 0 if fully handled. |
+
+Pointer 0 removes only that hook. The paired window hooks share one delegate;
+the two application hooks share another. Removing the last hook clears the
+delegate and releases the adapter's reference. Rebinding changes only one
+handler; windows remain independent. A callback may detach itself safely. Do not
+release its window/application from inside the callback. Do not overwrite the
+delegate manually while hooks are active. All registration and dispatch require
+the main thread; code pointers and native borrowed arguments are not type- or
+lifetime-checked by the compiler.
+
+`performClose:` (including the normal close button) consults `windowShouldClose:`;
+direct `close` bypasses that veto. A missing veto handler permits closing. A
+missing open-file handler rejects the file; a missing reopen handler permits
+default native behavior while another application hook is installed. Only
+integer result 1 is accepted as true; arbitrary text is not a Boolean contract.
+Quit does not necessarily deliver `windowWillClose:`: save separately in the
+Quit action when needed. These helpers do not implement termination callbacks.
+
+The adapter never retains the owner through its delegate. Applications reopening
+a closed window must keep a valid strong reference and set
+`msg_1(win,"setReleasedWhenClosed:",0)` before closing. `okShow` reuses a live
+window; it does not recreate a deallocated window or implement second-process
+coordination. Do not create an owner/delegate retention cycle with associations.
+
+Register application hooks before `okRun`/`okFinish`, so launch events can be
+delivered. Open-file dispatch uses AppKit's `application:openFile:` contract;
+Finder associations additionally require bundle document declarations such as
+`CFBundleDocumentTypes`. No bundle metadata, URL/multi-file delegate, sandbox
+permission, security-scoped resource access, or NSDocument integration is added.
+Do not infer actual Finder routing from a direct delegate regression.
+
+`tests/macos/test_objk_lifecycle.k` checks native `performClose:` veto and close
+notifications, per-window isolation, rebinding, independent detachment, foreign
+delegate refusal, self-detachment, and direct application open-file/reopen
+dispatch. Window checks explicitly skip when no display is available.
 
 ## Example And Verification
 
@@ -131,7 +181,8 @@ The example filters six component names in two columns as text is edited. Empty
 query restores all rows. Single/double actions update status independently.
 Unhandled arrow keys navigate normally; Return displays the selected
 item and Escape clears selection. It preserves native theme and edit-menu
-commands. It saves the window frame on Quit and attempts restore at launch.
+commands. It saves the window frame on close and Quit, attempts restore at launch,
+and reopens its retained window through the application reopen hook.
 The data source and filtering logic are Krypton, with no C/Objective-C
 source or external compiler.
 
@@ -139,5 +190,7 @@ source or external compiler.
 retained data sources, independent/rebound key handlers, live notifications,
 delegate detachment and refusal to replace another delegate. The runtime checker
 includes it. Actual demo typing, filter clearing, Down, Return and Escape were
-also verified through the native UI. Drag/drop, IME composition, VoiceOver,
-multi-column tables and other platforms are not claimed as verified here.
+also verified through the native UI, as were two-column single/double-click
+actions and closing/reopening with the filter state retained. Drag/drop, IME
+composition, VoiceOver, actual Finder file routing and other platforms are not
+claimed as verified here.

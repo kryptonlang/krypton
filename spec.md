@@ -276,7 +276,7 @@ Windows/Linux adapters are unchanged; no new release version is implied.
 Full contracts: [AppKit API guide](docs/objk_appkit_events_macos.md).
 Runnable sources: [live field tutorial](tutorial/macos/01_live_field.ks) and
 [filter table](examples/objk/table_filter.ks). Regression:
-`tests/macos/test_objk_table_events.k`, included in the 94-check Objective-K
+`tests/macos/test_objk_table_events.k`, included in the 95-check Objective-K
 runtime gate. Native GUI interactions were checked separately; the old full
 compiler-suite results below remain historical and are not replaced by that gate.
 
@@ -290,8 +290,21 @@ track pending names until registration; repeated allocation reuses the pending
 handle, while a different pending superclass or conflicting registration fails
 with a diagnostic. These are main-thread contracts, not a concurrent registry.
 The [API guide](docs/objk_appkit_events_macos.md) specifies ownership and results;
-`tests/macos/test_objk_appkit_controls.k` covers the new helpers. Drag/drop,
-close/open-file hooks and asynchronous processes remain open.
+`tests/macos/test_objk_appkit_controls.k` covers the control helpers.
+
+`okWindowShouldClose(win,fnPtr)` and `okWindowOnClose(win,fnPtr)` install an owned
+native window delegate: `(win)` returns integer 1 to allow a user close or 0 to
+veto, while the later close notification ignores the result. Direct native
+`close` bypasses the veto. `okAppOnOpenFile(app,fnPtr)` passes `(app,pathText)`
+and returns integer 1 for handled; `okAppOnReopen(app,fnPtr)` passes
+`(app,hasVisibleWindows)` and returns integer 1 to permit default native handling.
+Pointer 0 detaches one hook; removing the last paired hook releases the delegate.
+Foreign delegates are refused. Owners retain proxies; proxies do not retain
+owners, and callbacks may detach themselves. No termination/session manager,
+Finder bundle declarations, sandbox access, automatic window recreation, or
+signature inference is implied. Window persistence on Quit remains explicit.
+`tests/macos/test_objk_lifecycle.k` covers native close behavior and direct app
+delegate dispatch. Drag/drop and asynchronous processes remain open.
 
 ### Model And Window Ownership
 
