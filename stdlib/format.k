@@ -274,6 +274,7 @@ func formatDurationLong(seconds) {
 // Format a nonnegative int as lowercase hex, padded to at least width digits.
 func formatHex(n, width) {
     let value = toInt(n)
+    if value < 0 { printErr("formatHex: value must be nonnegative\n"); emit "" }
     let h = ""
     let digits = "0123456789abcdef"
     if value == 0 { h = "0" }
