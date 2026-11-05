@@ -15,6 +15,9 @@ main-thread requirements are semantic API contracts, not grammar rules.
 See the [API guide](../objk_appkit_events_macos.md) and
 [tutorial](../../tutorial/macos/README.md). These library callbacks are separate
 from K-owned `objk object` method callbacks, which receive `(runtime,self,...)`.
+Typed `okOnClick`/`okOnDoubleClick` handlers receive `(table)`; generic
+`okClick` actions retain `(self,command,sender)`. Columns, menus, images and
+frame persistence add no syntax either.
 
 ### K-Owned Declaration Syntax
 

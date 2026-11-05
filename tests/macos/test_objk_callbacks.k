@@ -44,6 +44,12 @@ just run {
     checkButton(a, "third")
     checkButton(b, "second")
     let klass = okClass("KryptonDuplicateClassProbe")
+    let pending = okClass("KryptonDuplicateClassProbe")
+    if msg_1(msg_1(cls("NSValue"), "valueWithPointer:", klass), "isEqualToValue:", msg_1(cls("NSValue"), "valueWithPointer:", pending)) == 0 {
+        print("[FAIL] duplicate pending class")
+        exit("1")
+    }
+    if okViewClass("KryptonDuplicateClassProbe") != 0 { print("[FAIL] pending parent conflict"); exit("1") }
     if okMethod(klass, "answer", funcptr(answer), "q@:") != "1" { print("[FAIL] add method"); exit("1") }
     okRegister(klass)
     let again = okClass("KryptonDuplicateClassProbe")

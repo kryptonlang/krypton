@@ -17,8 +17,9 @@
 
 ## Objective-K Development Preview
 
-The current checkout adds macOS AppKit table selection, per-table keyboard
-handlers, and live text-field events through `k:okui`. Native arrow navigation
+The current checkout adds macOS AppKit table selection, columns, independent
+click/double-click and keyboard handlers, live text fields, image/menu helpers,
+and window frame persistence through `k:okui`. Native arrow navigation
 remains active for unhandled keys. This is source work for the next release,
 not an update to the published 2.4.8 installer or a Windows/Linux parity claim.
 
@@ -36,7 +37,7 @@ export KRYPTON_ROOT="$PWD"
 /tmp/objk-table-filter
 ```
 
-The focused Objective-K checker passes 93 checks; the demo's actual typing,
+The focused Objective-K checker passes 94 checks; the demo's actual typing,
 filter clearing, Down, Return and Escape were verified. This is separate from
 the full compiler/platform test suite and does not close the remaining handoffs.
 

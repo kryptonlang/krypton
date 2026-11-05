@@ -60,6 +60,17 @@ selection and reloads the model. Empty query explicitly restores every row.
 detach it with `okDataSource(table,0)` when appropriate. The data source must not
 strongly retain its own table.
 
+The table now uses `okColumn(table,"c0","Component",440)` to update the default
+column and `okColumn(table,"kind","Kind",160)` to add another. The data-source
+callback reads the column identifier before choosing cell text. `okColWidth`
+and `okRowHeight` use positive integer points. Columns retain their native
+objects; this does not introduce language records or string-list columns.
+
+Single/double handlers registered with `okOnClick`/`okOnDoubleClick` receive
+only `(table)` and coexist. They are different from generic `okClick` actions
+with `(self,command,sender)`. The example saves geometry through `okFrameSave`
+on its Quit action and tries `okFrameRestore` at launch; that is not a close hook.
+
 ## 3. Read Selection And Preserve Native Keys
 
 `okSelection(table)` returns an immutable NSIndexSet snapshot, not a text list.
