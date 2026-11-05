@@ -851,6 +851,107 @@ func chocFieldOnChange(field, fnPtr) {
     emit "1"
 }
 
+func _chocWindowShouldClose(self, command, win) {
+    let handlerBox = chocGetAssocKey(self, "kr.window.shouldClose")
+    if handlerBox == 0 { emit 1 }
+    msg(self, "retain")
+    let result = callPtr(msg(handlerBox, "pointerValue"), win)
+    msg(self, "release")
+    if result == 1 { emit 1 }
+    emit 0
+}
+func _chocWindowWillClose(self, command, notification) {
+    let handlerBox = chocGetAssocKey(self, "kr.window.willClose")
+    if handlerBox != 0 {
+        msg(self, "retain")
+        callPtr(msg(handlerBox, "pointerValue"), msg(notification, "object"))
+        msg(self, "release")
+    }
+    emit 0
+}
+func _chocAppOpenFile(self, command, app, filename) {
+    let handlerBox = chocGetAssocKey(self, "kr.app.openFile")
+    if handlerBox == 0 { emit 0 }
+    msg(self, "retain")
+    let result = callPtr(msg(handlerBox, "pointerValue"), app, nsToStr(filename))
+    msg(self, "release")
+    if result == 1 { emit 1 }
+    emit 0
+}
+func _chocAppReopen(self, command, app, visible) {
+    let handlerBox = chocGetAssocKey(self, "kr.app.reopen")
+    if handlerBox == 0 { emit 1 }
+    msg(self, "retain")
+    let result = callPtr(msg(handlerBox, "pointerValue"), app, visible)
+    msg(self, "release")
+    if result == 1 { emit 1 }
+    emit 0
+}
+func _chocLifecycleClass(windowKind) {
+    let name = "KryptonObjkAppLifecycle"
+    if windowKind != 0 { name = "KryptonObjkWindowLifecycle" }
+    let c = objc_lookUpClass(name)
+    if c != 0 { emit c }
+    c = chocClassNew(name)
+    if c == 0 { emit 0 }
+    if windowKind != 0 {
+        if chocClassAddMethod(c, "windowShouldClose:", funcptr(_chocWindowShouldClose), "B@:@") == "0" { emit 0 }
+        if chocClassAddMethod(c, "windowWillClose:", funcptr(_chocWindowWillClose), "v@:@") == "0" { emit 0 }
+    } else {
+        if chocClassAddMethod(c, "application:openFile:", funcptr(_chocAppOpenFile), "B@:@@") == "0" { emit 0 }
+        if chocClassAddMethod(c, "applicationShouldHandleReopen:hasVisibleWindows:", funcptr(_chocAppReopen), "B@:@B") == "0" { emit 0 }
+    }
+    if chocClassRegister(c) == "0" { emit 0 }
+    emit c
+}
+// AppKit delegates are weak. The owner retains our proxy; the proxy never retains
+// its owner. Retain self across dispatch so callbacks may safely detach themselves.
+func _chocLifecycleSet(owner, fnPtr, key, otherKey, windowKind) {
+    if owner == 0 { emit "0" }
+    let proxyKey = "kr.app.lifecycle"
+    if windowKind != 0 { proxyKey = "kr.window.lifecycle" }
+    let owned = chocGetAssocKey(owner, proxyKey)
+    let current = msg(owner, "delegate")
+    if current != 0 {
+        if owned == 0 || msg_1(current, "isEqual:", owned) == 0 {
+            printErr("Objective-K: lifecycle owner already has another delegate\n")
+            emit "0"
+        }
+    }
+    if fnPtr == 0 {
+        if owned == 0 { emit "1" }
+        chocSetAssocKey(owned, key, 0)
+        if chocGetAssocKey(owned, otherKey) == 0 {
+            msg_1(owner, "setDelegate:", 0)
+            chocSetAssocKey(owner, proxyKey, 0)
+        }
+        emit "1"
+    }
+    if owned == 0 {
+        let c = _chocLifecycleClass(windowKind)
+        if c == 0 { emit "0" }
+        owned = msg(c, "new")
+        if owned == 0 { emit "0" }
+        chocSetAssocKey(owner, proxyKey, owned)
+        msg(owned, "release")
+    }
+    chocSetAssocKey(owned, key, msg_1(cls("NSValue"), "valueWithPointer:", fnPtr))
+    msg_1(owner, "setDelegate:", owned)
+    emit "1"
+}
+func chocWindowShouldClose(win, fnPtr) {
+    emit _chocLifecycleSet(win, fnPtr, "kr.window.shouldClose", "kr.window.willClose", 1)
+}
+func chocWindowOnClose(win, fnPtr) {
+    emit _chocLifecycleSet(win, fnPtr, "kr.window.willClose", "kr.window.shouldClose", 1)
+}
+func chocAppOnOpenFile(app, fnPtr) {
+    emit _chocLifecycleSet(app, fnPtr, "kr.app.openFile", "kr.app.reopen", 0)
+}
+func chocAppOnReopen(app, fnPtr) {
+    emit _chocLifecycleSet(app, fnPtr, "kr.app.reopen", "kr.app.openFile", 0)
+}
+
 func chocSplit(win, x, y, w, h) {
     let sp = msg_frame(msg(cls("NSSplitView"), "alloc"), "initWithFrame:", x, y, w, h)
     msg_1(sp, "setVertical:", 1)

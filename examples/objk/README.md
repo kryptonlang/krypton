@@ -4,7 +4,7 @@
 
 `table_filter.ks` uses the current macOS `k:okui` APIs: retained table data
 source, two columns, selection snapshots, independent click/double-click/key
-handlers, a live filter field, and explicit frame persistence on Quit.
+handlers, a live filter field, frame persistence on close/Quit and reopen support.
 Empty query restores all rows. Native arrows still navigate; Return displays a
 selected item and Escape clears selection. All callbacks/data-source logic are
 Krypton. Run on a macOS desktop from this checkout, not the published 2.4.8 stdlib:
@@ -22,7 +22,9 @@ Tests: `tests/macos/test_objk_table_events.k`; the full focused checker is
 parity claim and do not change the grammar or the released compiler version.
 Column/action/menu/image/frame regression coverage is in
 `tests/macos/test_objk_appkit_controls.k`. Frame checks need a desktop display;
-the example does not implement close/reopen or drag/drop.
+`tests/macos/test_objk_lifecycle.k` covers close veto/notification and application
+open-file/reopen dispatch. The example retains its window across close and shows
+it again on a reopen event; it does not implement drag/drop or document routing.
 
 ## Existing Demos
 

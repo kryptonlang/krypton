@@ -19,7 +19,8 @@
 
 The current checkout adds macOS AppKit table selection, columns, independent
 click/double-click and keyboard handlers, live text fields, image/menu helpers,
-and window frame persistence through `k:okui`. Native arrow navigation
+window frame persistence, close veto/notifications and app open-file/reopen
+hooks through `k:okui`. Native arrow navigation
 remains active for unhandled keys. This is source work for the next release,
 not an update to the published 2.4.8 installer or a Windows/Linux parity claim.
 
@@ -37,8 +38,9 @@ export KRYPTON_ROOT="$PWD"
 /tmp/objk-table-filter
 ```
 
-The focused Objective-K checker passes 94 checks; the demo's actual typing,
-filter clearing, Down, Return and Escape were verified. This is separate from
+The focused Objective-K checker passes 95 checks; the demo's actual typing,
+filter clearing, single/double clicks, Down, Return, Escape and retained-window
+close/reopen were verified. This is separate from
 the full compiler/platform test suite and does not close the remaining handoffs.
 
 ## File extensions

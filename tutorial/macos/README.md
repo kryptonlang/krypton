@@ -69,7 +69,17 @@ objects; this does not introduce language records or string-list columns.
 Single/double handlers registered with `okOnClick`/`okOnDoubleClick` receive
 only `(table)` and coexist. They are different from generic `okClick` actions
 with `(self,command,sender)`. The example saves geometry through `okFrameSave`
-on its Quit action and tries `okFrameRestore` at launch; that is not a close hook.
+on its close notification and Quit action, then tries `okFrameRestore` at launch.
+
+The example registers `okWindowOnClose(win,funcptr(windowClosed))` with a `(win)`
+handler, and `okAppOnReopen(app,funcptr(reopenLab))` with `(app,visible)`. The
+reopen handler shows the retained window when none is visible, then returns 1
+to permit default AppKit behavior. Setting `setReleasedWhenClosed:` to 0 and
+keeping the window on the app association lets it survive closing. Saving on
+Quit remains separate: a close notification is not a termination hook.
+`okWindowShouldClose(win,funcptr(handler))` can veto a normal user close with
+integer 0 or permit it with 1; direct native `close` bypasses this check.
+Never replace existing foreign delegates to install these hooks.
 
 ## 3. Read Selection And Preserve Native Keys
 

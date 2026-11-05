@@ -29,6 +29,15 @@ Menu enabling takes over validation for the entire menu. Frame persistence needs
 a display and is not a close/reopen hook. See the API guide before mixing actions
 or retaining native objects; none of these calls extend the language grammar.
 
+Lifecycle registrations: `okWindowShouldClose(win,fnPtr)` and
+`okWindowOnClose(win,fnPtr)` take `(win)` handlers; the first returns integer 1
+to permit user close and 0 to veto, the latter ignores its result.
+`okAppOnOpenFile(app,fnPtr)` takes `(app,pathText)` and returns integer 1 if handled.
+`okAppOnReopen(app,fnPtr)` takes `(app,hasVisibleWindows)` and returns integer 1
+to permit native default handling. Pointer 0 detaches one hook; the final paired
+detach releases the proxy. Foreign delegates are refused. No automatic bundle
+document declarations, window recreation, or Quit notification is supplied.
+
 ### K-Owned Runtime APIs
 
 The experimental K-owned API is a library, not a collection of compiler

@@ -69,12 +69,18 @@ synchronous, not a background-job framework.
 | `okClick(control,funcptr(handler))` | `(self,command,sender)` | Ignored native action result. |
 | `okOnKeyDown(table,funcptr(handler))` | `(table,event)` | Nonzero consumes; 0 preserves native table handling. |
 | `okFieldOnChange(field,funcptr(handler))` | `(field)` | Ignored; read current text with `okText(field)`. |
+| `okWindowShouldClose(win,funcptr(handler))` | `(win)` | Integer 1 permits user close; 0 vetoes. Direct `close` bypasses this. |
+| `okWindowOnClose(win,funcptr(handler))` | `(win)` | Ignored; close notification, not a veto or Quit hook. |
+| `okAppOnOpenFile(app,funcptr(handler))` | `(app,path)` | Integer 1 handled, 0 rejected; path is borrowed text. |
+| `okAppOnReopen(app,funcptr(handler))` | `(app,hasVisibleWindows)` | Integer 1 permits native default behavior; 0 fully handled. |
 | K-owned method registration/declaration | `(runtime,self,...)` | Must satisfy the declared runtime contract. |
 
 These signatures are not interchangeable. `funcptr` points to a named function;
 it does not capture locals or create a closure. Native callback arguments are
 borrowed. The code pointer must remain valid and its signature must match.
-Passing 0 detaches the key or live-field handler. A foreign field delegate is
+Passing 0 detaches one handler. Lifecycle hooks share one retained proxy per
+owner and release it when the last paired hook is removed. Foreign delegates are
+not replaced; callbacks may safely detach themselves. A foreign field delegate is
 not overwritten. Programmatic `okSetText` is not a user-edit notification.
 
 Native table selections are NSIndexSet handles, not comma/newline lists.
@@ -141,14 +147,18 @@ type checks are compiler type checking or automatic reference counting.
 ./bootstrap/kcc_driver_macos_aarch64 -r scripts/check_objk_runtime_macos.ks
 ```
 
-The focused macOS Objective-K gate passes 94 checks, including adapter and
+The focused macOS Objective-K gate passes 95 checks, including adapter and
 K-owned runtime regressions. The table demo's real typing, filter clearing,
-Down, Return and Escape were checked through native UI. That is not a full
+Down, Return, Escape, single/double clicks and retained-window close/reopen were
+checked through native UI. That is not a full
 compiler-suite, accessibility, IME, or cross-platform certification.
 New column/action/image/menu helpers have native regressions. Frame restoration
 was checked with desktop access; without a display that case explicitly skips.
 Pending native class names are now reused before registration, with a diagnostic
 for conflicting parents. Native class creation remains main-thread-only.
+Lifecycle tests cover native close veto/notifications, independent delegates and
+safe self-detachment. App open-file/reopen tests invoke the native delegate
+methods; this does not prove Finder associations or bundle document routing.
 
 The [Cortex tracker](objk_cortex_followup.md) contains the AppKit tasks and
 Freebuff's updated compiler findings. The [Synapse tracker](objk_synapse_followup.md)

@@ -23,6 +23,15 @@ func selectedName(table) {
 }
 func clicked(table) { okSetText(okGet(table, "demo.status"), "Selected: " + selectedName(table)); emit 0 }
 func doubleClicked(table) { okSetText(okGet(table, "demo.status"), "Activated: " + selectedName(table)); emit 0 }
+func windowClosed(win) { okFrameSave(win, "KryptonTableLab.frame"); emit 0 }
+func reopenLab(app, visible) {
+    if visible == 0 {
+        let win = okGet(app, "demo.window")
+        okShow(win, app)
+        okSetText(okGet(win, "demo.status"), "Window reopened")
+    }
+    emit 1
+}
 func quitLab(self, command, sender) {
     let app = okSharedApp()
     okFrameSave(okGet(app, "demo.window"), "KryptonTableLab.frame")
@@ -73,9 +82,12 @@ just run {
     let pool = okAutoreleasePool()
     let app = okApp()
     let win = okWindow(app, "Objective-K Table Lab", 680, 460)
+    msg_1(win, "setReleasedWhenClosed:", 0)
     okMinSize(win, 480, 320)
     okSet(app, "demo.window", win)
     okFrameRestore(win, "KryptonTableLab.frame")
+    okWindowOnClose(win, funcptr(windowClosed))
+    okAppOnReopen(app, funcptr(reopenLab))
     let bar = okMenuBar(app)
     let menu = okMenuAdd(bar, "Table Lab")
     okMenuAction(menu, "Quit", "q", funcptr(quitLab))
@@ -95,6 +107,7 @@ just run {
     let scroll = msg(table, "enclosingScrollView")
     okAutoresizing(scroll, 18)
     let status = okLabel(win, "Items: 6", 20, 24, 640, 24)
+    okSet(win, "demo.status", status)
     let items = okArray()
     okArrayAdd(items, nsString("AppKit adapter"))
     okArrayAdd(items, nsString("Code Brain editor"))

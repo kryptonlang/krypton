@@ -17,7 +17,10 @@ See the [API guide](../objk_appkit_events_macos.md) and
 from K-owned `objk object` method callbacks, which receive `(runtime,self,...)`.
 Typed `okOnClick`/`okOnDoubleClick` handlers receive `(table)`; generic
 `okClick` actions retain `(self,command,sender)`. Columns, menus, images and
-frame persistence add no syntax either.
+frame persistence add no syntax either. Window hooks receive `(win)`;
+application open-file/reopen hooks receive `(app,path)` or
+`(app,hasVisibleWindows)`. Their Boolean results and delegate lifetime rules
+are library contracts, not new syntax or compiler-inferred callback signatures.
 
 ### K-Owned Declaration Syntax
 

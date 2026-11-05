@@ -16,6 +16,10 @@ func okTitle(obj, title)             { emit chocSetTitle(obj, title) }
 func okMinSize(win, w, h)            { emit chocSetWindowMinSize(win, w, h) }
 func okTransparentTitlebar(win)      { emit chocTransparentTitlebar(win) }
 func okMakeFirstResponder(win, view) { emit chocMakeFirstResponder(win, view) }
+func okWindowShouldClose(win, fnPtr) { emit chocWindowShouldClose(win, fnPtr) }
+func okWindowOnClose(win, fnPtr)     { emit chocWindowOnClose(win, fnPtr) }
+func okAppOnOpenFile(app, fnPtr)     { emit chocAppOnOpenFile(app, fnPtr) }
+func okAppOnReopen(app, fnPtr)       { emit chocAppOnReopen(app, fnPtr) }
 
 func okButton(win, label, x, y, w, h)      { emit chocButton(win, label, x, y, w, h) }
 func okCheckbox(win, label, x, y, w, h)    { emit chocCheckbox(win, label, x, y, w, h) }
