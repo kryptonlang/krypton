@@ -1,6 +1,4 @@
-// compile.k — Krypton-to-C compiler written in Krypton
-// Usage: kcc compiler/compile.k <source.k> > output.c
-//   then: gcc -o program output.c
+// Krypton frontend: source to native-pipeline IR, written in Krypton.
 
 // === Pair helpers (value,pos) ===
 
@@ -705,6 +703,106 @@ func tokVal(tok) {
     emit ""
 }
 
+func compilerInputFile() {
+    let i = 0
+    while i < argCount() {
+        let value = arg(i + "")
+        if value == "--ir" || value == "--port-1to2" { i += 1 }
+        else if value == "-o" || value == "--target" { i += 2 }
+        else { emit value }
+    }
+    emit "kcc"
+}
+func compilerSyntaxError(message) {
+    printErr(compilerInputFile() + ": error: " + message + "\n")
+    exit(1)
+}
+func compilerRemoveTemp(path) {
+    if environ("OS") == "Windows_NT" {
+        shellRun("del /f /q \"" + path + "\" >nul 2>nul")
+    } else {
+        let quote = fromCharCode(39)
+        shellRun("/bin/rm -f -- " + quote + replace(path, quote, quote + "\\" + quote + quote) + quote)
+    }
+    emit 0
+}
+func requireIdentifier(token, file) {
+    if tokType(token) != "ID" {
+        printErr(file + ": error: expected identifier, got '" + tokVal(token) + "'; keywords are reserved\n")
+        exit(1)
+    }
+}
+// Validate before scanners that assume balanced delimiters or identifier names.
+// This also runs on imported streams, where diagnostics must name that module.
+func validateTokens(tokens, ntoks, file) {
+    let stack = ""
+    let i = 0
+    while i < ntoks {
+        let token = tokAt(tokens, i)
+        let open = ""
+        let close = ""
+        if token == "LBRACE" { open = "{" }
+        if token == "LPAREN" { open = "(" }
+        if token == "LBRACK" { open = "[" }
+        if token == "RBRACE" { close = "{" }
+        if token == "RPAREN" { close = "(" }
+        if token == "RBRACK" { close = "[" }
+        if open != "" { stack = stack + open }
+        if close != "" {
+            if len(stack) == 0 {
+                printErr(file + ": error: unmatched closing delimiter\n"); exit(1)
+            }
+            if stack[len(stack) - 1] != close {
+                printErr(file + ": error: mismatched closing delimiter\n"); exit(1)
+            }
+            stack = substring(stack, 0, len(stack) - 1)
+        }
+        if token == "KW:let" || token == "KW:const" || token == "KW:for" {
+            requireIdentifier(tokAt(tokens, i + 1), file)
+            if token != "KW:for" {
+                let p = i + 2
+                while p < ntoks && tokAt(tokens, p) == "COMMA" {
+                    requireIdentifier(tokAt(tokens, p + 1), file)
+                    p += 2
+                }
+            }
+        }
+        if token == "KW:func" || token == "KW:fn" {
+            let p = i + 1
+            if tokAt(tokens, p) != "LPAREN" {
+                requireIdentifier(tokAt(tokens, p), file)
+                p += 1
+            }
+            if tokAt(tokens, p) != "LPAREN" {
+                printErr(file + ": error: expected '(' after function name\n"); exit(1)
+            }
+            let depth = 1
+            let needName = 1
+            p += 1
+            while p < ntoks && depth > 0 {
+                let part = tokAt(tokens, p)
+                if depth == 1 && part != "RPAREN" {
+                    if needName == 1 { requireIdentifier(part, file); needName = 0 }
+                    if part == "COMMA" { needName = 1 }
+                }
+                if part == "LPAREN" || part == "LBRACK" { depth += 1 }
+                if part == "RPAREN" || part == "RBRACK" { depth -= 1 }
+                p += 1
+            }
+            if tokAt(tokens, p) == "ID:void" {
+                printErr(file + ": error: use '-> do' for no-return functions, not bare 'void'\n")
+                exit(1)
+            }
+        }
+        i += 1
+    }
+    if len(stack) > 0 {
+        printErr(file + ": error: unclosed delimiter '" + stack[len(stack) - 1] + "'\n")
+        exit(1)
+    }
+    emit 0
+}
+
 // === C string escaping ===
 
 func expandEscapes(s) {
@@ -923,9 +1021,14 @@ func findEntry(tokens, ntoks) {
 }
 
 func skipBlock(tokens, pos) {
+    if tokAt(tokens, pos) != "LBRACE" {
+        compilerSyntaxError("expected '{' to start a block; return annotations use '-> TYPE'")
+    }
     let depth = 1
     let p = pos + 1
+    let ntoks = lineCount(tokens)
     while depth > 0 {
+        if p >= ntoks { compilerSyntaxError("unclosed block; expected '}'") }
         let t = tokAt(tokens, p)
         if t == "LBRACE" {
             depth += 1
@@ -2570,11 +2673,12 @@ func irLetIR(tokens, pos, ntoks, lc, inFunc, types) {
 }
 
 func irBlockIR(tokens, pos, ntoks, lc, inFunc, types) {
-    // pos is at LBRACE
+    if tokAt(tokens, pos) != "LBRACE" { compilerSyntaxError("expected '{' to start a block") }
     let p = pos + 1
     let sbBlock = sbNew()
     let nlc = lc
     while tokAt(tokens, p) != "RBRACE" {
+        if p >= ntoks { compilerSyntaxError("unclosed block; expected '}'") }
         let sp = irStmt(tokens, p, ntoks, nlc, inFunc, types)
         sbBlock = sbAppend(sbBlock, pairVal(sp))
         p = pairPos(sp)
@@ -3581,6 +3685,7 @@ just run {
     }
     let tokens = tokenize(source)
     let ntoks = lineCount(tokens)
+    validateTokens(tokens, ntoks, file)
     let objkScan = 0
     let hasObjK = 0
     while objkScan < ntoks {
@@ -3724,6 +3829,7 @@ just run {
                 if len(importSrc) > 0 {
 	                    let iToks = tokenize(importSrc)
 	                    let iNtoks = lineCount(iToks)
+	                    validateTokens(iToks, iNtoks, fullPath)
 	                    let iFtable = scanFunctions(iToks, iNtoks)
 	                    // Pull direct imports of imported modules too. This lets facade
 	                    // modules (for example k:objk) hide their lower layers without
@@ -3773,6 +3879,7 @@ just run {
 	                                if len(depSrc) > 0 {
 	                                    let depToks = tokenize(depSrc)
 	                                    let depNtoks = lineCount(depToks)
+	                                    validateTokens(depToks, depNtoks, depFull)
 	                                    let depFtable = scanFunctions(depToks, depNtoks)
 	                                    let depJ = 0
 	                                    while depJ < depNtoks {
@@ -3970,6 +4077,7 @@ just run {
                         if len(jSrc) > 0 {
                             let jToks = tokenize(jSrc)
                             let jNt = lineCount(jToks)
+                            validateTokens(jToks, jNt, jFullPath)
                             let jFt = scanFunctions(jToks, jNt)
                             if len(jFt) > 0 {
                                 if len(ftable) > 0 { ftable = ftable + "\n" + jFt }
@@ -4336,8 +4444,8 @@ just run {
                 let codeCmd2 = compilerDir + "\\x64_host_new.exe " + tmpOpt + " " + outFile
                 shellRun(optCmd2)
                 shellRun(codeCmd2)
-                DeleteFileA(tmpIR)
-                DeleteFileA(tmpOpt)
+                compilerRemoveTemp(tmpIR)
+                compilerRemoveTemp(tmpOpt)
                 emit 0
             }
             print(irLibText)
@@ -4506,8 +4614,8 @@ just run {
             let codeCmd = compilerDir + "\\x64_host_new.exe " + tmpOpt + " " + outFile
             shellRun(optCmd)
             shellRun(codeCmd)
-            DeleteFileA(tmpIR)
-            DeleteFileA(tmpOpt)
+            compilerRemoveTemp(tmpIR)
+            compilerRemoveTemp(tmpOpt)
             emit 0
         }
 

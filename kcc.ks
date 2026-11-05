@@ -210,26 +210,21 @@ func baseName(src) {
     emit src
 }
 
-// Stream frontend IR while preserving failure. sh()/exec() expose stdout, not
-// reliable child exit status, so use temp files and verify the IR header.
+// Keep diagnostics on stderr and IR on stdout; warnings do not imply failure.
 func streamFrontendIR(root, fe, src) {
     let tmpir = tmpPath("_kccir", ".kir")
     let tmperr = tmpPath("_kccirerr", ".txt")
-    exec("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir " + q(src) + " > " + q(tmpir) + " 2> " + q(tmperr))
+    let rc = shellRun("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir " + q(src) + " > " + q(tmpir) + " 2> " + q(tmperr))
     let ir = readText(tmpir)
     let err = readText(tmperr)
     rm(tmpir)
     rm(tmperr)
-    if err != "" {
-        kp(_chompWS(err))
-        emit "0"
-    }
-    if startsWith(ir, "; Krypton IR") {
+    if err != "" { printErr(err) }
+    if rc == "0" && startsWith(ir, "; Krypton IR") {
         kp(ir)
         emit "1"
     }
-    if ir != "" { kp(_chompWS(ir)) }
-    else { kp("kcc: IR emission failed for " + src) }
+    if err == "" { printErr("kcc: IR emission failed for " + src + "\n") }
     emit "0"
 }
 
@@ -261,22 +256,61 @@ func compileMacos(root, src, out) {
     let fe = root + "/compiler/macos_arm64/kcc-arm64"
     let host = root + "/compiler/macos_arm64/macho_host"
     if ensureHost(root) == "0" { emit "0" }
+    let parent = "."
+    let slash = 0 - 1
+    let oi = 0
+    while oi < len(out) {
+        if out[oi] == "/" { slash = oi }
+        oi += 1
+    }
+    if slash == 0 { parent = "/" }
+    if slash > 0 { parent = substring(out, 0, slash) }
+    if shellRun("test -d " + q(parent)) != "0" {
+        printErr("kcc: output directory '" + parent + "' does not exist\n")
+        emit "0"
+    }
+    if shellRun("test -d " + q(out)) == "0" {
+        printErr("kcc: output path '" + out + "' is a directory\n")
+        emit "0"
+    }
     let tmpir = tmpPath("_kcck", ".kir")
     // frontend: .k -> IR  (KRYPTON_ROOT must reach it for k: imports)
-    exec("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir " + q(src) + " > " + q(tmpir))
-    if size(tmpir) == 0 {
-        kp("kcc: IR emission failed for " + src)
+    let frontRc = shellRun("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir " + q(src) + " > " + q(tmpir))
+    if frontRc != "0" || !startsWith(readText(tmpir), "; Krypton IR") {
+        printErr("kcc: IR emission failed for " + src + "\n")
         rm(tmpir)
         emit "0"
     }
-    // backend: IR -> Mach-O
-    exec(q(host) + " --ir " + q(tmpir) + " " + q(out))
-    rm(tmpir)
-    if exists(out) == "0" {
-        kp("kcc: native codegen failed")
+    if !contains(readText(tmpir), "FUNC __main__ 0\n") {
+        printErr(src + ": error: no entry point; expected 'just run { ... }' or 'go run { ... }'\n")
+        rm(tmpir)
         emit "0"
     }
-    exec("chmod +x " + q(out))
+    // Stage beside the output so failed codegen cannot reuse or overwrite an
+    // earlier executable; a successful rename stays on the same filesystem.
+    let staged = sh("mktemp " + q(parent + "/.kcc_XXXXXX"))
+    if staged == "" {
+        printErr("kcc: cannot create output in '" + parent + "'\n")
+        rm(tmpir)
+        emit "0"
+    }
+    let codeRc = shellRun(q(host) + " --ir " + q(tmpir) + " " + q(staged))
+    rm(tmpir)
+    if codeRc != "0" || size(staged) == 0 {
+        printErr("kcc: native codegen failed for " + src + "\n")
+        rm(staged)
+        emit "0"
+    }
+    if shellRun("chmod 755 " + q(staged)) != "0" {
+        printErr("kcc: cannot set executable permissions\n")
+        rm(staged)
+        emit "0"
+    }
+    if shellRun("mv -f -- " + q(staged) + " " + q(out)) != "0" {
+        printErr("kcc: cannot write output '" + out + "'\n")
+        rm(staged)
+        emit "0"
+    }
     emit "1"
 }
 
@@ -918,9 +952,9 @@ just run {
         writeText(ek, "just run {\n" + arg(1) + "\n}\n")
         let ebin = sh("mktemp " + q(tmpRoot() + "/_kcceval_XXXXXX"))
         if compileMacos(root, ek, ebin) == "0" { rm(ek)  exit("1") }
-        kp(sh(q(ebin)))
+        let rc = shellRun(q(ebin))
         rm(ek)  rm(ebin)
-        exit("0")
+        exit(rc)
     }
 
     // -r <src> [args...]: compile to temp, run, delete.
@@ -929,12 +963,11 @@ just run {
         let src = arg(1)
         let tmpbin = sh("mktemp " + q(tmpRoot() + "/_kcckrun_XXXXXX"))
         if compileMacos(root, src, tmpbin) == "0" { exit("1") }
-        // pass through any args after the source. sh() chomps the trailing
-        // newline so kp re-adds exactly one (shRaw would double it).
+        // Preserve the child's streams and exit status, including missing newlines.
         let passed = restFrom(2)
-        kp(sh(q(tmpbin) + " " + passed))
+        let rc = shellRun(q(tmpbin) + " " + passed)
         rm(tmpbin)
-        exit("0")
+        exit(rc)
     }
 
     // default: compile src [-o OUT]. Use the flag-tolerant source finder (same
