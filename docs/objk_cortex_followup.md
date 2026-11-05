@@ -11,9 +11,11 @@ Preserve the correctness gates and both handoffs.
 
 - [x] First slice: table selection, keyboard callbacks, and live filtering.
 - [x] Columns, row geometry, independent single/double target/action handlers.
-- [ ] Native drag/drop behavior and real double-click gesture verification.
+- [x] Real single/double-click gesture verification in the two-column demo.
+- [ ] Native drag/drop behavior.
 - [ ] Strengthen method-signature checks, callback ownership, and cleanup.
-- [ ] Add close/open-file hooks, session restoration, and frame persistence.
+- [x] Add close veto/notification and app open-file/reopen hooks; explicit frames.
+- [ ] Session restoration, termination hooks, and Finder document routing.
 - [x] Live text events, menu check/enabled state and image views/file loading.
 - [ ] Confirmation sheets and scrollable alerts.
 - [ ] Add cancellable background processes and main-thread progress delivery.
@@ -133,7 +135,7 @@ Entries remain pending unless explicitly stated; this is not a completion list.
 - D3 native selection snapshots/builders, mutation and scrolling added for
   macOS. See the API guide for index-set ownership and selection-policy limits.
 - D4 independent typed table single/double actions added. Native target/action
-  routing is tested; actual gesture timing is not claimed from that test.
+  routing and real demo gestures are tested; drag/drop is separate.
 - D5 macOS table key hook added; unconsumed events retain native navigation.
   Arbitrary foreign NSTableView instances are not silently subclassed.
 - D6 drag-source callbacks and pasteboard representations.
@@ -153,9 +155,12 @@ Entries remain pending unless explicitly stated; this is not a completion list.
 
 - F1 explicit frame save/restore added and desktop-tested. No lifecycle delegate
   is installed; applications choose when to save. No-display requests fail.
-- F2 close callbacks and session-save ordering.
-- F3 application open-file delegates and bundle document declarations.
-- F4 existing-instance activation and reopen behavior.
+- F2 close veto/notification hooks added; Quit/session-save ordering remains
+  application work, not automatic termination handling.
+- F3 application open-file hook added; bundle document declarations, sandbox
+  access and actual Finder routing remain unverified.
+- F4 app reopen hook added; the demo retains/reuses its closed window. This is
+  not automatic window recreation or second-process coordination.
 
 ### G: Language And FFI
 
@@ -178,7 +183,7 @@ working `format`, `sh`, conversion, path, AppKit, and signed-binary behavior.
 
 ## Verification
 
-Current development verification: **94 checks pass** in the macOS Objective-K
+Current development verification: **95 checks pass** in the macOS Objective-K
 runtime checker, including unknown-call/funcptr rejection, format imports,
 callback isolation/rebinding, duplicate classes, segmented-control state, table
 selection/key dispatch and live field notifications. The table example's actual
@@ -186,6 +191,11 @@ typing, empty-filter recovery, arrow fallback, Return and Escape were verified.
 Native tests additionally cover column/action/menu/image helpers and pending
 class registration. Frame save/restore was verified with desktop access; the
 test explicitly skips that part when no display is visible.
+The lifecycle regression adds native close veto/notification tests, foreign
+delegate refusal, per-window isolation, rebinding and self-detachment; application
+open-file/reopen selectors are exercised directly, not through Finder.
+The native demo's single/double clicks and close/reopen cycle were also checked;
+the filtered row survived closing and the reopen callback updated the status.
 Strict symbol checking may expose other dormant library defects; audit imports
 before release rather than restoring silent unresolved calls.
 
