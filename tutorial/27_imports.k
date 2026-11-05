@@ -1,7 +1,7 @@
 // Tutorial 27: Using the Standard Library
 // Pull in stdlib modules with: import "k:<module>"
 //
-// Lesson 17 showed 'go' blocks for grouping your own code. Here we use
+// Lesson 17 showed the 'go run' entry block. Here we use
 // modules someone else already wrote — they live in stdlib/ and are
 // imported with the "k:" prefix.
 

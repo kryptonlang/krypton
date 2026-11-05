@@ -138,8 +138,9 @@ type checks are compiler type checking or automatic reference counting.
 - Do not claim imported declarations, drag/drop, async jobs, full struct-return
   support, automatic lifetime safety, or platform parity without implementation
   and verification. Keep source, installed tools and published releases distinct.
-- The local identifier `callback` has a known resolution defect; the new adapter
-  uses `handlerBox`. It is tracked, not considered fixed by the rename.
+- Keywords such as `callback`, `process`, `go`, `fn` and `default` cannot be
+  binding or parameter names. The development frontend now rejects them rather
+  than silently loading empty text. Use names such as `handlerBox` or `fallback`.
 
 ## Verification And Open Work
 
@@ -147,7 +148,7 @@ type checks are compiler type checking or automatic reference counting.
 ./bootstrap/kcc_driver_macos_aarch64 -r scripts/check_objk_runtime_macos.ks
 ```
 
-The focused macOS Objective-K gate passes 95 checks, including adapter and
+The focused macOS Objective-K gate passes 101 checks, including adapter and
 K-owned runtime regressions. The table demo's real typing, filter clearing,
 Down, Return, Escape, single/double clicks and retained-window close/reopen were
 checked through native UI. That is not a full
@@ -164,3 +165,19 @@ The [Cortex tracker](objk_cortex_followup.md) contains the AppKit tasks and
 Freebuff's updated compiler findings. The [Synapse tracker](objk_synapse_followup.md)
 contains process/bundling/module work. The handoffs remain open; this guide is
 not a claim that all 42 API requests are finished.
+
+The frontend also diagnoses bare `void`, unmatched/unclosed delimiters and
+reserved identifiers before scanners run. Valid function-only modules still
+emit library IR and import normally. The macOS driver rejects those modules only
+when asked for an executable without `just run`/`go run`. Its separate
+`scripts/check_macos_driver.ks` gate checks stderr/IR separation, child exit
+statuses, output-directory errors and preservation of existing output on failure.
+Diagnostics identify the input or imported file; full line/excerpt/debug mapping
+remains open. Native `jxt` function declarations are not compiled as bodies.
+The isolated rebuilt toolchain also passed 16 driver-contract checks and the
+broader native suite (71 passed, 0 failed, 8 platform skips). Two successive
+frontend self-host generations are byte-identical. These are development tests,
+not installer, signing, notarization or store-submission validation.
+Tutorial compilation: 33 passed, with three explicitly excluded native gaps
+(closures, Win32 HTTP internals and browser-only lesson APIs); see the
+[tutorial scope](../tutorial/README.md). Do not report a clean all-lessons gate.

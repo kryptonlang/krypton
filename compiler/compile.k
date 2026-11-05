@@ -3534,15 +3534,15 @@ func emitPortWarnings(tokens, ntoks, fname) {
         // Raw memory access
         if tok == "ID:rawReadByte" || tok == "ID:rawReadWord" || tok == "ID:rawReadQword" {
             if tokAt(tokens, i + 1) == "LPAREN" {
-                let fn = substring(tok, 3, len(tok))
-                printErr(fname + ": warning [port-1to2]: " + fn + "() — raw memory read. Prefer typed pointer indexing (`p[i]` with `let p: *u8 = ...`) for 2.0 safety.")
+                let functionName = substring(tok, 3, len(tok))
+                printErr(fname + ": warning [port-1to2]: " + functionName + "() — raw memory read. Prefer typed pointer indexing (`p[i]` with `let p: *u8 = ...`) for 2.0 safety.")
                 warnings = warnings + 1
             }
         }
         if tok == "ID:rawWriteWord" || tok == "ID:rawWriteQword" {
             if tokAt(tokens, i + 1) == "LPAREN" {
-                let fn = substring(tok, 3, len(tok))
-                printErr(fname + ": warning [port-1to2]: " + fn + "() — raw memory write. Prefer typed pointer assignment in 2.0.")
+                let functionName = substring(tok, 3, len(tok))
+                printErr(fname + ": warning [port-1to2]: " + functionName + "() — raw memory write. Prefer typed pointer assignment in 2.0.")
                 warnings = warnings + 1
             }
         }
@@ -4411,7 +4411,9 @@ just run {
             let libStructTypes = kccStructTypes(tokens, ntoks)
             while irlibI < ntoks {
                 let irlibTok = tokAt(tokens, irlibI)
-                if irlibTok == "KW:func" || irlibTok == "KW:fn" {
+                if irlibTok == "KW:jxt" {
+                    irlibI = skipBlock(tokens, irlibI + 1)
+                } else if irlibTok == "KW:func" || irlibTok == "KW:fn" {
                     let irlibFp = irFuncIR(tokens, irlibI, ntoks, libStructTypes)
                     sbIRlib = sbAppend(sbIRlib, pairVal(irlibFp))
                     irlibI = pairPos(irlibFp)
@@ -4472,7 +4474,9 @@ just run {
         let mainStructTypes = kccStructTypes(tokens, ntoks)
         while iri < ntoks {
             let irtok = tokAt(tokens, iri)
-            if irtok == "KW:func" || irtok == "KW:fn" {
+            if irtok == "KW:jxt" {
+                iri = skipBlock(tokens, iri + 1)
+            } else if irtok == "KW:func" || irtok == "KW:fn" {
                 let fp = irFuncIR(tokens, iri, ntoks, mainStructTypes)
                 sbIR = sbAppend(sbIR, pairVal(fp))
                 iri = pairPos(fp)

@@ -28,6 +28,11 @@ it again on a reopen event; it does not implement drag/drop or document routing.
 
 ## Existing Demos
 
+Use ordinary non-keyword callback/parameter names (`handlerBox`, `fallback`,
+`scanning`), not `callback`, `default` or `go`. The development frontend rejects
+these previously silent mistakes. Native `jxt` signatures remain declarations,
+not function bodies; action-only Krypton bodies use `-> do`.
+
 Native macOS apps written in Krypton, with no Objective-C source. AppKit and
 Foundation remain Apple's system frameworks, accessed through Objective-K.
 Start with the [Objective-K guide](../../docs/objective_k.md).

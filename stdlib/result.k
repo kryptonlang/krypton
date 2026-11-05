@@ -37,11 +37,11 @@ func unwrapErr(result) {
     emit ""
 }
 
-func unwrapOr(result, default) {
+func unwrapOr(result, fallback) {
     if startsWith(result, "ok:") {
         emit substring(result, 3, len(result))
     }
-    emit default
+    emit fallback
 }
 
 func resultMap(result, func_name) {

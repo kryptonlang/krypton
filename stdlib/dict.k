@@ -99,18 +99,20 @@ func dictitemsk(d) {
 
 // dictgetk(d, key, default) -- value associated with key, or default
 // if key is absent.
-func dictgetk(d, key, default) {
+func dictgetk(d, key, fallback) {
+    if d == "" { emit fallback }
     let n = count(d)
     let i = 0
     while i < n {
         if split(d, i) == key { emit split(d, i + 1) }
         i = i + 2
     }
-    emit default
+    emit fallback
 }
 
 // indictk(key, d) -- Python `key in d` membership.  Returns int 1/0.
 func indictk(key, d) {
+    if d == "" { emit 0 }
     let n = count(d)
     let i = 0
     while i < n {
@@ -125,6 +127,7 @@ func indictk(key, d) {
 
 // dictsetk(d, key, value) -- set or replace.  Returns new dict.
 func dictsetk(d, key, value) {
+    if d == "" { emit key + "," + value }
     let n = count(d)
     let out = sbNew()
     let i = 0
@@ -182,13 +185,13 @@ func dictdelk(d, key) {
 // a pair: `v = dictsetdefaultk(d, k, def); d = dictsetdefaultupd(d, k, def)`.
 // Returns ONLY the value; companion `dictsetdefaultupd` updates the
 // dict.  Matches Python semantics where setdefault mutates AND returns.
-func dictsetdefaultk(d, key, default) {
-    emit dictgetk(d, key, default)
+func dictsetdefaultk(d, key, fallback) {
+    emit dictgetk(d, key, fallback)
 }
 
-func dictsetdefaultupd(d, key, default) {
+func dictsetdefaultupd(d, key, fallback) {
     if indictk(key, d) == 1 { emit d }
-    emit dictsetk(d, key, default)
+    emit dictsetk(d, key, fallback)
 }
 
 // dictupdatek(d, other) -- merge `other` into `d`; values in `other`
@@ -207,8 +210,8 @@ func dictupdatek(d, other) {
 // dictpopk(d, key, default) -- return value if present, else default.
 // Companion: dictdelk(d, key) updates the dict.  See popk in list.k
 // for the same FE-paired-statements pattern.
-func dictpopk(d, key, default) {
-    emit dictgetk(d, key, default)
+func dictpopk(d, key, fallback) {
+    emit dictgetk(d, key, fallback)
 }
 
 // dictpopitemk(d) -- return the LAST key,value pair as a 2-element

@@ -34,7 +34,7 @@ func osgetcwdk() {
 }
 
 // os.environ.get(key, default)
-func osgetenvk(key, default) {
+func osgetenvk(key, fallback) {
     let v = exec("echo %" + key + "%")
     let i = len(v)
     while i > 0 {
@@ -43,7 +43,7 @@ func osgetenvk(key, default) {
     }
     let trimmed = substring(v, 0, i)
     // exec("echo %FOO%") returns "%FOO%" literally if unset on Windows.
-    if trimmed == "%" + key + "%" { emit default }
+    if trimmed == "%" + key + "%" { emit fallback }
     emit trimmed
 }
 
