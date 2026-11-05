@@ -1841,6 +1841,35 @@ func efCountNL(s) {
     emit c
 }
 
+func irFunctionArity(ir, name) {
+    let prefix = "FUNC " + name + " "
+    let start = 0
+    while start < len(ir) {
+        let end = start
+        while end < len(ir) && ir[end] != "\n" { end += 1 }
+        let line = trim(substring(ir, start, end))
+        if startsWith(line, prefix) { emit toInt(substring(line, len(prefix), len(line))) }
+        start = end + 1
+    }
+    emit 0 - 1
+}
+
+func padEnsure(sbLocals, nLocals) {
+    let names = "__pad_s\n__pad_n\n__pad_c\n__pad_b\n__pad_len\n__pad_step"
+    let n = nLocals
+    let i = 0
+    while i < 6 {
+        let name = getLine(names, i)
+        if findInList(sbToString(sbLocals), n, name) < 0 {
+            if n > 0 { sbAppend(sbLocals, "\n") }
+            sbAppend(sbLocals, name)
+            n += 1
+        }
+        i += 1
+    }
+    emit n
+}
+
 // Append a function block (header + params + locals + ops) to a sb.
 func appendFunc(sb, name, params, nParams, locals, nLocals, opsStr, nOps) {
     sb = sbAppend(sb, name + "\t" + nParams + "\t" + nLocals + "\t" + nOps + "\n")
@@ -2230,7 +2259,54 @@ func parseFullIR(ir) {
                     let bj = 0
                     while bj < len(rest) && rest[bj] != " " { bj += 1 }
                     let bname = substring(rest, 0, bj)
-                    if bname == "kp" {
+                    if bname == "padLeft" || bname == "padRight" {
+                        let argc = toInt(trim(substring(rest, bj + 1, len(rest))))
+                        let defined = irFunctionArity(ir, bname)
+                        if defined >= 0 {
+                            if argc != defined {
+                                printErr("macho_arm64_self: '" + bname + "' expects " + defined + " argument(s), got " + argc + " in '" + curName + "'\n")
+                                exit("1")
+                            }
+                            curOps = sbAppend(curOps, "CALL_FUNC " + bname + " " + argc + "\n")
+                            nOps += 1
+                        } else {
+                            if argc != 3 {
+                                printErr("macho_arm64_self: '" + bname + "' needs 3 arguments in '" + curName + "'\n")
+                                exit("1")
+                            }
+                            nLocals = padEnsure(sbLocals, nLocals)
+                            let ps = nParams + findInList(sbToString(sbLocals), nLocals, "__pad_s")
+                            let pn = nParams + findInList(sbToString(sbLocals), nLocals, "__pad_n")
+                            let pc = nParams + findInList(sbToString(sbLocals), nLocals, "__pad_c")
+                            let pb = nParams + findInList(sbToString(sbLocals), nLocals, "__pad_b")
+                            let pl = nParams + findInList(sbToString(sbLocals), nLocals, "__pad_len")
+                            let pt = nParams + findInList(sbToString(sbLocals), nLocals, "__pad_step")
+                            let empty = internSb(sbStrings, nStrings, asciiToHex(""))
+                            if empty == nStrings { nStrings += 1 }
+                            let original = "_pad_original_" + i
+                            let loopLabel = "_pad_loop_" + i
+                            let step = "_pad_step_" + i
+                            let finish = "_pad_finish_" + i
+                            let done = "_pad_done_" + i
+                            let code = "STORE_SLOT " + pc + "\nBUILTIN_TOINT\nSTORE_SLOT " + pn + "\nSTORE_SLOT " + ps + "\n"
+                            // CAT forces text conversion; ADD may parse numeric text.
+                            code = code + "PUSH_STR " + empty + "\nLOAD_SLOT " + ps + "\nCAT\nSTORE_SLOT " + ps + "\n"
+                            code = code + "LOAD_SLOT " + pn + "\nLOAD_SLOT " + ps + "\nBUILTIN_LEN\nSUB\nSTORE_SLOT " + pn + "\n"
+                            code = code + "PUSH_INT 0\nLOAD_SLOT " + pn + "\nLT\nJUMPIFNOT " + original + "\n"
+                            code = code + "PUSH_STR " + empty + "\nLOAD_SLOT " + pc + "\nCAT\nSTORE_SLOT " + pc + "\n"
+                            code = code + "LOAD_SLOT " + pc + "\nBUILTIN_LEN\nSTORE_SLOT " + pl + "\nPUSH_INT 0\nLOAD_SLOT " + pl + "\nLT\nJUMPIFNOT " + original + "\n"
+                            code = code + "BUILTIN_SBNEW\nSTORE_SLOT " + pb + "\n"
+                            if bname == "padRight" { code = code + "LOAD_SLOT " + pb + "\nLOAD_SLOT " + ps + "\nBUILTIN_SBAPPEND\nPOP\n" }
+                            code = code + "LABEL " + loopLabel + "\nPUSH_INT 0\nLOAD_SLOT " + pn + "\nLT\nJUMPIFNOT " + finish + "\n"
+                            code = code + "LOAD_SLOT " + pl + "\nSTORE_SLOT " + pt + "\nLOAD_SLOT " + pn + "\nLOAD_SLOT " + pl + "\nLT\nJUMPIFNOT " + step + "\nLOAD_SLOT " + pn + "\nSTORE_SLOT " + pt + "\nLABEL " + step + "\n"
+                            code = code + "LOAD_SLOT " + pb + "\nLOAD_SLOT " + pc + "\nPUSH_INT 0\nLOAD_SLOT " + pt + "\nBUILTIN_SUBSTRING\nBUILTIN_SBAPPEND\nPOP\n"
+                            code = code + "LOAD_SLOT " + pn + "\nLOAD_SLOT " + pt + "\nSUB\nSTORE_SLOT " + pn + "\nJUMP " + loopLabel + "\nLABEL " + finish + "\n"
+                            if bname == "padLeft" { code = code + "LOAD_SLOT " + pb + "\nLOAD_SLOT " + ps + "\nBUILTIN_SBAPPEND\nPOP\n" }
+                            code = code + "LOAD_SLOT " + pb + "\nBUILTIN_SBTOSTRING\nJUMP " + done + "\nLABEL " + original + "\nLOAD_SLOT " + ps + "\nLABEL " + done + "\n"
+                            curOps = sbAppend(curOps, code)
+                            nOps += efCountNL(code)
+                        }
+                    } else if bname == "kp" {
                         curOps = sbAppend(curOps, "BUILTIN_KP\n")
                         nOps += 1
                     } else if bname == "callPtr" {
@@ -2252,7 +2328,7 @@ func parseFullIR(ir) {
                     } else if bname == "getField" {
                         // getField(o, k): [o,k] -> value or "". Runtime key from stack.
                         nLocals = efEnsure(sbLocals, nLocals)
-                        let go = nParams + findInList(sbToString(sbLocals), nLocals, "__ef_o")
+                        let gObj = nParams + findInList(sbToString(sbLocals), nLocals, "__ef_o")
                         let gi = nParams + findInList(sbToString(sbLocals), nLocals, "__ef_i")
                         let gk = nParams + findInList(sbToString(sbLocals), nLocals, "__ef_k")
                         let ge = internSb(sbStrings, nStrings, asciiToHex(""))
@@ -2262,12 +2338,12 @@ func parseFullIR(ir) {
                         let gN = "_dfg_nf_" + i
                         let gEd = "_dfg_end_" + i
                         let dg = ""
-                        dg = dg + "STORE_SLOT " + gk + "\nSTORE_SLOT " + go + "\nPUSH_INT 0\nSTORE_SLOT " + gi + "\n"
+                        dg = dg + "STORE_SLOT " + gk + "\nSTORE_SLOT " + gObj + "\nPUSH_INT 0\nSTORE_SLOT " + gi + "\n"
                         dg = dg + "LABEL " + gL + "\n"
-                        dg = dg + "LOAD_SLOT " + gi + "\nLOAD_SLOT " + go + "\nPUSH_INT 0\nBUILTIN_BUFGETQWORDAT\nLT\nJUMPIFNOT " + gN + "\n"
-                        dg = dg + "LOAD_SLOT " + go + "\nLOAD_SLOT " + gi + "\nPUSH_INT 16\nMUL\nPUSH_INT 8\nADD\nBUILTIN_BUFGETQWORDAT\nLOAD_SLOT " + gk + "\nEQ\nJUMPIF " + gF + "\n"
+                        dg = dg + "LOAD_SLOT " + gi + "\nLOAD_SLOT " + gObj + "\nPUSH_INT 0\nBUILTIN_BUFGETQWORDAT\nLT\nJUMPIFNOT " + gN + "\n"
+                        dg = dg + "LOAD_SLOT " + gObj + "\nLOAD_SLOT " + gi + "\nPUSH_INT 16\nMUL\nPUSH_INT 8\nADD\nBUILTIN_BUFGETQWORDAT\nLOAD_SLOT " + gk + "\nEQ\nJUMPIF " + gF + "\n"
                         dg = dg + "LOAD_SLOT " + gi + "\nPUSH_INT 1\nADD\nSTORE_SLOT " + gi + "\nJUMP " + gL + "\n"
-                        dg = dg + "LABEL " + gF + "\nLOAD_SLOT " + go + "\nLOAD_SLOT " + gi + "\nPUSH_INT 16\nMUL\nPUSH_INT 16\nADD\nBUILTIN_BUFGETQWORDAT\nJUMP " + gEd + "\n"
+                        dg = dg + "LABEL " + gF + "\nLOAD_SLOT " + gObj + "\nLOAD_SLOT " + gi + "\nPUSH_INT 16\nMUL\nPUSH_INT 16\nADD\nBUILTIN_BUFGETQWORDAT\nJUMP " + gEd + "\n"
                         dg = dg + "LABEL " + gN + "\nPUSH_STR " + ge + "\n"
                         dg = dg + "LABEL " + gEd + "\n"
                         curOps = sbAppend(curOps, dg)
@@ -3806,7 +3882,7 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_pop_x0())                            // 0
             s = sbAppend(s, arm64_movz_x_imm_lsl32(9, 1))             // 1: x9 = 1<<32
             s = sbAppend(s, arm64_cmp_xx(0, 9))                        // 2
-            s = sbAppend(s, arm64_b_cond(0x3, 5))                     // 3: b.lo -> 8 (INT)
+            s = sbAppend(s, arm64_b_cond(0xb, 5))                     // 3: signed b.lt -> 8 (INT)
             s = sbAppend(s, arm64_ldr_d(0, 0, 0))                     // 4: float box deref
             s = sbAppend(s, arm64_fneg_d(0, 0))                       // 5
             s = sbAppend(s, arm64_bl(g_F_BOX_INSTR - (instrIdx + 6))) // 6: re-box -> x0
@@ -3914,7 +3990,7 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             instrIdx = instrIdx + 10
         } else if opTok == "BUILTIN_TOINT" {
             // toInt(s): parse a signed decimal string → int. 30 instructions.
-            // If arg is already an int (< 0), return as-is. Otherwise
+            // Signed values below the pointer range are integers, including negatives.
             // parse, honoring a leading '-' (KIR encodes large/negative constants
             // like 0xfeedfacf as the signed value -17958193, so the sign MUST be
             // handled or self-compile mis-encodes every such PUSH_INT).
@@ -3922,7 +3998,7 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_pop(7))  // 0
             s = sbAppend(s, arm64_movz_x_imm_lsl32(3, 1))  // 1: x3 = 0
             s = sbAppend(s, arm64_cmp_xx(7, 3))  // 2
-            s = sbAppend(s, arm64_b_cond(0x3, 25))  // 3: b.lo INT_MOV@28
+            s = sbAppend(s, arm64_b_cond(0xb, 25))  // 3: signed b.lt INT_MOV@28
             s = sbAppend(s, arm64_movz_x_imm(0, 0))  // 4: result = 0
             s = sbAppend(s, arm64_movz_x_imm(4, 10))  // 5: ten
             s = sbAppend(s, arm64_movz_x_imm(8, 0))  // 6: neg = 0

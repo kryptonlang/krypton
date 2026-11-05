@@ -11,30 +11,30 @@
 module string_utils
 
 
-// Pad a string on the left to reach target length.
-// Native builtin equivalent: none.
-func padLeft(s, targetLen, padChar) {
-    let result = s
-    while len(result) < targetLen {
-        let sb = sbNew()
-        sb = sbAppend(sb, padChar)
-        sb = sbAppend(sb, result)
-        result = sbToString(sb)
-    }
-    emit result
+func _padString(value) {
+    let text = `:{value}`
+    emit substring(text, 1, len(text))
 }
-
-// Pad a string on the right to reach target length.
-func padRight(s, targetLen, padChar) {
-    let result = s
-    while len(result) < targetLen {
-        let sb = sbNew()
-        sb = sbAppend(sb, result)
-        sb = sbAppend(sb, padChar)
-        result = sbToString(sb)
+func _stringPad(s, targetLen, padChar, left) {
+    let source = _padString(s)
+    targetLen = toInt(targetLen)
+    if targetLen <= len(source) { emit source }
+    let pad = _padString(padChar)
+    if pad == "" { emit source }
+    let missing = targetLen - len(source)
+    let out = sbNew()
+    if left == 0 { sbAppend(out, source) }
+    while missing > 0 {
+        let step = len(pad)
+        if step > missing { step = missing }
+        sbAppend(out, substring(pad, 0, step))
+        missing -= step
     }
-    emit result
+    if left != 0 { sbAppend(out, source) }
+    emit sbToString(out)
 }
+func padLeft(s, targetLen, padChar) { emit _stringPad(s, targetLen, padChar, 1) }
+func padRight(s, targetLen, padChar) { emit _stringPad(s, targetLen, padChar, 0) }
 
 // Trim leading whitespace only.
 // Native builtin trim(s) does both ends; use this when you need just one.
@@ -381,9 +381,11 @@ func dedent(s) {
 
 // Repeat a string n times.
 //   strRepeat("ab", 3) → "ababab"
-// Krypton has a `repeat` builtin already; this is a friendly alias.
 func strRepeat(s, n) {
-    emit repeat(s, n)
+    let out = sbNew()
+    let i = 0
+    while i < n { sbAppend(out, s); i += 1 }
+    emit sbToString(out)
 }
 
 // ── String distance / similarity ─────────────────────────────────────
