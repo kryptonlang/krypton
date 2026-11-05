@@ -87,6 +87,12 @@ just run {
         "unknown function 'definitelyNotAFunction'", log)
     syntaxReject(root, "tests/macos/fixtures/unknown_funcptr.k",
         "unknown function 'definitelyNotAFunction'", log)
+    syntaxReject(root, "tests/macos/fixtures/bare_void.k", "use '-> do'", log)
+    syntaxReject(root, "tests/macos/fixtures/reserved_binding.k", "keywords are reserved", log)
+    syntaxReject(root, "tests/macos/fixtures/reserved_parameter.k", "keywords are reserved", log)
+    syntaxReject(root, "tests/macos/fixtures/unclosed_block.k", "unclosed delimiter", log)
+    let library = compileCheck(root, work, "tests/macos/test_function_library.k", "function-library")
+    runCheck(library, "function-only module import", log)
     let processStatusBinary = compileCheck(root, work, "tests/macos/test_process_status.k", "process-status")
     runCheck(processStatusBinary, "process status", log)
     let formatting = compileCheck(root, work, "tests/macos/test_format.k", "format")
