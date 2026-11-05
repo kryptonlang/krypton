@@ -141,10 +141,14 @@ type checks are compiler type checking or automatic reference counting.
 ./bootstrap/kcc_driver_macos_aarch64 -r scripts/check_objk_runtime_macos.ks
 ```
 
-The focused macOS Objective-K gate passes 93 checks, including adapter and
+The focused macOS Objective-K gate passes 94 checks, including adapter and
 K-owned runtime regressions. The table demo's real typing, filter clearing,
 Down, Return and Escape were checked through native UI. That is not a full
 compiler-suite, accessibility, IME, or cross-platform certification.
+New column/action/image/menu helpers have native regressions. Frame restoration
+was checked with desktop access; without a display that case explicitly skips.
+Pending native class names are now reused before registration, with a diagnostic
+for conflicting parents. Native class creation remains main-thread-only.
 
 The [Cortex tracker](objk_cortex_followup.md) contains the AppKit tasks and
 Freebuff's updated compiler findings. The [Synapse tracker](objk_synapse_followup.md)

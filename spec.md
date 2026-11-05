@@ -276,9 +276,22 @@ Windows/Linux adapters are unchanged; no new release version is implied.
 Full contracts: [AppKit API guide](docs/objk_appkit_events_macos.md).
 Runnable sources: [live field tutorial](tutorial/macos/01_live_field.ks) and
 [filter table](examples/objk/table_filter.ks). Regression:
-`tests/macos/test_objk_table_events.k`, included in the 93-check Objective-K
+`tests/macos/test_objk_table_events.k`, included in the 94-check Objective-K
 runtime gate. Native GUI interactions were checked separately; the old full
 compiler-suite results below remain historical and are not replaced by that gate.
+
+The facade also exposes `okColumn`/`okColWidth`/`okRowHeight`, independent
+`okOnClick`/`okOnDoubleClick` handlers taking `(table)`, image view/file loading,
+menu check/enabled state and explicit window frame save/restore. Table actions
+must not be mixed with generic `okClick` callbacks taking `(self,command,sender)`.
+`okMenuEnabled` switches the entire menu to manual validation. Frame helpers
+fail without a display and install no lifecycle delegate. Native class helpers
+track pending names until registration; repeated allocation reuses the pending
+handle, while a different pending superclass or conflicting registration fails
+with a diagnostic. These are main-thread contracts, not a concurrent registry.
+The [API guide](docs/objk_appkit_events_macos.md) specifies ownership and results;
+`tests/macos/test_objk_appkit_controls.k` covers the new helpers. Drag/drop,
+close/open-file hooks and asynchronous processes remain open.
 
 ### Model And Window Ownership
 

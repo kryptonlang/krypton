@@ -458,14 +458,39 @@ func chocSetFont(view, font){ msg_1(view, "setFont:", font)  emit "1" }
 //   chocClassAddMethod(c, "numberOfRowsInTableView:", funcptr(nrows), "q@:@")
 //   chocClassRegister(c)
 //   let inst = chocNew(c)
+func _chocPendingClasses() {
+    let owner = cls("NSObject")
+    let registry = chocGetAssocKey(owner, "kr.objk.pendingClasses")
+    if registry == 0 {
+        registry = msg(cls("NSMutableDictionary"), "dictionary")
+        chocSetAssocKey(owner, "kr.objk.pendingClasses", registry)
+    }
+    emit registry
+}
 func _chocClassNew(name, parentName) {
+    if name == "" { printErr("Objective-K: class name is empty\n"); emit 0 }
     let existing = objc_lookUpClass(name)
     if existing != 0 {
         printErr("Objective-K: reusing registered class '" + name + "'\n")
         emit existing
     }
+    let registry = _chocPendingClasses()
+    let record = msg_1(registry, "objectForKey:", nsString(name))
+    if record != 0 {
+        let parent = msg_1(record, "objectForKey:", nsString("parent"))
+        if msg_1(parent, "isEqualToString:", nsString(parentName)) == 0 {
+            printErr("Objective-K: pending class '" + name + "' has another parent\n")
+            emit 0
+        }
+        printErr("Objective-K: reusing pending class '" + name + "'\n")
+        emit msg(msg_1(record, "objectForKey:", nsString("class")), "pointerValue")
+    }
     let c = objc_allocateClassPair(cls(parentName), name, 0)
-    if c == 0 { printErr("Objective-K: cannot allocate class '" + name + "'\n") }
+    if c == 0 { printErr("Objective-K: cannot allocate class '" + name + "'\n"); emit 0 }
+    record = msg(cls("NSMutableDictionary"), "dictionary")
+    msg_2(record, "setObject:forKey:", nsString(parentName), nsString("parent"))
+    msg_2(record, "setObject:forKey:", msg_1(cls("NSValue"), "valueWithPointer:", c), nsString("class"))
+    msg_2(registry, "setObject:forKey:", record, nsString(name))
     emit c
 }
 func chocClassNew(name) { emit _chocClassNew(name, "NSObject") }
@@ -551,11 +576,26 @@ func chocClassAddMethod(c, selName, fnPtr, types) {
 func chocClassRegister(c) {
     if c == 0 { printErr("Objective-K: cannot register nil class\n"); emit "0" }
     let name = class_getName(c)
-    if objc_lookUpClass(name) == c {
-        printErr("Objective-K: class '" + name + "' already registered\n")
-        emit "1"
+    let existing = objc_lookUpClass(name)
+    let value = msg_1(cls("NSValue"), "valueWithPointer:", c)
+    if existing != 0 {
+        if msg_1(value, "isEqualToValue:", msg_1(cls("NSValue"), "valueWithPointer:", existing)) != 0 {
+            printErr("Objective-K: class '" + name + "' already registered\n")
+            emit "1"
+        }
+        printErr("Objective-K: another class is registered as '" + name + "'\n")
+        emit "0"
+    }
+    let registry = _chocPendingClasses()
+    let record = msg_1(registry, "objectForKey:", nsString(name))
+    if record != 0 {
+        if msg_1(value, "isEqualToValue:", msg_1(record, "objectForKey:", nsString("class"))) == 0 {
+            printErr("Objective-K: another class is pending as '" + name + "'\n")
+            emit "0"
+        }
     }
     objc_registerClassPair(c)
+    msg_1(registry, "removeObjectForKey:", nsString(name))
     emit "1"
 }
 func chocNew(c)                    { emit msg(msg(c, "alloc"), "init") }
@@ -571,6 +611,18 @@ func _chocTableKeyDown(self, command, event) {
     emit 0
 }
 
+func _chocTableClick(self, command, sender) {
+    let handlerBox = chocGetAssocKey(self, "kr.table.clickCallback")
+    if handlerBox != 0 { callPtr(msg(handlerBox, "pointerValue"), self) }
+    emit 0
+}
+
+func _chocTableDoubleClick(self, command, sender) {
+    let handlerBox = chocGetAssocKey(self, "kr.table.doubleCallback")
+    if handlerBox != 0 { callPtr(msg(handlerBox, "pointerValue"), self) }
+    emit 0
+}
+
 func _chocTableClass() {
     let name = "KryptonObjkTableView"
     let c = objc_lookUpClass(name)
@@ -578,6 +630,8 @@ func _chocTableClass() {
     c = objc_allocateClassPair(cls("NSTableView"), name, 0)
     if c == 0 { printErr("Objective-K: cannot allocate table class\n"); emit 0 }
     if chocClassAddMethod(c, "keyDown:", funcptr(_chocTableKeyDown), "v@:@") == "0" { emit 0 }
+    if chocClassAddMethod(c, "krTableClick:", funcptr(_chocTableClick), "v@:@") == "0" { emit 0 }
+    if chocClassAddMethod(c, "krTableDoubleClick:", funcptr(_chocTableDoubleClick), "v@:@") == "0" { emit 0 }
     chocClassRegister(c)
     emit c
 }
@@ -587,6 +641,8 @@ func chocTable(win, x, y, w, h) {
     if tableClass == 0 { emit 0 }
     let sv = msg_frame(msg(cls("NSScrollView"), "alloc"), "initWithFrame:", x, y, w, h)
     msg_1(sv, "setHasVerticalScroller:", 1)
+    msg_1(sv, "setHasHorizontalScroller:", 1)
+    msg_1(sv, "setAutohidesScrollers:", 1)
     msg_1(sv, "setBorderType:", 0)             // no bezel border
     msg_1(sv, "setFocusRingType:", 1)          // no blue focus ring
     let tbl = msg_frame(msg(tableClass, "alloc"), "initWithFrame:", 0, 0, w, h)
@@ -594,6 +650,7 @@ func chocTable(win, x, y, w, h) {
     let col = msg_1(msg(cls("NSTableColumn"), "alloc"), "initWithIdentifier:", nsString("c0"))
     msg_d1(col, "setWidth:", w)
     msg_1(tbl, "addTableColumn:", col)
+    msg(col, "release")
     msg_1(sv, "setDocumentView:", tbl)
     _addToContentView(win, sv)
     emit tbl
@@ -617,6 +674,100 @@ func chocTableOnKeyDown(table, fnPtr) {
     if fnPtr != 0 { boxed = msg_1(cls("NSValue"), "valueWithPointer:", fnPtr) }
     chocSetAssocKey(table, "kr.table.keyCallback", boxed)
     emit "1"
+}
+
+func chocTableOnClick(table, fnPtr, doubleClick) {
+    if table == 0 { emit "0" }
+    if msg_1(table, "isKindOfClass:", objc_lookUpClass("KryptonObjkTableView")) == 0 { emit "0" }
+    let target = msg(table, "target")
+    if target != 0 {
+        if msg_1(target, "isEqual:", table) == 0 {
+            printErr("Objective-K: table already has another action target\n")
+            emit "0"
+        }
+    }
+    let key = "kr.table.clickCallback"
+    let action = "krTableClick:"
+    if doubleClick != 0 { key = "kr.table.doubleCallback"; action = "krTableDoubleClick:" }
+    let boxed = 0
+    if fnPtr != 0 { boxed = msg_1(cls("NSValue"), "valueWithPointer:", fnPtr) }
+    chocSetAssocKey(table, key, boxed)
+    let selector = 0
+    if fnPtr != 0 { selector = sel(action) }
+    if doubleClick != 0 { msg_1(table, "setDoubleAction:", selector) }
+    else { msg_1(table, "setAction:", selector) }
+    if chocGetAssocKey(table, "kr.table.clickCallback") == 0 && chocGetAssocKey(table, "kr.table.doubleCallback") == 0 {
+        msg_1(table, "setTarget:", 0)
+    } else { msg_1(table, "setTarget:", table) }
+    emit "1"
+}
+
+func chocColumn(table, identifier, title, width) {
+    if table == 0 || identifier == "" || width <= 0 { emit 0 }
+    let column = msg_1(table, "tableColumnWithIdentifier:", nsString(identifier))
+    if column == 0 {
+        column = msg_1(msg(cls("NSTableColumn"), "alloc"), "initWithIdentifier:", nsString(identifier))
+        msg_1(table, "addTableColumn:", column)
+        msg(column, "release")
+    }
+    msg_1(column, "setTitle:", nsString(title))
+    msg_d1(column, "setWidth:", width)
+    emit column
+}
+func chocColWidth(table, identifier, width) {
+    if table == 0 || width <= 0 { emit "0" }
+    let column = msg_1(table, "tableColumnWithIdentifier:", nsString(identifier))
+    if column == 0 { emit "0" }
+    msg_d1(column, "setWidth:", width)
+    emit "1"
+}
+func chocRowHeight(table, height) {
+    if table == 0 || height <= 0 { emit "0" }
+    msg_d1(table, "setRowHeight:", height)
+    emit "1"
+}
+
+func chocMenuCheck(menu, title, checked) {
+    if menu == 0 { emit "0" }
+    let item = msg_1(menu, "itemWithTitle:", nsString(title))
+    if item == 0 { emit "0" }
+    let state = 0
+    if checked != 0 { state = 1 }
+    msg_1(item, "setState:", state)
+    emit "1"
+}
+func chocMenuEnabled(menu, title, enabled) {
+    if menu == 0 { emit "0" }
+    let item = msg_1(menu, "itemWithTitle:", nsString(title))
+    if item == 0 { emit "0" }
+    msg_1(menu, "setAutoenablesItems:", 0)
+    msg_1(item, "setEnabled:", enabled)
+    emit "1"
+}
+func chocImageView(win, x, y, w, h) {
+    let view = msg_frame(msg(cls("NSImageView"), "alloc"), "initWithFrame:", x, y, w, h)
+    msg_1(view, "setImageScaling:", 3)
+    _addToContentView(win, view)
+    emit view
+}
+func chocImageFromFile(view, path) {
+    if view == 0 || path == "" { emit "0" }
+    let image = msg_1(msg(cls("NSImage"), "alloc"), "initWithContentsOfFile:", nsString(path))
+    if image == 0 { emit "0" }
+    msg_1(view, "setImage:", image)
+    msg(image, "release")
+    emit "1"
+}
+func chocFrameSave(win, key) {
+    if win == 0 || key == "" { emit "0" }
+    if msg(msg(cls("NSScreen"), "screens"), "count") == 0 { emit "0" }
+    msg_1(win, "saveFrameUsingName:", nsString(key))
+    emit "1"
+}
+func chocFrameRestore(win, key) {
+    if win == 0 || key == "" { emit "0" }
+    if msg(msg(cls("NSScreen"), "screens"), "count") == 0 { emit "0" }
+    emit msg_2(win, "setFrameUsingName:force:", nsString(key), 1)
 }
 
 func chocSelectionNew() { emit msg(cls("NSMutableIndexSet"), "indexSet") }

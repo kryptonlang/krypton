@@ -14,6 +14,8 @@
 (* macOS AppKit event APIs use ordinary function calls and funcptr().    *)
 (* okOnKeyDown handlers receive (table,event); field-change handlers     *)
 (* receive (field). Their ABI, lifetime and main-thread rules are       *)
+(* Typed table click/double-click handlers receive only (table), unlike *)
+(* generic action callbacks (self,command,sender). These too are APIs.   *)
 (* semantic library contracts, not new keywords or grammar productions. *)
 (* See docs/objk_appkit_events_macos.md and tutorial/macos/README.md.     *)
 
