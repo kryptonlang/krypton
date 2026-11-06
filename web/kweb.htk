@@ -8,7 +8,7 @@
 //                         — upload dist/ (recursively) via FTP
 
 import "k:htmk"
-import "k:server"
+import "k:server_native"
 
 func printUsage() {
     let NL = fromCharCode(10)
@@ -284,18 +284,64 @@ func doBuild() {
     printErr("kweb: build complete")
 }
 
+func previewType(path) {
+    if endsWith(path, ".html") { emit "text/html; charset=utf-8" }
+    if endsWith(path, ".css") { emit "text/css; charset=utf-8" }
+    if endsWith(path, ".js") { emit "text/javascript; charset=utf-8" }
+    if endsWith(path, ".json") { emit "application/json" }
+    if endsWith(path, ".svg") { emit "image/svg+xml" }
+    if endsWith(path, ".png") { emit "image/png" }
+    if endsWith(path, ".jpg") || endsWith(path, ".jpeg") { emit "image/jpeg" }
+    if endsWith(path, ".wasm") { emit "application/wasm" }
+    emit "application/octet-stream"
+}
+func previewSend(client, data, size) {
+    let offset = 0
+    while offset < size {
+        let end = offset + 4096
+        if end > size { end = size }
+        let chunk = substring(data, offset, end)
+        let sent = sockSend(client, chunk, end - offset)
+        if sent <= 0 { emit 0 }
+        offset += sent
+    }
+    emit 1
+}
 func doServe(port) {
-    printErr("kweb: serving on http://127.0.0.1:" + port)
-    serverInit(port)
-    while "1" == "1" {
-        let got = serverNext()
-        if got == "1" {
-            let path = serverReqPath()
+    if isWindows() == "1" { printErr("kweb: native preview is currently macOS/Linux only"); exit(1) }
+    let p = toInt(port)
+    if p < 1 || p > 65535 { printErr("kweb: invalid port"); exit(1) }
+    if shellRun("find dist -type l -print -quit 2>/dev/null | grep -q .") == "0" {
+        printErr("kweb: preview refuses symbolic links in dist/"); exit(1)
+    }
+    let listener = sockMake()
+    if listener < 0 { printErr("kweb: cannot create preview socket"); exit(1) }
+    let hi = p / 256
+    if sockBind(listener, hi, p - hi * 256) != 0 {
+        sockClose(listener); printErr("kweb: preview port unavailable"); exit(1)
+    }
+    if sockListen(listener, 16) != 0 {
+        sockClose(listener); printErr("kweb: cannot listen"); exit(1)
+    }
+    printErr("kweb: preview on http://127.0.0.1:" + port + " (listens on all interfaces; development only)")
+    while 1 == 1 {
+        let client = serverAccept(listener)
+        if client >= 0 {
+            let request = serverRead(client)
+            let path = reqPath(request)
             if path == "/" { path = "/index.html" }
             let filePath = "dist" + path
-            let ok = serverRespondFile(filePath)
-            if ok == "0" {
-                serverRespond404()
+            if !startsWith(path, "/") || contains(path, "..") || fsFileExists(filePath) != "1" {
+                serve404(client)
+            } else {
+                let size = chomp(exec("stat -f%z " + shellQuote(filePath)))
+                if chomp(exec("uname -s")) != "Darwin" { size = chomp(exec("stat -c%s " + shellQuote(filePath))) }
+                let body = readFile(filePath)
+                let nl = fromCharCode(13) + fromCharCode(10)
+                let header = "HTTP/1.1 200 OK" + nl + "Content-Type: " + previewType(filePath) + nl +
+                    "Content-Length: " + size + nl + "Connection: close" + nl + nl
+                if previewSend(client, header, len(header)) != 0 { previewSend(client, body, toInt(size)) }
+                serverClose(client)
             }
         }
     }

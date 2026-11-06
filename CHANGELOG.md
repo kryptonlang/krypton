@@ -4,6 +4,27 @@ All notable changes to the Krypton language and compiler.
 
 ## [Unreleased]
 
+### macOS 2.4.9 Candidate
+
+- Expanded Objective-K AppKit controls: table selection/columns/actions/key
+  hooks, live text changes, images, menu state, window frames and lifecycle hooks.
+- Guarded callback isolation, pending native class registration and delegate
+  cleanup without Objective-C source or an Objective-C compiler.
+- Added compiler diagnostics for reserved binding names, malformed blocks and
+  invalid return syntax; executable entry checks preserve valid library modules.
+- Preserved macOS child exit status and output streams, with staged output so
+  failed compilation does not overwrite a previous executable.
+- Corrected native padding, padding arity checks and module-function precedence;
+  empty padding cannot loop forever. Hardened signed integer conversion.
+- Restored the Krypton app bundler, including self-contained kweb toolchains,
+  explicit output/version/identifier/icon options and checked native builds.
+- Added compiler/runtime regression checks and updated Objective-K documentation.
+
+Candidate scope: macOS arm64. Published Linux x86_64 remains 2.4.4 and Windows
+x86_64 remains 2.3.0. Objective-K is experimental; imported object/protocol
+declarations, closures, sorting/lossless splitting and additional AppKit APIs
+remain development work. Publication/signing gates are not implied by this entry.
+
 ## [2.4.8] - 2026-10-17 - kweb FTP reliability
 
 - Batched kweb FTP uploads into reusable curl connections, avoiding Hostinger
