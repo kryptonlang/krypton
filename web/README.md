@@ -127,6 +127,12 @@ kweb serve 8080
 
 Serves `dist/` locally for preview.
 
+The 2.4.9 macOS CLI uses `k:server_native` (no C compiler). Preview supports
+binary assets, rejects traversal and symlinks, and reports bind/port errors.
+It binds all interfaces: development use only, on a trusted network. Do not
+expose it as a production server. This preview change is not a Windows release.
+`kweb build` now fails when the exporter exits unsuccessfully.
+
 ```bash
 kweb deploy example.com username
 ```

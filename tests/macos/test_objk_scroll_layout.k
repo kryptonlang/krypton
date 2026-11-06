@@ -26,5 +26,5 @@ just run {
     let field = okField(win, 0, 0, 100, 24)
     check("non-scroll view rejected", "0", okScrollFrame(field, 0, 0, 10, 10))
     check("non-scroll hide rejected", "0", okScrollHidden(field, 1))
-    print("PASS Objective-K scroll layout")
+    print("[PASS] Objective-K scroll layout")
 }

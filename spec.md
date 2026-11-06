@@ -274,9 +274,17 @@ Windows/Linux adapters are unchanged; no new release version is implied.
   inference, or general protection against invalid native pointers.
 
 Full contracts: [AppKit API guide](docs/objk_appkit_events_macos.md).
+macOS `okScrollFrame` and `okScrollHidden` operate on a document view's enclosing
+scroll container; non-scroll views return "0". `okViewWidth`/`okViewHeight` use
+the NSRect return ABI. `okSameHandle` compares native pointer identity without
+generic string equality. `okCopyText(text)` creates an independent NUL-terminated
+Krypton text allocation; `okObjectText(object)` snapshots a native description,
+with nil producing empty text. Copy before mutation or pool drain and keep the
+result rooted. Raw `sbToString` interior pointers are not collector-safe roots;
+the helpers do not repair general transitive/interior-pointer tracing.
 Runnable sources: [live field tutorial](tutorial/macos/01_live_field.ks) and
 [filter table](examples/objk/table_filter.ks). Regression:
-`tests/macos/test_objk_table_events.k`, included in the 101-check Objective-K
+`tests/macos/test_objk_table_events.k`, included in the Objective-K
 runtime gate. Native GUI interactions were checked separately; the old full
 compiler-suite results below remain historical and are not replaced by that gate.
 

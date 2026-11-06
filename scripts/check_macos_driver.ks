@@ -51,6 +51,10 @@ just run {
     check(rc == "7" && readFile(work + "/out") == "child output\n" && contains(readFile(work + "/err"), "child error"), "run preserves child streams and status", work)
     rc = invoke(driver, "-e " + q("fdWrite(1, \"raw\", 3); exit(9)"), work)
     check(rc == "9" && readFile(work + "/out") == "raw", "eval preserves status and missing newline", work)
+    rc = invoke(driver, "-e " + q("emit \"ok\""), work)
+    check(rc == "0", "nonnumeric entry result exits zero", work)
+    rc = invoke(driver, "-e " + q("exit(\"7\")"), work)
+    check(rc == "7", "numeric text exit status", work)
     let spaced = work + "/space 'quoted'"
     if shellRun("mkdir -p " + q(spaced)) != "0" { print("FAIL spaced directory"); exit(1) }
     let spacedSource = spaced + "/input 'quoted'.ks"

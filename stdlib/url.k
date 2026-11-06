@@ -134,7 +134,7 @@ func urlBuild(base, queryCsv) {
     let out = base + "?"
     let i = 0
     while i < n {
-        let kv = split(queryCsv, i + "")
+        let kv = split(queryCsv, i)
         let eq = indexOf(kv, "=")
         if eq > 0 {
             let k = substring(kv, 0, eq)

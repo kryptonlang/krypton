@@ -148,7 +148,7 @@ type checks are compiler type checking or automatic reference counting.
 ./bootstrap/kcc_driver_macos_aarch64 -r scripts/check_objk_runtime_macos.ks
 ```
 
-The focused macOS Objective-K gate passes 101 checks, including adapter and
+The focused macOS Objective-K gate includes adapter and
 K-owned runtime regressions. The table demo's real typing, filter clearing,
 Down, Return, Escape, single/double clicks and retained-window close/reopen were
 checked through native UI. That is not a full

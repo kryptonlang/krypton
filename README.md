@@ -38,7 +38,8 @@ export KRYPTON_ROOT="$PWD"
 /tmp/objk-table-filter
 ```
 
-The focused Objective-K checker passes 101 checks; the demo's actual typing,
+The focused Objective-K checker covers native adapters and runtime contracts;
+the demo's actual typing,
 filter clearing, single/double clicks, Down, Return, Escape and retained-window
 close/reopen were verified. This is separate from
 the full compiler/platform test suite and does not close the remaining handoffs.
@@ -303,15 +304,12 @@ just run {
 | Linux x86_64 | `kcc_seed_linux_x86_64`, `elf_host_linux_x86_64`, `optimize_host_linux_x86_64` | none (pure copy) |
 | FreeBSD x86_64 | `kcc_seed_freebsd_x86_64`, `kcc_driver_freebsd_x86_64`, `elf_host_freebsd_x86_64`, `optimize_host_freebsd_x86_64` | pending first seed; no C fallback wired |
 | Windows x86_64 | `kcc_seed_windows_x86_64.exe`, `x64_host_windows_x86_64.exe`, `optimize_host_windows_x86_64.exe` | none (pure copy) |
-| macOS arm64 | `kcc_seed_macos_aarch64` | none (pure copy); macho_host built on first `--native` call via clang |
+| macOS arm64 | `kcc_seed_macos_aarch64`, `kcc_driver_macos_aarch64`, `macho_host_macos_aarch64` | none; backend self-hosts from the native seed without C tools |
 | Linux ARM64 | `kcc_seed_linux_aarch64` | none (pure copy); **C path only** — no native ELF aarch64 backend yet, `kcc --native` falls back to gcc/clang |
 
 **Optional, for development only (end users never need a C compiler):**
-- **gcc / clang** — one-time backend bootstrap *only* if you edit a backend
-  emitter (`compiler/linux_x86/elf.k`, `compiler/freebsd_x86/elf.k`,
-  `compiler/windows_x86/x64.k`, or `compiler/macos_arm64/macho_arm64_self.k`)
-  and need to rebuild its host seed.
-  Building and running normal programs never touches a C compiler.
+- A matching native seed is required to rebuild a backend emitter. macOS
+  frontend, driver and backend rebuild directly from Krypton, without Clang.
 - **macOS**: the `macho_arm64_self.k` pipeline emits Mach-O directly with
   in-Krypton SHA-256 ad-hoc signing — no clang or `codesign` invocation at
   user-compile time.
@@ -811,7 +809,11 @@ Pure `cp` — no compiler invoked at install. After that, `kcc source.k` runs th
 
 **Re-seeding (developer-only):**
 
-If you edit `compiler/<platform>/<emitter>.k` you may need to rebuild the seed. As of 2.3.0 the native toolchain regenerates its own seeds with **no C compiler** (the frontend self-hosts and the backend host is rebuilt by the native pipeline); the exact steps live in [bootstrap/REBUILD_SEED.md](bootstrap/REBUILD_SEED.md). (macOS still uses clang for the one-time `macho_host` rebuild if you edit `macho_arm64_self.k` and no prebuilt host is present.)
+If you edit `compiler/<platform>/<emitter>.k` you may need to rebuild the seed.
+The macOS driver emits frontend IR and rebuilds the backend through the matching
+native host seed. No C compiler is used. Keep a tested matching seed before
+replacing compiler binaries; compare successive self-host builds and run the
+macOS runtime and driver checks before packaging.
 
 The compiler has been self-hosting since the v0.1 series. Historical bootstrap binaries live in `versions/`.
 
