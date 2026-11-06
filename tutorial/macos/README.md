@@ -108,7 +108,23 @@ from K-owned method callbacks `(runtime,self,...)`. See the
 [API guide](../../docs/objk_appkit_events_macos.md) for complete contracts and
 [grammar notes](../../docs/spec/grammar.md) for the unchanged language syntax.
 
-## 4. Verify
+## 4. Keep Text Beyond A Callback
+
+`okText`, `nsToStr` and `sbToString` can expose borrowed buffers. Copy before
+the native owner changes, its pool drains, or collection can reclaim a builder:
+
+```krypton
+let saved = okCopyText(okText(field))
+let description = okObjectText(nativeObject)
+```
+
+Keep snapshots reachable in stack locals or globals. Do not store a raw builder
+interior pointer across `gcCollect`; the collector does not trace it correctly.
+Use `okSameHandle(a,b)` for native identity, not generic `==`. For text/table
+document views, resize/hide the scroll container with `okScrollFrame` and
+`okScrollHidden`, not just the document itself.
+
+## 5. Verify
 
 For a separate K-owned model, read [02_owned_model.k](02_owned_model.k).
 It uses compiler declarations and prints `42` without opening a window:

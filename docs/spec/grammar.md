@@ -21,6 +21,9 @@ frame persistence add no syntax either. Window hooks receive `(win)`;
 application open-file/reopen hooks receive `(app,path)` or
 `(app,hasVisibleWindows)`. Their Boolean results and delegate lifetime rules
 are library contracts, not new syntax or compiler-inferred callback signatures.
+Scroll-container layout, pointer identity and copied text (`okCopyText` and
+`okObjectText`) also use ordinary calls. Their ownership contracts are in
+[Cortex support](../release-staging/cortex-macos-objk.md); no new grammar applies.
 
 ### K-Owned Declaration Syntax
 

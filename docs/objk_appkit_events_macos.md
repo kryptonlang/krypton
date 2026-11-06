@@ -7,6 +7,22 @@ claim and are not yet part of a published compiler release.
 
 ## Table Model And Selection
 
+### Text Snapshots And Scroll Layout
+
+`okCopyText(text)` copies NUL-terminated borrowed text into a separate Krypton
+allocation. `okObjectText(object)` snapshots its native description; nil returns
+empty text. Copy before a builder mutates or a native autorelease pool drains.
+Keep the result rooted in a stack local/global while using `gcCollect`. Raw
+`sbToString` interior pointers are not safe collector roots; this explicit copy
+does not introduce transitive tracing of arbitrary containers.
+
+`okScrollFrame(document,x,y,w,h)` and `okScrollHidden(document,hidden)` operate
+on the enclosing NSScrollView, returning "0" when none exists. Read native
+dimensions with `okViewWidth(view)`/`okViewHeight(view)` (NSRect return ABI).
+Compare native identities with `okSameHandle(a,b)`, not generic `==`.
+
+### Selection Contracts
+
 `okTable(win,x,y,w,h)` returns a document table inside a scroll view, as before.
 It now uses a Krypton-defined NSTableView subclass with native keyboard fallback.
 Existing table data sources/delegates remain supported; the keyboard hook does

@@ -19,6 +19,10 @@ All notable changes to the Krypton language and compiler.
 - Restored the Krypton app bundler, including self-contained kweb toolchains,
   explicit output/version/identifier/icon options and checked native builds.
 - Added compiler/runtime regression checks and updated Objective-K documentation.
+- Added Cortex scroll-container layout, native identity and independent text
+  snapshots; raw StringBuilder interior-pointer collection remains unsupported.
+- Repaired kweb native preview/scaffolding and exporter failure reporting.
+- Corrected macOS text exit-code parsing and text/integer character-code inputs.
 
 Candidate scope: macOS arm64. Published Linux x86_64 remains 2.4.4 and Windows
 x86_64 remains 2.3.0. Objective-K is experimental; imported object/protocol

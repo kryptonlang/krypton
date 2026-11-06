@@ -77,6 +77,9 @@ func okSegSelect(seg, index) {
 func okSegIndex(seg)                      { emit chocSegSelected(seg) }
 func okSegOnChange(seg, fnPtr)            { emit chocOnClick(seg, fnPtr) }
 
+// Snapshot borrowed UTF-8 or builder text before its owner changes or drains.
+func okCopyText(text)                { emit substring(text, 0, len(text)) }
+func okObjectText(obj)               { emit okCopyText(nsToStr(obj)) }
 func okText(control)                 { emit chocGetText(control) }
 func okSetText(control, text)        { emit chocSetText(control, text) }
 func okAppend(tv, text)              { emit chocTVAppend(tv, text) }

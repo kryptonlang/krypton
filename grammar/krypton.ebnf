@@ -19,6 +19,7 @@
 (* Window hooks receive (win); app hooks receive (app,path) or           *)
 (* (app,hasVisibleWindows). These are semantic library contracts,        *)
 (* not new keywords or grammar productions.                             *)
+(* Scroll layout and text snapshots are ordinary library calls too.     *)
 (* See docs/objk_appkit_events_macos.md and tutorial/macos/README.md.     *)
 
 (* ═══════════════════════════════════════════════════════════════ *)

@@ -1,7 +1,7 @@
 # Unreleased: macOS Objective-K file-manager support
 
-Prepared while stabilizing Cortex for macOS. SDK changes only; the installed
-compiler executable and package version have not been changed.
+Prepared while stabilizing Cortex for macOS, included in the 2.4.9 candidate.
+Installed and published versions do not change until installation/publication.
 
 - `okScrollFrame(document,x,y,w,h)` lays out the enclosing NSScrollView.
 - `okScrollHidden(document,hidden)` hides/restores that container.
@@ -9,6 +9,9 @@ compiler executable and package version have not been changed.
   compiler's floating-point/struct return ABI.
 - `okSameHandle(a,b)` compares foreign pointer identity numerically, avoiding
   generic equality's string comparison for addresses above 4 GiB.
+- `okCopyText(text)` copies borrowed UTF-8 or StringBuilder text into a new
+  Krypton allocation. `okObjectText(object)` copies its description (nil is
+  empty). Call before the builder mutates or the object's pool drains.
 
 Regression source: `tests/macos/test_objk_scroll_layout.k`.
 
@@ -23,5 +26,8 @@ on the local macOS arm64 toolchain.
 
 The Cortex repository also includes the source patch, regression copy and a
 separate reproducer of the string-builder interior-pointer collector defect.
-That collector issue remains open; Cortex retains persistent text through
-Foundation associations and copies foreign UTF-8 strings before use.
+That collector issue remains open; use the snapshot helpers for text retained
+across collection. A snapshot must remain reachable in a stack local or global;
+this does not add transitive tracing for arbitrary buffers. Cortex's existing
+Foundation-association workaround remains valid. The raw reproducer still fails;
+`tests/macos/test_objk_text_snapshot.k` verifies the explicit safe alternative.

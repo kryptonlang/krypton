@@ -89,7 +89,7 @@ func scaffoldSite(projectName, which) {
     let DQ = fromCharCode(34)
 
     let siteK = "import " + DQ + "k:htmk" + DQ + NL +
-        "import " + DQ + "k:server" + DQ + NL + NL +
+        "import " + DQ + "k:server_native" + DQ + NL + NL +
 
         "func css() {" + NL +
         "    emit htStyle(" + DQ + scaffoldCSS() + DQ + ")" + NL +
@@ -112,14 +112,14 @@ func scaffoldSite(projectName, which) {
         "}" + NL + NL +
 
         "just run {" + NL +
-        "    serverInit(" + DQ + "8080" + DQ + ")" + NL +
+        "    let listener = serverListen(" + DQ + "8080" + DQ + ")" + NL +
         "    while " + DQ + "1" + DQ + " == " + DQ + "1" + DQ + " {" + NL +
-        "        let got = serverNext()" + NL +
-        "        if got == " + DQ + "1" + DQ + " {" + NL +
-        "            let path = serverReqPath()" + NL +
-        "            if path == " + DQ + "/" + DQ + " { serverRespond(pageHome()) }" + NL +
-        "            else if path == " + DQ + "/about" + DQ + " { serverRespond(pageAbout()) }" + NL +
-        "            else { serverRespond404() }" + NL +
+        "        let client = serverAccept(listener)" + NL +
+        "        if client >= 0 {" + NL +
+        "            let path = reqPath(serverRead(client))" + NL +
+        "            if path == " + DQ + "/" + DQ + " { serveHtml(client, pageHome()) }" + NL +
+        "            else if path == " + DQ + "/about" + DQ + " { serveHtml(client, pageAbout()) }" + NL +
+        "            else { serve404(client) }" + NL +
         "        }" + NL +
         "    }" + NL +
         "}" + NL
@@ -279,8 +279,12 @@ func doBuild() {
         printErr("kweb: compile did not produce " + bin)
         exit("1")
     }
-    let out = exec(bin)
-    print(out)
+    let runCmd = shellQuote(bin)
+    if isWindows() == "1" { runCmd = bin }
+    if shellRun(runCmd) != "0" {
+        printErr("kweb: export failed")
+        exit("1")
+    }
     printErr("kweb: build complete")
 }
 
@@ -311,6 +315,8 @@ func doServe(port) {
     if isWindows() == "1" { printErr("kweb: native preview is currently macOS/Linux only"); exit(1) }
     let p = toInt(port)
     if p < 1 || p > 65535 { printErr("kweb: invalid port"); exit(1) }
+    if shellRun("test -d dist") != "0" { printErr("kweb: no dist/ folder; build first"); exit(1) }
+    let previewRoot = chomp(exec("cd dist && pwd -P"))
     if shellRun("find dist -type l -print -quit 2>/dev/null | grep -q .") == "0" {
         printErr("kweb: preview refuses symbolic links in dist/"); exit(1)
     }
@@ -331,12 +337,14 @@ func doServe(port) {
             let path = reqPath(request)
             if path == "/" { path = "/index.html" }
             let filePath = "dist" + path
-            if !startsWith(path, "/") || contains(path, "..") || fsFileExists(filePath) != "1" {
+            let canonical = chomp(exec("realpath " + shellQuote(filePath) + " 2>/dev/null"))
+            if !startsWith(path, "/") || contains(path, "..") || !startsWith(canonical, previewRoot + "/") || fsFileExists(canonical) != "1" {
                 serve404(client)
             } else {
-                let size = chomp(exec("stat -f%z " + shellQuote(filePath)))
-                if chomp(exec("uname -s")) != "Darwin" { size = chomp(exec("stat -c%s " + shellQuote(filePath))) }
-                let body = readFile(filePath)
+                let statCmd = "stat -f%z "
+                if chomp(exec("uname -s")) != "Darwin" { statCmd = "stat -c%s " }
+                let size = chomp(exec(statCmd + shellQuote(canonical)))
+                let body = readFile(canonical)
                 let nl = fromCharCode(13) + fromCharCode(10)
                 let header = "HTTP/1.1 200 OK" + nl + "Content-Type: " + previewType(filePath) + nl +
                     "Content-Length: " + size + nl + "Connection: close" + nl + nl
