@@ -20,6 +20,9 @@ SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # kcc next to this script (installed/tarball layout), else fall back to kcc
 # on PATH (dev checkout, where kcc is installed via Homebrew).
 KCC="$SCRIPT_DIR/kcc"
+if [ ! -x "$KCC" ] && [ "$(uname -s)" = "Darwin" ] && [ "$(uname -m)" = "arm64" ]; then
+    KCC="$SCRIPT_DIR/bootstrap/kcc_driver_macos_aarch64"
+fi
 if [ ! -x "$KCC" ]; then KCC="$(command -v kcc)"; fi
 if [ -z "$KCC" ]; then
     echo "kr: cannot find 'kcc' (not next to this script, not on PATH)" >&2
