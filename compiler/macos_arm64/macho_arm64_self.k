@@ -2465,8 +2465,8 @@ func parseFullIR(ir) {
                     } else if bname == "fformat" {
                         curOps = sbAppend(curOps, "BUILTIN_FFORMAT\n")  nOps += 1
                     } else if bname == "exit" {
-                        curOps = sbAppend(curOps, "BUILTIN_EXIT\n")
-                        nOps += 1
+                        curOps = sbAppend(curOps, "BUILTIN_TOINT\nBUILTIN_EXIT\n")
+                        nOps += 2
                     } else if bname == "len" {
                         curOps = sbAppend(curOps, "BUILTIN_LEN\n")
                         nOps += 1
@@ -2622,8 +2622,8 @@ func parseFullIR(ir) {
                         curOps = sbAppend(curOps, "BUILTIN_GCSLABBYTES\n")
                         nOps += 1
                     } else if bname == "fromCharCode" {
-                        curOps = sbAppend(curOps, "BUILTIN_FROMCHARCODE\n")
-                        nOps += 1
+                        curOps = sbAppend(curOps, "BUILTIN_TOINT\nBUILTIN_FROMCHARCODE\n")
+                        nOps += 2
                     } else if bname == "readLine" {
                         curOps = sbAppend(curOps, "BUILTIN_READLINE\n")
                         nOps += 1

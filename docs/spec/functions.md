@@ -218,8 +218,10 @@ Strip only leading or only trailing whitespace.
 ### center(s, width, pad) — (C path)
 Centers `s` within `width`, padding with `pad`.
 
-### padLeft(s, width, pad) / padRight(s, width, pad) — (C path)
-Left- or right-pad to `width`.
+### padLeft(s, width, pad) / padRight(s, width, pad) — (macOS native 2.4.9)
+Left- or right-pad to a byte width. Exactly three arguments are required. Empty
+padding leaves the input unchanged; over-width input is not truncated. Partial
+pad text fills the final bytes. Declared module/user functions take precedence.
 
 ### splitBy(s, delim) — (C path)
 Splits `s` on a multi-char `delim`; returns a comma-separated list.
