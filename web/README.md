@@ -252,29 +252,7 @@ It is KryptScript compiled by `kcc`, using `k:okui`, the app-facing
 Objective-K layer. `okui` routes to the macOS Choc/AppKit backend here and to
 Forge's Windows Choc/Win32 backend on Windows.
 
-- project path
-- kweb binary path
-- host/user/password fields
-- optional remote folder for deploys
-- build button
-- deploy button
-- open `dist/`
-- log pane
-
-The remote folder field controls where `dist/` lands on the server:
-
-- empty remote folder: `dist/index.html` uploads to `index.html`
-- `pages`: `dist/index.html` uploads to `pages/index.html`
-- `sites/krypton`: `dist/index.html` uploads to `sites/krypton/index.html`
-
-Do not enter `public_html` for Hostinger FTP accounts that already start inside
-the website root.
-
-Deploy groups files into 10-file curl batches. Each batch reuses one FTP
-connection and retries transient transfer failures, avoiding host connection
-limits caused by opening one curl process per file.
-
-Build app bundle:
+### Building The App Bundle
 
 ```bash
 bootstrap/kcc_driver_macos_aarch64 -r scripts/build-objk-app.ks web/kweb_gui.ks kweb
@@ -286,11 +264,97 @@ Output:
 dist/kweb.app
 ```
 
+`KRYPTON_ROOT` must be set in the shell that builds it: for `kweb` the script
+refuses to run without it, then embeds the driver, seed compiler, `stdlib/`, and
+`headers/` under `Contents/Resources` so the bundle is self-contained.
+
 OKUI smoke app:
 
 ```bash
 bootstrap/kcc_driver_macos_aarch64 -r scripts/build-objk-app.ks examples/objk/human_ui.ks human_ui
 ```
+
+## Operating The kweb App
+
+The window is titled `kweb deploy` and has six fields, four buttons, a status
+line, and a log pane.
+
+### Launch
+
+```bash
+open dist/kweb.app
+```
+
+Or double-click `kweb.app` in Finder. There is no project argument: the app
+opens with **Project** set to its own working directory, so either start it from
+the project you want or press **Choose** and pick the folder. Launched from
+Finder the working directory is often `/`, so **Project** will need changing
+before **Build** or **Deploy** will do anything.
+
+### Fields
+
+| Field | Meaning |
+| --- | --- |
+| **Project** | Project root. **Build** runs here; **Deploy** uploads `<project>/dist`. **Choose** opens a folder picker. |
+| **kweb** | Path to the `kweb` CLI. Prefilled with the first that exists: the app's bundled `kweb-cli`, `<cwd>/web/kweb`, `/usr/local/krypton/web/kweb`, this checkout's `web/kweb`, then bare `web/kweb`. Override it if the CLI lives elsewhere. |
+| **Host** | FTP host name. `ftp://` and `sftp://` prefixes and trailing slashes are stripped; the transport is always plain FTP. |
+| **User** / **Pass** | FTP credentials. The password is masked. |
+| **Remote dir** | Optional folder under the FTP login root. Blank, `.`, `./`, `""` and `''` all mean the login root; leading and trailing slashes are trimmed. Quote characters and `..` are rejected with a dialog. |
+
+Every button validates only what it needs and shows a dialog rather than running
+with an empty path or missing credentials. **Project** and **kweb** must both be
+set for **Build**; **Deploy** also needs **Host**, **User**, and **Pass**.
+
+### Buttons
+
+- **Build** — runs `kweb build` in **Project** and appends the echoed command and
+  its combined output to the log. The status line goes to `Build running`, then
+  `Build finished` or `Build failed`; a failure also raises a dialog. The output
+  is written to a temp file and read back after the command exits, so it appears
+  in one block, not live.
+- **Deploy** — uploads `<project>/dist` to **Host** as **User**. See below.
+- **Open dist** — `open <project>/dist` in Finder, to inspect the build before
+  publishing.
+- **Clear** — empties the log and sets the status line back to `Ready`.
+
+When the app runs as a bundle it points `KRYPTON_ROOT` at its own embedded
+toolchain, which is what lets `k:htmk` imports resolve without an installed
+Krypton. Run from source without that payload and **Build** uses whatever
+`kweb` resolves to on `PATH` or in the field.
+
+### What Deploy Uploads
+
+Only the contents of `<project>/dist`, discovered by a recursive walk. Build
+first: an empty or missing `dist/` logs `No files found in dist/` and stops.
+
+Relative paths are preserved under the remote folder:
+
+- empty remote folder: `dist/index.html` uploads to `index.html`
+- `pages`: `dist/index.html` uploads to `pages/index.html`
+- `sites/krypton`: `dist/index.html` uploads to `sites/krypton/index.html`
+
+Files go up in batches of ten over one reusable curl connection per batch, with
+`--ftp-create-dirs`, a 15-second connect timeout, 120 seconds per transfer, and
+five retries. That batching is what keeps hosts with connection limits from
+refusing a site-wide upload.
+
+The first failed batch stops the run, logs `Deploy failed (curl exit N)`, and
+leaves later files untouched. Pressing **Deploy** again restarts from the first
+file, so re-running is safe but not resumable.
+
+Do not enter `public_html` for Hostinger-style FTP accounts that already log in
+inside the website root; that nests the site one level too deep.
+
+### Caveats
+
+- Deploy is FTP with `--insecure`: credentials and file contents cross the
+  network unencrypted. Use it for throwaway hosting; SFTP is not wired up here.
+- The password is passed to curl as an argument, so it is briefly visible in the
+  process list while a batch runs.
+- The app builds and deploys. It does not run `kweb serve`; preview is still the
+  CLI step above (`../kweb serve 8080` from the project folder).
+- Text, field, and log colors follow the system light/dark appearance; there is
+  no in-app toggle.
 
 ## Mental Model
 

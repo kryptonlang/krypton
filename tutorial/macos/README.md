@@ -1,7 +1,7 @@
 # Objective-K On macOS: Live Fields And Tables
 
-This track uses the development checkout on macOS arm64. Installed 2.4.8 does
-not contain these additions. No Objective-C/C source, generated source, or Clang
+This track requires macOS arm64 Krypton 2.4.9 or the matching source checkout.
+Older 2.4.8 does not contain these additions. No Objective-C/C source, generated source, or Clang
 is needed; Objective-K calls Apple's system frameworks through its native ABI.
 Use a desktop session. These are not browser/WASM lessons.
 

@@ -6,23 +6,23 @@
 
 **A self-hosting programming language that emits native machine code without a C compiler in the loop.**
 
-> **Current macOS version: 2.4.8** - reliable batched kweb FTP deploy release.
+> **Current macOS version: 2.4.9** - Objective-K/AppKit and compiler hardening.
 > See [`CHANGELOG.md`](CHANGELOG.md) for the full history.
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-2.4.8-brightgreen)
-![macOS](https://img.shields.io/badge/macOS-arm64%202.4.8-success)
+![Version](https://img.shields.io/badge/version-2.4.9-brightgreen)
+![macOS](https://img.shields.io/badge/macOS-arm64%202.4.9-success)
 ![Linux](https://img.shields.io/badge/Linux-x86__64%202.4.4-yellow)
 ![Windows](https://img.shields.io/badge/Windows-x86__64%202.3.0-orange)
 
-## Objective-K Development Preview
+## Objective-K On macOS 2.4.9
 
 The current checkout adds macOS AppKit table selection, columns, independent
 click/double-click and keyboard handlers, live text fields, image/menu helpers,
 window frame persistence, close veto/notifications and app open-file/reopen
 hooks through `k:okui`. Native arrow navigation
-remains active for unhandled keys. This is source work for the next release,
-not an update to the published 2.4.8 installer or a Windows/Linux parity claim.
+remains active for unhandled keys. These additions ship in macOS 2.4.9;
+they are not a Windows/Linux parity claim. Objective-K remains experimental.
 
 - [Objective-K: start here](docs/objective_k.md)
 - [API and ownership contracts](docs/objk_appkit_events_macos.md)
@@ -52,7 +52,7 @@ preserve earlier outputs. Run `scripts/check_macos_driver.ks` with this checkout
 rebuilt driver to verify those contracts. These changes are not installed by
 updating stdlib alone; the frontend and driver must also be rebuilt.
 
-The 2.4.9 macOS candidate also adds Cortex scroll-container layout, native
+The 2.4.9 macOS release also adds Cortex scroll-container layout, native
 pointer identity and independent text snapshots. See the [Cortex SDK notes](docs/release-staging/cortex-macos-objk.md).
 The current release checks pass 109 Objective-K checks, 19 driver checks and
 71 native tests (8 explicit Windows/pointer-contract skips). Run
@@ -60,11 +60,12 @@ The current release checks pass 109 Objective-K checks, 19 driver checks and
 backend successive self-host builds match byte-for-byte. These checks do not
 claim sorting/lossless splitting or general interior-pointer GC is fixed.
 
-Local 2.4.9 `.pkg` and `.tar.gz` candidates in `releases/` are Developer
-ID-signed, notarized and stapled, with SHA-256 checksums. Temporary installation
-and Gatekeeper checks pass. They are not yet published, installed system-wide,
-or reflected in Homebrew/website downloads; the public version above remains
-2.4.8 until publication. This is not an App Store submission.
+The [macOS 2.4.9 release](https://github.com/t3m3d/krypton/releases/tag/v2.4.9)
+provides Developer ID-signed, notarized and stapled `.pkg`/`.tar.gz` files and
+SHA-256 checksums. Temporary installation and Gatekeeper checks pass. Install
+with `brew install t3m3d/krypton/krypton`, or use the signed installer. Existing
+Homebrew users can run `brew update && brew upgrade krypton`. This is Developer
+ID distribution, not an App Store submission. Linux remains 2.4.4; Windows 2.3.0.
 
 ## File extensions
 
@@ -239,7 +240,8 @@ run, imports, and self-host on macOS (arm64), Linux (x86-64), and Windows
 macOS is on [`2.4.8`](https://github.com/t3m3d/krypton/releases/tag/v2.4.8).
 Linux is on [`2.4.4`](https://github.com/t3m3d/krypton/releases/tag/2.4.4).
 Windows stays on [`2.3.0`](https://github.com/t3m3d/krypton/releases/tag/2.3.0).
-The editor extension has a local 2.4.8 build; it has not been published as a release.
+The editor extension remains [2.4.8](https://github.com/t3m3d/krypton/releases/tag/v2.4.8),
+separate from the macOS compiler version.
 
 **Bundled CLIs (one package, four commands):**
 

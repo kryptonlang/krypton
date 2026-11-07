@@ -1,7 +1,8 @@
-# Unreleased: macOS Objective-K file-manager support
+# macOS 2.4.9 Objective-K File-Manager Support
 
-Prepared while stabilizing Cortex for macOS, included in the 2.4.9 candidate.
-Installed and published versions do not change until installation/publication.
+Prepared while stabilizing Cortex for macOS and shipped in macOS 2.4.9.
+Install the matching release to use these APIs; publication does not upgrade
+an existing local compiler automatically.
 
 - `okScrollFrame(document,x,y,w,h)` lays out the enclosing NSScrollView.
 - `okScrollHidden(document,hidden)` hides/restores that container.
