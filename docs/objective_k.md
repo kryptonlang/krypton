@@ -5,10 +5,10 @@ Objective-K is Krypton's object and native-application layer. It uses the same
 Objective-C compiler. `.k` and `.ks` share syntax. Normal functions and modules
 can be split across files and combined with `import`.
 
-This guide describes the current source checkout. Published macOS 2.4.8 and a
-development checkout are not interchangeable: the table/key/live-field APIs
-below were committed after that release. There is no version bump implied by
-this documentation. Use the checkout driver and stdlib when testing them.
+The AppKit additions below ship in macOS 2.4.9. Older 2.4.8 binaries do not gain
+them through a stdlib override alone: update the compiler and runtime together.
+Development checkouts may add unreleased work; verify `kcc --version` and use
+matching driver/frontend/stdlib files. Windows/Linux parity is not implied.
 
 ## Three Layers, Different Responsibilities
 

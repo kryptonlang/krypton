@@ -1,9 +1,9 @@
 # Objective-K AppKit Events And Lifecycle
 
-Development source APIs for macOS arm64. Import `k:okui` or `k:objk`.
+macOS arm64 APIs shipped in 2.4.9. Import `k:okui` or `k:objk`.
 Implementation stays in `stdlib/choc_macos.k`; the framework-free object core
 and Windows adapters are unchanged. These APIs are not a Windows/Linux parity
-claim and are not yet part of a published compiler release.
+claim. Older compilers must be updated alongside their stdlib.
 
 ## Table Model And Selection
 
