@@ -232,12 +232,12 @@ run, imports, and self-host on macOS (arm64), Linux (x86-64), and Windows
 
 | Platform | Shipped version | Notes |
 |----------|-----------------|-------|
-| macOS arm64 | **2.4.8** | `.pkg`, tarball, or Homebrew. Includes `kweb`, `/usr/local/bin/kweb`, and `/Applications/Krypton/kweb.app`. |
+| macOS arm64 | **2.4.9** | `.pkg`, tarball, or Homebrew. Includes `kweb`, `/usr/local/bin/kweb`, and `/Applications/Krypton/kweb.app`. |
 | Linux x86_64 | **2.4.4** | Prebuilt tarball -> `./install.sh`, or build from source. No C compiler. Self-hosting. Includes rebuilt `kcc` seed, driver, kweb, and aarch64 via `kcc --aarch64` cross-compile. |
 | Windows x86_64 | **2.3.0** | Inno Setup installer: `kcc.exe`/`kcc-bin.exe` driver/backend split, native `krypton_rt.dll`, `kr.exe` REPL, kweb, WASM, .k/.ks associations. |
-| **VS Code / Antigravity ext.** | **2.4.8 (local build)** | `extensions/krypton-language-2.4.8.vsix`. Objective-K highlighting, `print` snippets/completions, diagnostics, and outline. This local artifact bundles macOS arm64 `kls`; other platforms use an installed server. |
+| **brain / VS Code / Antigravity ext.** | **2.4.8** | `krypton-language-2.4.8.vsix` on the 2.4.8 release. Objective-K highlighting, `print` snippets/completions, diagnostics, and outline. Bundles macOS arm64 `kls`; other platforms use an installed server. |
 
-macOS is on [`2.4.8`](https://github.com/t3m3d/krypton/releases/tag/v2.4.8).
+macOS is on [`2.4.9`](https://github.com/t3m3d/krypton/releases/tag/v2.4.9).
 Linux is on [`2.4.4`](https://github.com/t3m3d/krypton/releases/tag/2.4.4).
 Windows stays on [`2.3.0`](https://github.com/t3m3d/krypton/releases/tag/2.3.0).
 The editor extension remains [2.4.8](https://github.com/t3m3d/krypton/releases/tag/v2.4.8),
