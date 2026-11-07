@@ -4,7 +4,7 @@
 
 # Krypton
 
-**A self-hosting programming language that emits native machine code without a C compiler in the loop.**
+**A self-hosting programming language that emits native machine code.**
 
 > **Current macOS version: 2.4.9** - Objective-K/AppKit and compiler hardening.
 > See [`CHANGELOG.md`](CHANGELOG.md) for the full history.
