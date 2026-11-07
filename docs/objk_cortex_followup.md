@@ -186,7 +186,7 @@ working `format`, `sh`, conversion, path, AppKit, and signed-binary behavior.
 
 ## Verification
 
-Current development verification: **101 checks pass** in the macOS Objective-K
+Current development verification: **109 checks pass** in the macOS Objective-K
 runtime checker, including unknown-call/funcptr rejection, format imports,
 callback isolation/rebinding, duplicate classes, segmented-control state, table
 selection/key dispatch and live field notifications. The table example's actual
@@ -207,13 +207,25 @@ Run `kcc -r scripts/check_objk_runtime_macos.ks` with the development
 as a secondary measured tracker, accounting for the contract corrections above.
 Do not claim drag/drop or the full Cortex app is verified from unit tests alone.
 
-Rebuilt macOS toolchain: byte-identical frontend self-host fixpoint, 16 driver
+Rebuilt macOS toolchain: byte-identical frontend/backend self-host fixpoints, 19 driver
 contract checks, and broader native suite 71 passed / 0 failed / 8 platform
 skips. kweb GUI, Synapse controller, Stem and Brain compile probes passed; those
 are not full UI or deployment tests. Stem/Brain's local reserved `go` loop names
 were renamed to `scanning`. Tutorial sweep still exposes unsupported macOS
 closures, Win32-only HTTP internals, and browser-only `fetch`/`nowSec`; do not
-claim every lesson works natively. Packaging and release validation remain open.
+claim every lesson works natively. The local 2.4.9 macOS pkg/tar candidates are
+signed, notarized and stapled; temporary installs and Gatekeeper checks pass.
+Publication, Homebrew and website updates remain separate.
+
+Cortex's current source compiles against the candidate and its 38-check
+`--selftest` passes from its `krypton/` directory with the existing PXBridge
+bundle. No Objective-C source was compiled for that check. This does not remove
+Cortex's separate bridge dependency or certify its full interactive UI.
+The secondary language tracker is 11 passed / 4 failed: sorting, newline sort
+contract mismatch, missing lossless splitting, and an incompatible shellRun
+capture assertion. `shellRun` intentionally returns status; `exec` captures.
+Raw builder-text collection still fails; the new explicit snapshot regression
+passes. See [Cortex SDK notes](release-staging/cortex-macos-objk.md).
 
 Historical run of the original unmodified Cortex suite: **7 passed, 8 failed**. The
 remaining count includes the incompatible shellRun assertion and two mismatched
