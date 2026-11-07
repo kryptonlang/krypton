@@ -472,14 +472,14 @@ HN-headline moment.
 
 ## Phase 0 finding (2026-05-30)
 
-A hand-emit proof (`wasm_proof/hello_wasm.htk`) was written before kcc
+A hand-emit proof (`examples/wasm/hello_wasm.htk`) was written before kcc
 gains a `--wasm` mode. **It surfaced a runtime issue:** Krypton strings
 drop `\0` bytes (C-string semantics on `fromCharCode(0) + ...` concat),
 so any WASM module built via string concat loses every null byte —
 which is most of the magic, version, and section structure.
 
 Workarounds and the audit path are documented in
-`wasm_proof/FINDING.md`. The existing ELF and Mach-O backends both
+`examples/wasm/README.md`. The existing ELF and Mach-O backends both
 emit binaries with embedded `\0`s, so the answer is already in the
 codebase; lift their byte-write pattern into a documented helper before
 starting Phase 1.
@@ -492,7 +492,7 @@ issue is purely at the byte-IO boundary.
 
 ## Phase 0 finding (resolved, 2026-05-30)
 
-The Phase 0 hand-emit proof (`wasm_proof/hello_wasm.htk`) now produces
+The Phase 0 hand-emit proof (`examples/wasm/hello_wasm.htk`) now produces
 a valid 95-byte `hello.wasm` that loads via `WebAssembly.instantiate`
 in JavaScriptCore (verified via `osascript -l JavaScript`) and prints
 "Hello" via a host `console_log` import.

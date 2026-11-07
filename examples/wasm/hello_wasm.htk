@@ -1,20 +1,17 @@
-// hello_wasm.htk
-// Phase 0 of docs/wasm_backend_design.md — hand-emit a hello.wasm from
-// pure Krypton. Validates the binary-format design strategy before
-// kcc --wasm is built.
+// Hand-emit the original WASM proof using Krypton's binary writer.
+// The production IR-to-WASM backend is compiler/wasm32/wasm_self.k.
 //
 // Strategy: build a hex-encoded byte sequence (xHH per byte), then
 // writeBytes() to file. This is the same pattern elf.k and
 // macho_arm64_self.k use to emit binary with embedded \0 bytes —
 // concat-via-fromCharCode loses nulls because of C-string semantics.
 //
-// Build & run:
-//   kcc --c hello_wasm.htk > /tmp/hw.c && clang /tmp/hw.c -o /tmp/hw -w
-//   /tmp/hw                     # writes /tmp/hello.wasm
+// Build & run from the repo root (native compilation, no C toolchain):
+//   kcc -r examples/wasm/hello_wasm.htk /tmp/hello.wasm
 //   xxd /tmp/hello.wasm | head
 //
 // Validate the module:
-//   In a browser console / Node / wasmtime — see FINDING.md for the
+//   In a browser console / Node / wasmtime — see README.md for the
 //   JS snippet that loads the module and prints "Hello".
 
 // hexByte: encode a 0-255 integer as "xHH" so writeBytes() emits the
@@ -143,6 +140,8 @@ just run {
               wasmExports() +
               wasmCode() +
               wasmData()
-    writeBytes("/tmp/hello.wasm", mod)
-    kp("wrote /tmp/hello.wasm: " + hexBytes(mod) + " bytes")
+    let output = "hello.wasm"
+    if argCount() > 0 { output = arg(0) }
+    writeBytes(output, mod)
+    print("wrote " + output + ": " + hexBytes(mod) + " bytes")
 }
