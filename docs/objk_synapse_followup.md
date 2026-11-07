@@ -1,7 +1,7 @@
 # Synapse Objective-K Handoff Follow-Up
 
 Source report: Synapse `docs/objk-handoff.md`, reproduced against Krypton
-2.4.8. This is source work for the next release, not an installed-tool update.
+2.4.8. These fixes ship in macOS 2.4.9; existing installations must be upgraded.
 
 ## First Fix Set
 
@@ -34,8 +34,8 @@ driver binaries. Successive native frontend self-host builds are byte-identical;
 109 focused checks, 19 driver-contract checks and the broader native suite
 (71 passed / 0 failed / 8 platform skips) pass. Synapse controller compilation
 was checked, not a full browser UI migration or runtime/deployment test. Local
-2.4.9 macOS pkg/tar candidates are signed, notarized and stapled; installation
-and Gatekeeper checks pass. Publication remains separate.
+2.4.9 macOS pkg/tar releases are signed, notarized and stapled; installation
+and Gatekeeper checks pass. Linux and Windows releases remain unchanged.
 
 ## Still Open
 

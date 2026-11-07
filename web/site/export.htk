@@ -1095,7 +1095,6 @@ func pageZipForgePrivacy() {
     let page = sitePage("ZipForge Privacy Policy", hero + body)
     page = replace(page, siteDesc(), zipForgePrivacyDesc())
     page = replace(page, "<meta property=" + DQ() + "og:url" + DQ() + " content=" + DQ() + "https://krypton-lang.org/" + DQ() + ">", "<meta property=" + DQ() + "og:url" + DQ() + " content=" + DQ() + "https://krypton-lang.org/zipforge-privacy.html" + DQ() + ">")
-    page = replace(page, siteSponsorSlot(), "")
     page = replace(page, "</head>", "<link rel=" + DQ() + "canonical" + DQ() + " href=" + DQ() + "https://krypton-lang.org/zipforge-privacy.html" + DQ() + "></head>")
     emit page
 }
