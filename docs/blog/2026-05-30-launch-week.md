@@ -40,7 +40,7 @@ Module instantiated OK
 OUTPUT: Hello
 ```
 
-The proof is in `wasm_proof/hello_wasm.htk` in the repo. ~140 lines of
+The proof is now in `examples/wasm/hello_wasm.htk` in the repo. ~140 lines of
 Krypton, of which most is one-liner helpers (`hexByte`, `leb`, `b`,
 `wasmSection`). The trick was discovering Krypton's `writeBytes()`
 builtin, which takes a hex-encoded string like `"x00x61x73x6d"` and
