@@ -23,11 +23,22 @@ All notable changes to the Krypton language and compiler.
   snapshots; raw StringBuilder interior-pointer collection remains unsupported.
 - Repaired kweb native preview/scaffolding and exporter failure reporting.
 - Corrected macOS text exit-code parsing and text/integer character-code inputs.
+- Preserved macOS `-r` argument boundaries, including empty text and shell syntax.
 
 Candidate scope: macOS arm64. Published Linux x86_64 remains 2.4.4 and Windows
 x86_64 remains 2.3.0. Objective-K is experimental; imported object/protocol
 declarations, closures, sorting/lossless splitting and additional AppKit APIs
-remain development work. Publication/signing gates are not implied by this entry.
+remain development work.
+
+Local macOS candidate artifacts were rebuilt, Developer ID-signed, notarized
+and stapled on 2026-11-07: `krypton-2.4.9-macos-arm64.pkg` and
+`krypton-2.4.9-macos-arm64.tar.gz` in `releases/`, with a SHA-256 checksum file.
+Gatekeeper accepts both. Temporary-prefix and offline target-volume installs,
+embedded compiler execution, kweb builds and external-directory app bundling
+pass. Source gates: 109 Objective-K checks, 19 driver checks, 71 native tests
+with 8 named platform/pointer skips; frontend/backend self-host fixpoints match.
+GitHub publication, website downloads, Homebrew and live installation remain
+separate steps. This is a Developer ID distribution, not App Store approval.
 
 ## [2.4.8] - 2026-10-17 - kweb FTP reliability
 

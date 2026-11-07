@@ -55,6 +55,10 @@ just run {
     check(rc == "0", "nonnumeric entry result exits zero", work)
     rc = invoke(driver, "-e " + q("exit(\"7\")"), work)
     check(rc == "7", "numeric text exit status", work)
+    let argsSource = work + "/args.ks"
+    writeFile(argsSource, "just run { if argCount() != 4 || arg(0) != \"two words\" || arg(1) != \"quote 'value'\" || arg(2) != \"\" || arg(3) != \"$(printf wrong);exit 93\" { exit(3) }; print(\"argv preserved\") }")
+    rc = invoke(driver, "-r " + q(argsSource) + " " + q("two words") + " " + q("quote 'value'") + " " + q("") + " " + q("$(printf wrong);exit 93"), work)
+    check(rc == "0" && readFile(work + "/out") == "argv preserved\n", "run preserves argument boundaries without shell expansion", work)
     let spaced = work + "/space 'quoted'"
     if shellRun("mkdir -p " + q(spaced)) != "0" { print("FAIL spaced directory"); exit(1) }
     let spacedSource = spaced + "/input 'quoted'.ks"

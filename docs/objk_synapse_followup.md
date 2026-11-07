@@ -31,17 +31,18 @@ binary diagnostic by a newline. Published installers remain unchanged.
 
 The development checkout now includes rebuilt macOS frontend, frontend seed and
 driver binaries. Successive native frontend self-host builds are byte-identical;
-101 focused checks, 16 driver-contract checks and the broader native suite
+109 focused checks, 19 driver-contract checks and the broader native suite
 (71 passed / 0 failed / 8 platform skips) pass. Synapse controller compilation
-was checked, not a full browser UI migration or runtime/deployment test. Release
-packaging, signing and notarization are still separate work.
+was checked, not a full browser UI migration or runtime/deployment test. Local
+2.4.9 macOS pkg/tar candidates are signed, notarized and stapled; installation
+and Gatekeeper checks pass. Publication remains separate.
 
 ## Still Open
 
-1. General app bundling outside the source tree, using installed kcc. Preserve
-   kweb's existing bundled toolchain payload. Add explicit output, identifier,
-   version and icon settings, plist escaping, checked command statuses, and
-   conditional icon metadata. Verify plist and signature from an external cwd.
+1. General app bundling is restored in `scripts/build-objk-app.ks`, with explicit
+   output/identifier/version/icon/compiler settings, plist escaping and checked
+   builds. It preserves kweb's embedded toolchain. Signing/notarization remain
+   separate release steps; use the bundled helper, not a hand-written C build.
 2. Imported Objective-K declarations and shared declaration initialization.
    Imported modules currently need direct runtime APIs, as documented.
 3. Native pointer arithmetic and raw POSIX argv/wait support on macOS. The new
