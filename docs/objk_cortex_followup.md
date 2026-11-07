@@ -213,11 +213,12 @@ skips. kweb GUI, Synapse controller, Stem and Brain compile probes passed; those
 are not full UI or deployment tests. Stem/Brain's local reserved `go` loop names
 were renamed to `scanning`. Tutorial sweep still exposes unsupported macOS
 closures, Win32-only HTTP internals, and browser-only `fetch`/`nowSec`; do not
-claim every lesson works natively. The local 2.4.9 macOS pkg/tar candidates are
+claim every lesson works natively. The 2.4.9 macOS pkg/tar releases are
 signed, notarized and stapled; temporary installs and Gatekeeper checks pass.
-Publication, Homebrew and website updates remain separate.
+The GitHub release, Homebrew tap and download page select macOS 2.4.9 only;
+other platform versions remain separate.
 
-Cortex's current source compiles against the candidate and its 38-check
+Cortex's tested source compiles against 2.4.9 and its 38-check
 `--selftest` passes from its `krypton/` directory with the existing PXBridge
 bundle. No Objective-C source was compiled for that check. This does not remove
 Cortex's separate bridge dependency or certify its full interactive UI.
