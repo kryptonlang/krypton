@@ -92,8 +92,8 @@ The [repo spec](../spec.md) contains API contracts, arena layout, compiler
 prerequisites, validation gates, and outstanding work. Compiler declarations
 lower to this runtime; direct runtime calls remain supported.
 
-Outstanding app/API requests: [Cortex tracker](objk_cortex_followup.md) and
-[Synapse tracker](objk_synapse_followup.md). Unknown native macOS direct calls
+Outstanding runtime/API work is listed in the [implementation spec](../spec.md);
+agent handoffs remain local. Unknown native macOS direct calls
 and `funcptr` targets now fail code generation with the symbol and containing
 function. Source-line hints and a frontend-only check mode remain pending.
 

@@ -82,5 +82,12 @@ extensions/krypton-language-2.4.8.vsix
 InstallationLog.txt
 kompiler/macos_arm64/macho_host
 x64.ir
-docs/objk_cortex_followup.md
-docs/objk_cortex_followup.md
+
+# Local agent handoffs and Objective-K follow-up notes
+*[Hh][Aa][Nn][Dd][Oo][Ff][Ff]*
+*[Hh][Aa][Nn][Dd][Oo][Oo][Ff]*
+docs/objk_*_followup.md
+
+# Generated WASM example output
+/hello.wasm
+/examples/wasm/*.wasm

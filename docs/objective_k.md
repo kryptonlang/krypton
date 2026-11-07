@@ -161,10 +161,11 @@ Lifecycle tests cover native close veto/notifications, independent delegates and
 safe self-detachment. App open-file/reopen tests invoke the native delegate
 methods; this does not prove Finder associations or bundle document routing.
 
-The [Cortex tracker](objk_cortex_followup.md) contains the AppKit tasks and
-Freebuff's updated compiler findings. The [Synapse tracker](objk_synapse_followup.md)
-contains process/bundling/module work. The handoffs remain open; this guide is
-not a claim that all 42 API requests are finished.
+Remaining runtime and compiler limitations are documented in the
+[implementation spec](../spec.md). Shipped file-manager APIs and text-lifetime
+limits are in the [Cortex SDK notes](release-staging/cortex-macos-objk.md).
+Local agent handoffs are not published; this guide does not claim all requested
+AppKit APIs are finished.
 
 The frontend also diagnoses bare `void`, unmatched/unclosed delimiters and
 reserved identifiers before scanners run. Valid function-only modules still
