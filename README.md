@@ -38,8 +38,7 @@ export KRYPTON_ROOT="$PWD"
 /tmp/objk-table-filter
 ```
 
-The focused Objective-K checker covers native adapters and runtime contracts;
-the demo's actual typing,
+The focused Objective-K checker passes 109 checks; the demo's actual typing,
 filter clearing, single/double clicks, Down, Return, Escape and retained-window
 close/reopen were verified. This is separate from
 the full compiler/platform test suite and does not close the remaining handoffs.
@@ -52,6 +51,20 @@ entry block. macOS `-r`/`-e` preserve child exit status and streams; failed buil
 preserve earlier outputs. Run `scripts/check_macos_driver.ks` with this checkout's
 rebuilt driver to verify those contracts. These changes are not installed by
 updating stdlib alone; the frontend and driver must also be rebuilt.
+
+The 2.4.9 macOS candidate also adds Cortex scroll-container layout, native
+pointer identity and independent text snapshots. See the [Cortex SDK notes](docs/release-staging/cortex-macos-objk.md).
+The current release checks pass 109 Objective-K checks, 19 driver checks and
+71 native tests (8 explicit Windows/pointer-contract skips). Run
+`scripts/check_macos_native.ks` to repeat the broader gate. Both frontend and
+backend successive self-host builds match byte-for-byte. These checks do not
+claim sorting/lossless splitting or general interior-pointer GC is fixed.
+
+Local 2.4.9 `.pkg` and `.tar.gz` candidates in `releases/` are Developer
+ID-signed, notarized and stapled, with SHA-256 checksums. Temporary installation
+and Gatekeeper checks pass. They are not yet published, installed system-wide,
+or reflected in Homebrew/website downloads; the public version above remains
+2.4.8 until publication. This is not an App Store submission.
 
 ## File extensions
 

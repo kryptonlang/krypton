@@ -29,6 +29,11 @@ import "k:arch"
 
 func VERSION() { emit "kcc version 2.4.9" }
 
+func macArgQuote(text) {
+    let quote = fromCharCode(39)
+    emit quote + replace(text, quote, quote + "\\" + quote + quote) + quote
+}
+
 // Locate the install root: $KRYPTON_ROOT, else the dev repo, else the pkg
 // install. The dev repo is preferred over /usr/local/krypton because the pkg
 // install is often stale (missing newly-added stdlib). Returns "" if none.
@@ -964,7 +969,12 @@ just run {
         let tmpbin = sh("mktemp " + q(tmpRoot() + "/_kcckrun_XXXXXX"))
         if compileMacos(root, src, tmpbin) == "0" { exit("1") }
         // Preserve the child's streams and exit status, including missing newlines.
-        let passed = restFrom(2)
+        let passed = ""
+        let nextArg = 2
+        while nextArg < argCount() {
+            passed = passed + " " + macArgQuote(arg(nextArg))
+            nextArg += 1
+        }
         let rc = shellRun(q(tmpbin) + " " + passed)
         rm(tmpbin)
         exit(rc)
