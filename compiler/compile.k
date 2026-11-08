@@ -249,8 +249,169 @@ func irObjKType(token) {
     emit "LOAD " + name + "\n"
 }
 
+func objkStaticType(name) {
+    if name == "integer" { emit "int" }
+    if name == "any" || name == "do" { emit "" }
+    emit name
+}
+
+func objkStaticRequire(expected, actual, context, signatures) {
+    if expected != "" && actual != "" && expected != actual {
+        let ancestor = actual
+        let depth = 0
+        while ancestor != "" && depth < 128 {
+            if ancestor == expected { emit 0 }
+            let protocol = irTypeOf(signatures, "__conforms." + ancestor)
+            let protocolDepth = 0
+            while protocol != "" && protocolDepth < 128 {
+                if protocol == expected { emit 0 }
+                protocol = irTypeOf(signatures, "__parent." + protocol)
+                protocolDepth += 1
+            }
+            ancestor = irTypeOf(signatures, "__parent." + ancestor)
+            depth += 1
+        }
+        printErr("kcc: Objective-K type mismatch in " + context + ": expected " + expected + ", got " + actual + "\n")
+        exit(1)
+    }
+    emit 0
+}
+
+func objkStaticExpr(tokens, start, end, bindings, signatures) {
+    if tokAt(tokens, start) == "LPAREN" && tokAt(tokens, end - 1) == "RPAREN" {
+        emit objkStaticExpr(tokens, start + 1, end - 1, bindings, signatures)
+    }
+    if end == start + 1 {
+        let token = tokAt(tokens, start)
+        if tokType(token) == "INT" { emit "int" }
+        if tokType(token) == "STR" { emit "raw-string" }
+        if tokType(token) == "ID" { emit objkStaticType(irTypeOf(bindings, tokVal(token))) }
+    }
+    if end == start + 2 && tokAt(tokens, start) == "MINUS" && tokType(tokAt(tokens, start + 1)) == "INT" { emit "int" }
+    if tokType(tokAt(tokens, start)) == "ID" && tokAt(tokens, start + 1) == "LPAREN" {
+        let stop = start + 2
+        let depth = 1
+        while stop < end && depth > 0 {
+            if tokAt(tokens, stop) == "LPAREN" { depth += 1 }
+            if tokAt(tokens, stop) == "RPAREN" { depth -= 1 }
+            stop += 1
+        }
+        if stop == end {
+            let name = tokVal(tokAt(tokens, start))
+            if name == "okKText" { emit "text" }
+            if name == "okKNew" {
+                let p = start + 2
+                while p < end && tokAt(tokens, p) != "COMMA" { p += 1 }
+                if p + 3 == end && tokType(tokAt(tokens, p + 1)) == "ID" {
+                    let klass = tokVal(tokAt(tokens, p + 1))
+                    if irTypeOf(signatures, "__class." + klass) == "1" { emit klass }
+                }
+            }
+            emit irTypeOf(signatures, name + ".result")
+        }
+    }
+    emit ""
+}
+
+func objkStaticCheck(tokens, ntoks, signatures) {
+    if signatures == "" { emit 0 }
+    let i = 0
+    while i < ntoks {
+        if tokAt(tokens, i) != "KW:func" && tokAt(tokens, i) != "KW:fn" { i += 1; continue }
+        let name = tokVal(tokAt(tokens, i + 1))
+        let count = irTypeOf(signatures, name + ".count")
+        if count == "" { i += 1; continue }
+        let p = i + 3
+        let n = 0
+        let bindings = ""
+        while p < ntoks && tokAt(tokens, p) != "RPAREN" {
+            let parameter = tokVal(tokAt(tokens, p))
+            let expected = irTypeOf(signatures, name + ".arg." + n)
+            p += 1
+            if tokAt(tokens, p) == "COLON" {
+                objkStaticRequire(expected, objkStaticType(tokVal(tokAt(tokens, p + 1))), name + " parameter " + parameter, "")
+                p += 2
+            }
+            bindings = parameter + "|" + expected + "\n" + bindings
+            n += 1
+            if tokAt(tokens, p) == "COMMA" { p += 1 }
+        }
+        if n != toInt(count) {
+            printErr("kcc: Objective-K callback '" + name + "' expects " + count + " parameters including runtime/self, got " + n + "\n")
+            exit(1)
+        }
+        p += 1
+        let result = irTypeOf(signatures, name + ".result")
+        if tokAt(tokens, p) == "ARROW" {
+            objkStaticRequire(result, objkStaticType(tokVal(tokAt(tokens, p + 1))), name + " return annotation", "")
+            p += 2
+        }
+        if tokAt(tokens, p) != "LBRACE" { printErr("kcc: Objective-K callback needs body: " + name + "\n"); exit(1) }
+        let bodyEnd = skipBlock(tokens, p)
+        p += 1
+        while p < bodyEnd - 1 {
+            let token = tokAt(tokens, p)
+            if token == "KW:func" || token == "KW:fn" {
+                p += 1
+                while p < bodyEnd && tokAt(tokens, p) != "LBRACE" { p += 1 }
+                if p < bodyEnd { p = skipBlock(tokens, p) }
+                continue
+            }
+            let variable = ""
+            let expected = ""
+            let expression = p
+            if token == "KW:let" || token == "KW:const" {
+                variable = tokVal(tokAt(tokens, p + 1))
+                expression = p + 2
+                if tokAt(tokens, expression) == "COLON" {
+                    expected = objkStaticType(tokVal(tokAt(tokens, expression + 1)))
+                    expression += 2
+                }
+            } else if tokType(token) == "ID" && tokAt(tokens, p + 1) == "ASSIGN" {
+                variable = tokVal(token)
+                expected = objkStaticType(irTypeOf(bindings, variable))
+                expression = p + 1
+            }
+            if variable != "" && tokAt(tokens, expression) == "ASSIGN" {
+                expression += 1
+                let pair = irExpr(tokens, expression, ntoks, 0, "")
+                let actual = objkStaticExpr(tokens, expression, pairPos(pair), bindings, signatures)
+                objkStaticRequire(expected, actual, name + " assignment " + variable, signatures)
+                if expected == "" { expected = actual }
+                if expected == "" { expected = "any" }
+                bindings = variable + "|" + expected + "\n" + bindings
+            }
+            if token == "KW:emit" || token == "KW:return" {
+                let pair = irExpr(tokens, p + 1, ntoks, 0, "")
+                objkStaticRequire(result, objkStaticExpr(tokens, p + 1, pairPos(pair), bindings, signatures), name + " return", signatures)
+            }
+            if tokType(token) == "ID" && tokAt(tokens, p + 1) == "LPAREN" {
+                let target = tokVal(token)
+                if irTypeOf(signatures, target + ".count") != "" {
+                    let a = p + 2
+                    let argIndex = 0
+                    while a < ntoks && tokAt(tokens, a) != "RPAREN" {
+                        let pair = irExpr(tokens, a, ntoks, 0, "")
+                        objkStaticRequire(irTypeOf(signatures, target + ".arg." + argIndex), objkStaticExpr(tokens, a, pairPos(pair), bindings, signatures), name + " call " + target, signatures)
+                        argIndex += 1
+                        a = pairPos(pair)
+                        if tokAt(tokens, a) == "COMMA" { a += 1 } else { break }
+                    }
+                    if argIndex != toInt(irTypeOf(signatures, target + ".count")) {
+                        printErr("kcc: Objective-K callback call argument count: " + target + "\n"); exit(1)
+                    }
+                }
+            }
+            p += 1
+        }
+        i = bodyEnd
+    }
+    emit 0
+}
+
 func irObjKSetup(tokens, ntoks) {
     let code = ""
+    let signatures = ""
     let found = 0
     let i = 0
     while i < ntoks {
@@ -284,6 +445,9 @@ func irObjKSetup(tokens, ntoks) {
             } else { p += 1 }
         }
         if tokAt(tokens, p) != "LBRACE" { printErr("kcc: Objective-K declaration needs body"); exit("1") }
+        if form == "class" { signatures = signatures + "__class." + name + "|1\n" }
+        if parent != "" { signatures = signatures + "__parent." + name + "|" + parent + "\n" }
+        if conformName != "" { signatures = signatures + "__conforms." + name + "|" + conformName + "\n" }
         code = code + "LOCAL " + name + "\nLOAD __objkRuntime\nPUSH \"" + name + "\"\n"
         if parent == "" { code = code + "PUSH 0\n" } else { code = code + "LOAD " + parent + "\n" }
         if form == "protocol" { code = code + "CALL okKProtocol 3\nSTORE " + name + "\n" }
@@ -303,12 +467,14 @@ func irObjKSetup(tokens, ntoks) {
             let arity = 0
             let firstType = "PUSH 0\n"
             let secondType = "PUSH 0\n"
+            let staticTypes = ""
             while q < ntoks && tokAt(tokens, q) != "RPAREN" {
                 if tokType(tokAt(tokens, q)) != "ID" || tokAt(tokens, q + 1) != "COLON" {
                     printErr("kcc: Objective-K parameter needs type")
                     exit("1")
                 }
                 let typeCode = irObjKType(tokAt(tokens, q + 2))
+                staticTypes = staticTypes + ".arg." + (arity + 2) + "|" + objkStaticType(tokVal(tokAt(tokens, q + 2))) + "\n"
                 if arity == 0 { firstType = typeCode } else { secondType = typeCode }
                 arity += 1
                 if arity > 2 { printErr("kcc: Objective-K methods support 0..2 arguments"); exit("1") }
@@ -317,8 +483,10 @@ func irObjKSetup(tokens, ntoks) {
             }
             q += 1
             let resultType = "PUSH 0\n"
+            let staticResult = ""
             if tokAt(tokens, q) == "ARROW" {
                 resultType = irObjKType(tokAt(tokens, q + 1))
+                staticResult = objkStaticType(tokVal(tokAt(tokens, q + 1)))
                 q += 2
             }
             code = code + "LOAD __objkRuntime\nLOAD " + name + "\nPUSH \"" + methodName + "\"\nPUSH " + arity + "\n"
@@ -328,6 +496,20 @@ func irObjKSetup(tokens, ntoks) {
                     exit("1")
                 }
                 code = code + "FUNCPTR " + tokVal(tokAt(tokens, q + 1)) + "\n"
+                let handlerName = tokVal(tokAt(tokens, q + 1))
+                let previous = irTypeOf(signatures, handlerName + ".contract")
+                let contract = (arity + 2) + ":" + staticResult + ":" + replace(staticTypes, "\n", ";")
+                if previous != "" && previous != contract {
+                    printErr("kcc: Objective-K callback has conflicting method contracts: " + handlerName + "\n")
+                    exit(1)
+                }
+                signatures = signatures + handlerName + ".contract|" + contract + "\n" + handlerName + ".count|" + (arity + 2) + "\n" + handlerName + ".result|" + staticResult + "\n"
+                let st = 0
+                while st < lineCount(staticTypes) {
+                    let record = getLine(staticTypes, st)
+                    if record != "" { signatures = signatures + handlerName + record + "\n" }
+                    st += 1
+                }
                 q += 2
             }
             code = code + firstType + secondType + resultType
@@ -344,6 +526,7 @@ func irObjKSetup(tokens, ntoks) {
         }
         i = p + 1
     }
+    objkStaticCheck(tokens, ntoks, signatures)
     emit code
 }
 

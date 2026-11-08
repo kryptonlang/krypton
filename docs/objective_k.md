@@ -144,6 +144,13 @@ type checks are compiler type checking or automatic reference counting.
 
 ## Verification And Open Work
 
+Development builds check named Objective-K callbacks against their declared
+parameter count and types, and reject known mismatches in returns, simple
+assignments and direct calls between callbacks. See the
+[static/runtime boundary](../spec.md#object-typed-methods). A `text` result is
+an arena handle from `okKText`, not a raw string. Dynamic dispatch still checks
+at runtime. AppKit ABI checking is separate; this is not part of released 2.4.9.
+
 ```sh
 ./bootstrap/kcc_driver_macos_aarch64 -r scripts/check_objk_runtime_macos.ks
 ```
@@ -166,6 +173,12 @@ Remaining runtime and compiler limitations are documented in the
 limits are in the [Cortex SDK notes](release-staging/cortex-macos-objk.md).
 Local agent handoffs are not published; this guide does not claim all requested
 AppKit APIs are finished.
+
+The [K-owned UI toolkit plan](design/appkit_krypton.md) records the Orbit
+rectangle-ABI incident, metadata requirements and staged replacement boundary.
+Development macOS builds now reject wrong argument counts for defined Krypton
+functions; released 2.4.9 does not include this new guard. Native signature
+inference remains separate work.
 
 The frontend also diagnoses bare `void`, unmatched/unclosed delimiters and
 reserved identifiers before scanners run. Valid function-only modules still

@@ -1841,6 +1841,22 @@ func efCountNL(s) {
     emit c
 }
 
+func irFunctionSignatures(ir) {
+    let signatures = sbNew()
+    let start = 0
+    while start < len(ir) {
+        let end = start
+        while end < len(ir) && ir[end] != "\n" { end += 1 }
+        let line = trim(substring(ir, start, end))
+        if startsWith(line, "FUNC ") {
+            sbAppend(signatures, line)
+            sbAppend(signatures, "\n")
+        }
+        start = end + 1
+    }
+    emit sbToString(signatures)
+}
+
 func irFunctionArity(ir, name) {
     let prefix = "FUNC " + name + " "
     let start = 0
@@ -1927,6 +1943,7 @@ func collectModuleGlobals(ir) {
 }
 
 func parseFullIR(ir) {
+    let signatures = irFunctionSignatures(ir)
     // Collect module globals (all LOCALs declared in __main__). These are
     // shared across functions via x28-relative addressing instead of frame slots.
     let globalsStr = collectModuleGlobals(ir)
@@ -2042,6 +2059,11 @@ func parseFullIR(ir) {
                     let cname = substring(rest, 0, sp)
                     let cargc = "0"
                     if sp < len(rest) { cargc = trim(substring(rest, sp + 1, len(rest))) }
+                    let defined = irFunctionArity(signatures, cname)
+                    if defined >= 0 && toInt(cargc) != defined {
+                        printErr("macho_arm64_self: '" + cname + "' expects " + defined + " argument(s), got " + cargc + " in '" + curName + "'\n")
+                        exit("1")
+                    }
                     if cname == "bitAnd"    { curOps = sbAppend(curOps, "BUILTIN_BITAND\n") }
                     else if cname == "bitOr"  { curOps = sbAppend(curOps, "BUILTIN_BITOR\n") }
                     else if cname == "bitXor" { curOps = sbAppend(curOps, "BUILTIN_BITXOR\n") }
@@ -2261,7 +2283,7 @@ func parseFullIR(ir) {
                     let bname = substring(rest, 0, bj)
                     if bname == "padLeft" || bname == "padRight" {
                         let argc = toInt(trim(substring(rest, bj + 1, len(rest))))
-                        let defined = irFunctionArity(ir, bname)
+                        let defined = irFunctionArity(signatures, bname)
                         if defined >= 0 {
                             if argc != defined {
                                 printErr("macho_arm64_self: '" + bname + "' expects " + defined + " argument(s), got " + argc + " in '" + curName + "'\n")

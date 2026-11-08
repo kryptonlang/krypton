@@ -4,6 +4,14 @@ All notable changes to the Krypton language and compiler.
 
 ## [Unreleased]
 
+- Check Objective-K callback arity, explicit annotations and known value
+  types in returns, assignments and direct calls during frontend compilation.
+
+- Reject missing/extra arguments to defined Krypton functions on macOS,
+  including imported Objective-K helpers, instead of reading unspecified native
+  argument registers. Add dynamic-selector, rectangle and frame-pool regressions.
+- Record the Orbit AppKit crash findings and K-owned UI toolkit/metadata plan.
+
 ## [2.4.9] - 2026-11-07 - macOS Objective-K/AppKit
 
 - Expanded Objective-K AppKit controls: table selection/columns/actions/key

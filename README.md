@@ -26,6 +26,7 @@ they are not a Windows/Linux parity claim. Objective-K remains experimental.
 
 - [Objective-K: start here](docs/objective_k.md)
 - [API and ownership contracts](docs/objk_appkit_events_macos.md)
+- [K-owned UI toolkit plan and AppKit metadata](docs/design/appkit_krypton.md)
 - [Native macOS tutorials](tutorial/macos/README.md)
 - [Table/filter example](examples/objk/table_filter.ks)
 - [Objective-K examples](examples/objk/README.md)

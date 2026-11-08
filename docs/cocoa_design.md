@@ -1,5 +1,10 @@
 # Cocoa from Krypton — design notes
 
+Historical scaffold notes. For current ABI/lifetime contracts use
+[Objective-K](objective_k.md) and [AppKit events](objk_appkit_events_macos.md).
+The [K-owned toolkit plan](design/appkit_krypton.md) describes future replacement
+work; this scaffold is not a current implementation checklist.
+
 **Goal:** make KryptScript a viable native-app language for macOS,
 the same way Swift is for Apple. End state is a Krypton program that
 opens an `NSWindow`, places `NSButton` / `NSTextField` widgets, handles
@@ -83,25 +88,25 @@ The single hard case is `cocoaOnClick(button, fnPtr)`. The user wants
 the click handler to "see" some local state. Closures via `funcptr` do
 NOT capture upvalues at the funcptr-handle level (the funcptr is a
 plain code address). The Cocoa-idiomatic fix is
-`objc_setAssociatedObject` — attach a Krypton `env` to the button:
+`objc_setAssociatedObject` with a native object value, not a raw Krypton `env`:
 
 ```krypton
-let state = envNew()
-envSet(state, "label", lbl)
-envSet(state, "count", "0")
+let state = msg(cls("NSMutableDictionary"), "dictionary")
+msg_2(state, "setObject:forKey:", lbl, nsString("label"))
+msg_2(state, "setObject:forKey:", cocoaNumber(0), nsString("count"))
 cocoaSetAssoc(btn, state)
 cocoaOnClick(btn, funcptr(onClick))
 
-func onClick(sender) {
-    let env = cocoaGetAssoc(sender)
-    let lbl = envGet(env, "label")
+func onClick(self, command, sender) {
+    let state = cocoaGetAssoc(sender)
+    let lbl = msg_1(state, "objectForKey:", nsString("label"))
     cocoaSetText(lbl, "clicked")
 }
 ```
 
 The trampoline (`KrCallbackTarget.krDispatch:`) doesn't need to know
 anything about the user's state — it just hands the sender to the
-Krypton handler and lets the handler walk the associated env.
+Krypton handler and lets the handler read the associated native dictionary.
 
 ## What's Missing
 
