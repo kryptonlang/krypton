@@ -91,6 +91,12 @@ just run {
     syntaxReject(root, "tests/macos/fixtures/reserved_binding.k", "keywords are reserved", log)
     syntaxReject(root, "tests/macos/fixtures/reserved_parameter.k", "keywords are reserved", log)
     syntaxReject(root, "tests/macos/fixtures/unclosed_block.k", "unclosed delimiter", log)
+    syntaxReject(root, "tests/macos/fixtures/call_arity_missing.k", "'pair' expects 2 argument(s), got 1", log)
+    syntaxReject(root, "tests/macos/fixtures/call_arity_extra.k", "'answer' expects 0 argument(s), got 1", log)
+    syntaxReject(root, "tests/macos/fixtures/objk_rect_missing_selector.k", "'msgRectHeight' expects 2 argument(s), got 1", log)
+    syntaxReject(root, "tests/macos/fixtures/objk_rect_extra_argument.k", "'msgRectWidth' expects 2 argument(s), got 3", log)
+    let arities = compileCheck(root, work, "tests/macos/test_call_arity.k", "call-arity")
+    runCheck(arities, "exact call arities and forward declarations", log)
     let library = compileCheck(root, work, "tests/macos/test_function_library.k", "function-library")
     runCheck(library, "function-only module import", log)
     let fallbacks = compileCheck(root, work, "tests/macos/test_fallback_parameters.k", "fallback-parameters")
@@ -143,6 +149,16 @@ just run {
     runCheck(core, "K-owned object runtime", log)
     let syntax = compileCheck(root, work, "tests/macos/test_objk_syntax.k", "syntax")
     runCheck(syntax, "Objective-K declarations", log)
+    let staticTypes = compileCheck(root, work, "tests/macos/test_objk_static_types.k", "static-types")
+    runCheck(staticTypes, "Objective-K static callback types", log)
+    syntaxReject(root, "tests/macos/fixtures/objk_static_return_invalid.k", "Objective-K type mismatch", log)
+    syntaxReject(root, "tests/macos/fixtures/objk_static_assignment_invalid.k", "Objective-K type mismatch", log)
+    syntaxReject(root, "tests/macos/fixtures/objk_static_parameter_invalid.k", "Objective-K type mismatch", log)
+    syntaxReject(root, "tests/macos/fixtures/objk_static_call_invalid.k", "Objective-K type mismatch", log)
+    syntaxReject(root, "tests/macos/fixtures/objk_static_callback_arity_invalid.k", "parameters including runtime/self", log)
+    syntaxReject(root, "tests/macos/fixtures/objk_static_result_annotation_invalid.k", "return annotation: expected int, got text", log)
+    syntaxReject(root, "tests/macos/fixtures/objk_static_contract_invalid.k", "conflicting method contracts", log)
+    syntaxReject(root, "tests/macos/fixtures/objk_static_class_invalid.k", "expected Expected, got Other", log)
     syntaxReject(root, "tests/macos/fixtures/objk_syntax_invalid.k",
         "Objective-K parameter needs type", log)
     if shellRun("otool -L " + q(core) + " >" + q(log) + " 2>&1") != "0" {
@@ -241,6 +257,8 @@ just run {
     rejectCheck(invalid, "weak-to-owned", "weak field needs doKWeak", log)
     rejectCheck(invalid, "owned-to-weak", "owned field needs doKOwn", log)
     if arg("0") == "--gui" {
+        let selectorPool = compileCheck(root, work, "tests/macos/test_objk_selector_pool.k", "selector-pool")
+        runCheck(selectorPool, "dynamic selectors and frame pools", log)
         let gui = compileCheck(root, work, "examples/objk/k_owned_counter_macos.ks", "counter")
         let rc = shellRun(q(gui) + " --smoke >" + q(log) + " 2>&1")
         if rc != "0" || !contains(readFile(log), "[PASS] K model/native callback integration") {

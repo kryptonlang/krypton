@@ -21,6 +21,29 @@ on the enclosing NSScrollView, returning "0" when none exists. Read native
 dimensions with `okViewWidth(view)`/`okViewHeight(view)` (NSRect return ABI).
 Compare native identities with `okSameHandle(a,b)`, not generic `==`.
 
+At the low-level bridge use `msgRectHeight(view,"frame")` and
+`msgRectWidth(view,"frame")`. Do not use `msgRectHeight(msg(view,"frame"))`:
+`frame` returns four floating-point components, not an object handle, and the
+outer helper would also be missing its selector-name argument. The development
+macOS backend rejects wrong argument counts for defined Krypton functions,
+including imported helpers; released 2.4.9 does not contain this new diagnostic.
+It still cannot infer a native method signature from an arbitrary string.
+
+Non-literal NUL-terminated UTF-8 names are supported by `sel(name)` and the
+`msg*` selector-name parameters. `sel` returns a native selector handle, whereas
+`msg*` takes the name, not that handle. Selector registration is synchronous;
+keep the input alive and unmodified through the call. Native object arguments
+are separate: `nsString(text)` makes an autoreleased NSString; retain objects
+needed beyond their pool, or use an API with a documented retaining/copying
+contract. `cocoaSetAssocKey(owner,key,value)` retains a native object value;
+raw Krypton text/buffers/arena handles are not native objects. Wrap text with
+`nsString`, and clear the association with 0 when finished. Copy borrowed UTF-8
+with `okCopyText`/`okObjectText` before the owning native object is released.
+
+The GUI selector/pool regression exercises composed selector names, mutated key
+builders, collection, retained associations and 100 per-frame pools with event
+pumping. It does not establish arbitrary foreign signatures or thread safety.
+
 ### Selection Contracts
 
 `okTable(win,x,y,w,h)` returns a document table inside a scroll view, as before.

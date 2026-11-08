@@ -175,8 +175,22 @@ Explicit typed overrides must match typed-parent constraints exactly; variance
 is not implemented. Typed registration may constrain an untyped parent, so an
 untyped parent supplies no substitution guarantee.
 
-This is runtime checking, not compiler-checked dispatch. It does not yet
-distinguish every Krypton dynamic value category or declare ownership transfer.
+Dynamic dispatch is runtime-checked. The development frontend also checks the
+named callbacks bound by entry-file `objk` declarations: callback parameter
+count includes runtime and self; explicit callback annotations must agree with
+the declared method contract where both specify a type. A callback reused by
+multiple declarations must have the same declared contract. It checks known values
+in callback returns, simple assignments, and direct calls between those
+callbacks. The first pass recognizes literals, tracked local/parameter values,
+known callback results, `okKText`, and construction of declared classes with
+`okKNew`; known class inheritance and declared protocol adoption are accepted.
+Raw string literals are not arena `text` handles. Unknown expression types stay
+dynamic; this is not whole-program inference or a definite-return analysis.
+These checks do not apply to arbitrary functions, indirect calls, dynamic
+`okKSend*` expressions, or native AppKit signatures. No grammar or ownership
+transfer contract changes. Released 2.4.9 predates this frontend check.
+
+The runtime does not distinguish every Krypton dynamic value category.
 Raw pointer calls bypass it. Result validation occurs after callback
 side effects and cannot undo them.
 
@@ -327,6 +341,15 @@ separate work. This preflight is not a complete semantic/type checker.
 library needs an executable entry. Use `-> do` for action-only functions. Valid
 function-only modules may emit `--ir` and be imported. Native `jxt` function
 declarations describe foreign imports, not Krypton function bodies.
+
+The development macOS backend checks direct calls to defined Krypton functions
+against their declared parameter count, including imported helpers and forward
+definitions. Missing or extra arguments fail before machine-code emission and
+report the callee, expected/actual count and caller. Released 2.4.9 predates this
+guard. Indirect calls, native message signatures and foreign declarations are
+not made type-safe by this count check; `msg(view,"frame")` still cannot stand
+in for `msgRectHeight(view,"frame")`. NSRect is returned in d0..d3, not as an
+object handle in x0. No grammar change is introduced.
 
 On macOS, executable builds require `just run` or `go run`; absence reports an
 entry-point error without calling codegen. Frontend/backend failure must return
