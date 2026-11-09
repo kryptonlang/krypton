@@ -22,7 +22,7 @@ kr      text eol=lf
 #
 # .htk → KryptonWeb HTML template — paint as HTML (it IS HTML).
 # .kir → generated IR text, hidden.
-*.htk  linguist-language=HTML
+*.htk  linguist-detectable=false
 *.kir  linguist-generated=true
 
 # Krypton source — no real Linguist language yet, so don't claim a wrong
