@@ -1843,6 +1843,12 @@ func irPrimary(tokens, pos, ntoks, lc, types) {
                 let member = substring(memTk0, 3, len(memTk0))
                 let meta = irTypeOf(types, "__payload__." + tv + "." + member)
                 if len(meta) > 0 {
+                    let declCount = 0
+                    if meta != "-" {
+                        declCount = 1
+                        let qi = 0
+                        while qi < len(meta) { if meta[qi] == ";" { declCount += 1 } qi += 1 }
+                    }
                     let argCode = ""
                     let argTemp = ""
                     let an = 0
@@ -1858,6 +1864,9 @@ func irPrimary(tokens, pos, ntoks, lc, types) {
                         if tokAt(tokens, q) == "COMMA" { q += 1 }
                     }
                     q += 1
+                    if an != declCount {
+                        printErr("kcc: enum constructor " + tv + "." + member + " expects " + declCount + " argument(s), got " + an + "\n"); exit(1)
+                    }
                     let tmp = "_enump" + pos
                     let size = 8 + 8 * an
                     let ctor = argCode +
@@ -3052,6 +3061,37 @@ func irEnumMembers(types, ename) {
     emit out
 }
 
+// canonical decimal text for small ints (native-to-text for coverage keys)
+func irIntText(n) {
+    if n == 0 { emit "0" }
+    let neg = 0
+    if n < 0 { neg = 1; n = 0 - n }
+    let s = ""
+    while n > 0 {
+        let d = n % 10
+        s = fromCharCode(48 + d) + s
+        n = n / 10
+    }
+    if neg == 1 { emit "-" + s }
+    emit s
+}
+
+// value (decimal text) of a member in the "Name|value;" list, else ""
+func irEnumValueOf(members, member) {
+    let i = 0
+    while i < len(members) {
+        let j = i
+        while j < len(members) && members[j] != ";" { j += 1 }
+        let entry = substring(members, i, j)
+        let bar = indexOf(entry, "|")
+        if bar >= 0 {
+            if substring(entry, 0, bar) == member { emit substring(entry, bar + 1, len(entry)) }
+        }
+        i = j + 1
+    }
+    emit ""
+}
+
 func irEnumMemberByValueNum(members, n) {
     let i = 0
     while i < len(members) {
@@ -3123,31 +3163,35 @@ func irScrutineeEnum(tokens, start, end, types, varMap) {
 }
 
 // Classify one case-arm value expression's token range for enum-coverage of
-// `ename`. Returns the covered member list ("Idle;Done;"), or "" when the arm
-// is not statically classifiable (caller bails on the whole switch).
+// `ename`. Returns the covered values in bracketed form (";0;3;"), or ""
+// when the arm is not statically classifiable (caller bails on the whole
+// switch). Coverage is tracked by value so aliased names (same tag) share
+// coverage.
 func irCaseCoverage(tokens, start, end, types, ename, members) {
-    let covered = ""
+    let covered = ";"
     let i = start
     while i < end {
         if tokType(tokAt(tokens, i)) == "ID" && i + 2 < end && tokAt(tokens, i + 1) == "DOT" && tokType(tokAt(tokens, i + 2)) == "ID" {
             let e = tokVal(tokAt(tokens, i))
             let m = tokVal(tokAt(tokens, i + 2))
             if e == ename && irTypeOf(types, e + "." + m) != "" {
-                covered = covered + m + ";"
+                covered = covered + irEnumValueOf(members, m) + ";"
             } else { emit "" }
             i += 3
         } else if tokAt(tokens, i) == "COMMA" { i += 1 }
         else if tokType(tokAt(tokens, i)) == "INT" {
-            let mv = irEnumMemberByValueNum(members, irIntVal(tokVal(tokAt(tokens, i))))
-            if mv != "" { covered = covered + mv + ";" }
+            if irEnumMemberByValueNum(members, irIntVal(tokVal(tokAt(tokens, i)))) != "" {
+                covered = covered + irIntText(irIntVal(tokVal(tokAt(tokens, i)))) + ";"
+            }
             i += 1
         } else { emit "" }
     }
     emit covered
 }
 
-func irSwMissing(scrutEnum, members, covered) {
+func irSwMissing(members, covered) {
     let missing = ""
+    let seen = ";"
     let i = 0
     while i < len(members) {
         let j = i
@@ -3155,16 +3199,12 @@ func irSwMissing(scrutEnum, members, covered) {
         let entry = substring(members, i, j)
         let bar = indexOf(entry, "|")
         let member = substring(entry, 0, bar)
-        let found = 0
-        let k = 0
-        while k < len(covered) {
-            let l = k
-            while l < len(covered) && covered[l] != ";" { l += 1 }
-            if substring(covered, k, l) == member { found = 1 }
-            k = l + 1
-        }
-        if found == 0 {
-            if missing == "" { missing = member } else { missing = missing + ", " + member }
+        let value = substring(entry, bar + 1, len(entry))
+        if indexOf(covered, ";" + value + ";") < 0 {
+            if indexOf(seen, ";" + value + ";") < 0 {
+                seen = seen + value + ";"
+                if missing == "" { missing = member } else { missing = missing + ", " + member }
+            }
         }
         i = j + 1
     }
@@ -3193,7 +3233,7 @@ func irEnumExhaustiveCheck(scrutEnum, hasDefaultOrElse, bail, covered, members) 
     if scrutEnum == "" { emit 0 }
     if hasDefaultOrElse == "1" { emit 0 }
     if bail == 1 { emit 0 }
-    let missing = irSwMissing(scrutEnum, members, covered)
+    let missing = irSwMissing(members, covered)
     if missing == "" { emit 0 }
     printErr("kcc: non-exhaustive switch on " + scrutEnum + ": missing " + missing + " — add those cases or a 'default:' arm\n")
     exit(1)
@@ -3210,7 +3250,7 @@ func irSwitchIR(tokens, pos, ntoks, lc, inFunc, types) {
     if scrutEnum != "" { swMembers = irEnumMembers(types, scrutEnum) }
     let swHasPayload = 0
     if scrutEnum != "" { swHasPayload = irEnumHasPayload(types, scrutEnum) }
-    let swCovered = ""
+    let swCovered = ";"
     let swBail = 0
     let swId = "__sw_" + pos
     let endLabel = "_swend_" + pos
@@ -3241,7 +3281,7 @@ func irSwitchIR(tokens, pos, ntoks, lc, inFunc, types) {
                     if scrutEnum != "" && peName != scrutEnum {
                         printErr("kcc: enum pattern " + pmember + " does not match switch on " + scrutEnum + "\n"); exit(1)
                     }
-                    if peName == scrutEnum { swCovered = swCovered + pmember + ";" }
+                    if peName == scrutEnum { swCovered = swCovered + irTypeOf(types, peName + "." + pmember) + ";" }
                     if scrutEnum == "" { swBail = 1 }
                     let declCount = 0
                     if meta != "-" {
@@ -3279,7 +3319,8 @@ func irSwitchIR(tokens, pos, ntoks, lc, inFunc, types) {
                             bname = substring(rest, 0, comma)
                             rest = substring(rest, comma + 1, len(rest))
                         } else { bname = rest; rest = "" }
-                        armBindInit = armBindInit + "LOCAL " + bname + "\nLOAD " + swId + "\nPUSH 0\nBUILTIN bufGetQwordAt 2\nPUSH " + tag + "\nEQ\nJUMPIFNOT _skipbind_" + caseN + "_" + bi + "\nLOAD " + swId + "\nPUSH " + (8 + 8 * bi) + "\nBUILTIN bufGetQwordAt 2\nSTORE " + bname + "\nLABEL _skipbind_" + caseN + "_" + bi + "\n"
+                        let skipBinding = "_skipbind_" + p + "_" + bi
+                        armBindInit = armBindInit + "LOCAL " + bname + "\nLOAD " + swId + "\nPUSH 0\nBUILTIN bufGetQwordAt 2\nPUSH " + tag + "\nEQ\nJUMPIFNOT " + skipBinding + "\nLOAD " + swId + "\nPUSH " + (8 + 8 * bi) + "\nBUILTIN bufGetQwordAt 2\nSTORE " + bname + "\nLABEL " + skipBinding + "\n"
                         bi += 1
                     }
                     p = q
@@ -3435,7 +3476,7 @@ func irMatchIR(tokens, pos, ntoks, lc, inFunc, types) {
     if mScrutEnum != "" { mMembers = irEnumMembers(types, mScrutEnum) }
     let mHasPayload = 0
     if mScrutEnum != "" { mHasPayload = irEnumHasPayload(types, mScrutEnum) }
-    let mCovered = ""
+    let mCovered = ";"
     let mBail = 0
     let mElse = "0"
     let p = pairPos(pair) + 1
@@ -3467,7 +3508,7 @@ func irMatchIR(tokens, pos, ntoks, lc, inFunc, types) {
                 if mScrutEnum != "" && peName != mScrutEnum {
                     printErr("kcc: enum pattern " + pmember + " does not match match on " + mScrutEnum + "\n"); exit(1)
                 }
-                if peName == mScrutEnum { mCovered = mCovered + pmember + ";" }
+                if peName == mScrutEnum { mCovered = mCovered + irTypeOf(types, peName + "." + pmember) + ";" }
                 if mScrutEnum == "" { mBail = 1 }
                 let declCount = 0
                 if meta != "-" {
@@ -3588,13 +3629,21 @@ func irScanEnums(tokens, ntoks) {
                 let ename = substring(nameTk, 3, len(nameTk))
                 let p = i + 3
                 let val = 0
+                let hasPayload = 0
+                let hasPlain = 0
+                let seenMembers = ""
                 while p < ntoks && tokAt(tokens, p) != "RBRACE" {
                     let mTk = tokAt(tokens, p)
                     if len(mTk) >= 3 && substring(mTk, 0, 3) == "ID:" {
                         let member = substring(mTk, 3, len(mTk))
+                        if indexOf(seenMembers, ";" + member + ";") >= 0 {
+                            printErr("kcc: duplicate member in enum " + ename + ": " + member + "\n"); exit(1)
+                        }
+                        seenMembers = seenMembers + ";" + member + ";"
                         sb = sbAppend(sb, ename + "." + member + "|" + val + "\n")
                         let q = p + 1
                         if tokAt(tokens, q) == "LPAREN" {
+                            hasPayload = 1
                             let params = ""
                             let firstp = 1
                             q += 1
@@ -3606,14 +3655,18 @@ func irScanEnums(tokens, ntoks) {
                                 q += 1
                             }
                             if firstp == 1 { params = "-" }
-                            sb = sbAppend(sb, "__payload__." + ename + "." + member + "|" + params + "|\n")
+                            sb = sbAppend(sb, "__payload__." + ename + "." + member + "|" + params + "\n")
                             p = q + 1
                             val = val + 1
                             continue
                         }
+                        hasPlain = 1
                         val = val + 1
                     }
                     p = p + 1
+                }
+                if hasPayload == 1 && hasPlain == 1 {
+                    printErr("kcc: enum " + ename + " mixes payload and plain cases; give every case a payload or none\n"); exit(1)
                 }
             }
         }
@@ -4072,7 +4125,7 @@ func irFuncIR(tokens, pos, ntoks, structTypes) {
     // route through callPtr in irCall.
     // structTypes is precomputed once by the caller (was an O(n*nfuncs)
     // whole-stream rescan per function here).
-    let funcTypes = structTypes + kccFuncTypes(tokens, p, ntoks) + paramTypes
+    let funcTypes = structTypes + kccFuncTypes(tokens, p, ntoks) + paramTypes + kccEnums(tokens, ntoks)
     let bp = irBlockIR(tokens, p, ntoks, 0, "1", funcTypes)
     let bodyCode = applyDefers(pairVal(bp))   // B1: relocate defers to exits
     p = pairPos(bp)

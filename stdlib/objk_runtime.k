@@ -177,7 +177,7 @@ func okKClass(runtime, name, parent) {
         if okKRead(runtime, parent, 32) != 1 { okKFail("parent class not registered") }
     }
     let storedName = okKText(runtime, name)
-    let handle = okKAllocate(runtime, 56)
+    let handle = okKAllocate(runtime, 64)
     okKWrite(runtime, handle, 0, 1)
     okKWrite(runtime, handle, 8, parent)
     okKWrite(runtime, handle, 16, storedName)
@@ -185,6 +185,7 @@ func okKClass(runtime, name, parent) {
     okKWrite(runtime, handle, 32, 0)
     okKWrite(runtime, handle, 40, 0)
     okKWrite(runtime, handle, 48, 0)
+    okKWrite(runtime, handle, 56, 0)
     emit handle
 }
 
@@ -483,6 +484,16 @@ func okKCheckProtocol(runtime, klass, protocol) {
     emit klass
 }
 
+func okKProtocolIsAncestor(runtime, protocol, expected) {
+    okKRequire(runtime, protocol, 7)
+    let current = protocol
+    while current != 0 {
+        if current == expected { emit 1 }
+        current = okKRead(runtime, current, 8)
+    }
+    emit 0
+}
+
 func okKConforms(runtime, object, protocol) {
     okKRequire(runtime, protocol, 7)
     if okKRead(runtime, protocol, 32) != 1 { okKFail("protocol not registered") }
@@ -490,11 +501,7 @@ func okKConforms(runtime, object, protocol) {
     while klass != 0 {
         let declaration = okKRead(runtime, klass, 48)
         while declaration != 0 {
-            let current = okKRead(runtime, declaration, 16)
-            while current != 0 {
-                if current == protocol { emit 1 }
-                current = okKRead(runtime, current, 8)
-            }
+            if okKProtocolIsAncestor(runtime, okKRead(runtime, declaration, 16), protocol) == 1 { emit 1 }
             declaration = okKRead(runtime, declaration, 8)
         }
         klass = okKRead(runtime, klass, 8)
@@ -514,12 +521,13 @@ func doKCleanup(runtime, klass, fnPtr) {
 func okKNew(runtime, klass) {
     okKRequire(runtime, klass, 1)
     if okKRead(runtime, klass, 32) != 1 { okKFail("class not registered") }
-    let object = okKAllocate(runtime, 40)
+    let object = okKAllocate(runtime, 48)
     okKWrite(runtime, object, 0, 3)
     okKWrite(runtime, object, 8, klass)
     okKWrite(runtime, object, 16, 1)
     okKWrite(runtime, object, 24, 0)
     okKWrite(runtime, object, 32, 1)
+    okKWrite(runtime, object, 40, 0)
     emit object
 }
 
@@ -611,6 +619,7 @@ func okKWriteField(runtime, object, name, value, policy) {
     let field = okKField(runtime, object, name)
     let previous = 0
     let previousPolicy = 0
+    if field != 0 { previous = okKRead(runtime, field, 24) }
     if field != 0 { previousPolicy = okKRead(runtime, field, 32) }
     if field != 0 && previousPolicy == 1 {
         if policy != 1 { okKFail("owned field needs doKOwn") }
@@ -636,8 +645,18 @@ func okKWriteField(runtime, object, name, value, policy) {
     if policy == 3 && value != 0 { okKRetainText(runtime, value) }
     okKWrite(runtime, field, 24, value)
     okKWrite(runtime, field, 32, policy)
+    let notifying = okKHasFieldObservers(runtime, object)
+    if notifying == 1 {
+        okKRetain(runtime, object)
+        if policy == 1 && value != 0 { okKRetain(runtime, value) }
+        if policy == 3 && value != 0 { okKRetainText(runtime, value) }
+        okKFireFieldObservers(runtime, object, name, previous, value)
+        if policy == 1 && value != 0 { doKRelease(runtime, value) }
+        if policy == 3 && value != 0 { doKReleaseText(runtime, value) }
+    }
     if previous != 0 && previousPolicy == 1 { doKRelease(runtime, previous) }
     if previous != 0 && previousPolicy == 3 { doKReleaseText(runtime, previous) }
+    if notifying == 1 { doKRelease(runtime, object) }
     emit value
 }
 
@@ -698,6 +717,14 @@ func doKRelease(runtime, object) {
             if cleanup != 0 { callPtr(cleanup, runtime, object) }
             klass = okKRead(runtime, klass, 8)
         }
+        let observer = okKRead(runtime, object, 40)
+        while observer != 0 {
+            let onext = okKRead(runtime, observer, 8)
+            doKReleaseText(runtime, okKRead(runtime, observer, 16))
+            doKFree(runtime, observer)
+            observer = onext
+        }
+        okKWrite(runtime, object, 40, 0)
         let field = okKRead(runtime, object, 24)
         while field != 0 {
             if okKRead(runtime, field, 32) == 1 {
@@ -742,7 +769,7 @@ func okKWitness(runtime, object, protocol) {
     while klass != 0 {
         let declaration = okKRead(runtime, klass, 48)
         while declaration != 0 {
-            if okKRead(runtime, declaration, 16) == protocol {
+            if okKProtocolIsAncestor(runtime, okKRead(runtime, declaration, 16), protocol) == 1 {
                 let table = okKRead(runtime, declaration, 24)
                 if table == 0 { okKFail("witness table not built") }
                 emit table
@@ -756,19 +783,20 @@ func okKWitness(runtime, object, protocol) {
 }
 
 func okKWitnessCount(runtime, object, protocol) {
-    emit okKRead(runtime, okKWitness(runtime, object, protocol), 8)
+    okKWitness(runtime, object, protocol)
+    emit okKSlotCount(runtime, protocol)
 }
 
 func okKWitnessSlot(runtime, object, protocol, slot) {
     let table = okKWitness(runtime, object, protocol)
-    let count = okKRead(runtime, table, 8)
+    let count = okKSlotCount(runtime, protocol)
     if slot < 1 || slot > count { okKFail("witness slot out of range") }
     emit okKRead(runtime, table, 16 + (slot - 1) * 16)
 }
 
 func okKWitnessImplementation(runtime, object, protocol, slot) {
     let table = okKWitness(runtime, object, protocol)
-    let count = okKRead(runtime, table, 8)
+    let count = okKSlotCount(runtime, protocol)
     if slot < 1 || slot > count { okKFail("witness slot out of range") }
     emit okKRead(runtime, table, 24 + (slot - 1) * 16)
 }
@@ -796,4 +824,89 @@ func okKSlotSend2(runtime, object, protocol, slot, a, b) {
     if okKRead(runtime, requirement, 24) != 2 { okKFail("witness slot arity: " + toStr(slot)) }
     let name = okKTextValue(runtime, okKRead(runtime, requirement, 16))
     emit okKInvoke(runtime, object, okKObjectClass(runtime, object), name, 2, a, b)
+}
+
+// --- Field write observers -------------------------------------------------
+// Observers are lightweight records (kind 11) attached either to an instance
+// (object offset 40) or to a class (offset 56). An observer is {next, name,
+// fnPtr}; fnPtr receives (runtime, object, name, oldValue, newValue), where
+// `name` is an arena text handle (okKTextValue() it). Observers fire on every
+// committed write to the matching field — including writes through doKSet,
+// doKOwn, doKWeak and doKText — after the new value is stored and before the
+// previous value is released (so the callback may still read it). Writes are
+// rejected during final release/cleanup, so observers never see a releasing
+// object. Instance observers fire before class observers; class observers
+// fire most-derived first. Firing into user code is re-entrant: an observer
+// that writes another field triggers that field's observers recursively.
+// The receiver and owned values stay alive for the current notification.
+// Callback handles are borrowed; release only references you own.
+// No observer removal yet — register only what the object's lifetime can
+// afford. Instance observers do not fire for writes to other instances.
+
+func doKObserve(runtime, object, field, fnPtr) {
+    okKWritable(runtime, object)
+    if field == "" { okKFail("empty field") }
+    if fnPtr == 0 { okKFail("invalid observer") }
+    let name = okKText(runtime, field)
+    let node = okKAllocate(runtime, 32)
+    okKWrite(runtime, node, 0, 11)
+    okKWrite(runtime, node, 8, okKRead(runtime, object, 40))
+    okKWrite(runtime, node, 16, name)
+    okKWrite(runtime, node, 24, fnPtr)
+    okKWrite(runtime, object, 40, node)
+    emit object
+}
+
+func okBind(runtime, object, field, fnPtr) {
+    emit doKObserve(runtime, object, field, fnPtr)
+}
+
+func doKClassObserve(runtime, klass, field, fnPtr) {
+    okKRequire(runtime, klass, 1)
+    if field == "" { okKFail("empty field") }
+    if fnPtr == 0 { okKFail("invalid observer") }
+    let name = okKText(runtime, field)
+    let node = okKAllocate(runtime, 32)
+    okKWrite(runtime, node, 0, 11)
+    okKWrite(runtime, node, 8, okKRead(runtime, klass, 56))
+    okKWrite(runtime, node, 16, name)
+    okKWrite(runtime, node, 24, fnPtr)
+    okKWrite(runtime, klass, 56, node)
+    emit klass
+}
+
+func okKHasFieldObservers(runtime, object) {
+    if okKRead(runtime, object, 40) != 0 { emit 1 }
+    let klass = okKRead(runtime, object, 8)
+    while klass != 0 {
+        if okKRead(runtime, klass, 56) != 0 { emit 1 }
+        klass = okKRead(runtime, klass, 8)
+    }
+    emit 0
+}
+
+func okKFireObserver(runtime, node, object, field, oldValue, newValue) {
+    let name = okKRead(runtime, node, 16)
+    if okKTextEquals(runtime, name, field) == 1 {
+        callPtr(okKRead(runtime, node, 24), runtime, object, name, oldValue, newValue)
+    }
+    emit 0
+}
+
+func okKFireFieldObservers(runtime, object, field, oldValue, newValue) {
+    let node = okKRead(runtime, object, 40)
+    while node != 0 {
+        okKFireObserver(runtime, node, object, field, oldValue, newValue)
+        node = okKRead(runtime, node, 8)
+    }
+    let klass = okKRead(runtime, object, 8)
+    while klass != 0 {
+        let cnode = okKRead(runtime, klass, 56)
+        while cnode != 0 {
+            okKFireObserver(runtime, cnode, object, field, oldValue, newValue)
+            cnode = okKRead(runtime, cnode, 8)
+        }
+        klass = okKRead(runtime, klass, 8)
+    }
+    emit 0
 }
