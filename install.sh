@@ -59,6 +59,13 @@ fi
 echo ""
 echo "installed:"
 echo "  $BIN_DIR/kcc     -> $KCC_TARGET"
+echo
+echo "Tip: use KCC_FAST=1 to skip the self-hosting macho_host rebuild and use the"
+echo "     toolchain already on disk. Rebuild happens automatically when source is"
+echo "     newer than the host binary; force fast mode for interactive/CI loops:"
+echo "       KCC_FAST=1 kcc myapp.k -o myapp"
+echo "     The identical flag is --fast or --bootstrap."
+echo 
 [[ -f "$SCRIPT_DIR/kls" ]] && echo "  $BIN_DIR/kls     -> $SCRIPT_DIR/kls       (LSP server)"
 echo ""
 echo "verify: kcc --version"

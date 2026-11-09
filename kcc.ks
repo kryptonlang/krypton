@@ -29,6 +29,26 @@ import "k:arch"
 
 func VERSION() { emit "kcc version 2.4.9" }
 
+// _fast(): fast-path switch for the stage-0 driver binary.
+// When set, the self-hosting rebuild pass in ensureHost / ensureElfHost /
+// etc. is skipped entirely — the toolchain that's already on disk runs
+// unchanged. Precedence: --fast and --bootstrap flags beat nothing;
+// they all beat nothing else. Environmental override exported by tool
+// authors (KCC_FAST=1) is equivalent to --fast on the command line.
+//
+// Rationale: rebuilding macho_host takes 5-15 minutes on this Mac when the
+// repo's macho_arm64_self.k is newer than the shipped binary. That produced
+// apparent interactive hangs and killed workflows. CI or interactive dev
+// loops that don't need the rebuilt host set KCC_FAST=1 (or pass --fast);
+// prebuilt-toolchain builds for release steps do not set it and still go
+// through the normal rebuild.
+func _fast() {
+    if environ("KCC_FAST") == "1" { emit "1" }
+    if hasFlag("--fast") == "1"   { emit "1" }
+    if hasFlag("--bootstrap") == "1" { emit "1" }
+    emit "0"
+}
+
 func macArgQuote(text) {
     let quote = fromCharCode(39)
     emit quote + replace(text, quote, quote + "\\" + quote + quote) + quote
@@ -171,6 +191,7 @@ func findRoot() {
 // Ensure macho_host exists and is newer than its source. Rebuild from the
 // bundled host seed or current host; no C/clang path.
 func ensureHost(root) {
+    if _fast() == "1" { emit "1" }
     let host = root + "/compiler/macos_arm64/macho_host"
     let src  = root + "/compiler/macos_arm64/macho_arm64_self.k"
     let fe   = root + "/compiler/macos_arm64/kcc-arm64"
@@ -349,6 +370,7 @@ func compileIos(root, src, out, target) {
 //                        elf.k's IR into a fresh elf_host (slow FE, but no gcc).
 // "1" ok / "0" fail.
 func ensureElfHost(root) {
+    if _fast() == "1" { emit "1" }
     let host = root + "/compiler/linux_x86/elf_host"
     let src  = root + "/compiler/linux_x86/elf.k"
     let fe   = root + "/compiler/linux_x86/kcc-x64"
@@ -388,6 +410,7 @@ func ensureElfHost(root) {
 // "1" if usable, "0" to skip optimization. NO C compiler: cp the seed, else
 // the native elf_host compiles optimize.k.
 func ensureOptHost(root) {
+    if _fast() == "1" { emit "1" }
     let host = root + "/compiler/linux_x86/optimize_host"
     let src  = root + "/compiler/optimize.k"
     let fe   = root + "/compiler/linux_x86/kcc-x64"
@@ -433,6 +456,7 @@ func linuxSrc() {
 // Ensure the aarch64 backend host (an x86 binary that EMITS arm64) is built from
 // compiler/linux_arm64/elf.k. "1" ok / "0" fail.
 func ensureArm64Host(root) {
+    if _fast() == "1" { emit "1" }
     let host = root + "/compiler/linux_arm64/elf_host"
     let bsrc = root + "/compiler/linux_arm64/elf.k"
     let fe   = root + "/compiler/linux_x86/kcc-x64"
@@ -570,6 +594,7 @@ func compileLinux(root, src, out) {
 // Ensure the FreeBSD elf_host backend exists / is current. NO C compiler.
 // Needs a FreeBSD-built seed or an already-present host on FreeBSD.
 func ensureFreebsdHost(root) {
+    if _fast() == "1" { emit "1" }
     let host = root + "/compiler/freebsd_x86/elf_host"
     let src  = root + "/compiler/freebsd_x86/elf.k"
     let fe   = root + "/compiler/freebsd_x86/kcc-x64"
@@ -606,6 +631,7 @@ func ensureFreebsdHost(root) {
 // FreeBSD optimizer host, best-effort. Seed copy if available; otherwise the
 // FreeBSD elf_host compiles optimize.k. No C compiler.
 func ensureFreebsdOptHost(root) {
+    if _fast() == "1" { emit "1" }
     let host = root + "/compiler/freebsd_x86/optimize_host"
     let src  = root + "/compiler/optimize.k"
     let fe   = root + "/compiler/freebsd_x86/kcc-x64"
@@ -677,6 +703,8 @@ just run {
         kp("")
         kp("Usage: kcc <source.k|source.ks> [flags]")
         kp("  --native    (default) emit native binary at ./<basename>")
+        kp("  --fast      use the on-disk stage-0 toolchain (skip 10-min self-host rebuild)")
+        kp("  --bootstrap alias for --fast")
         kp("  --ir        emit Krypton IR to stdout")
         kp("  --arm64     cross-compile to a static aarch64 ELF")
         kp("  --target T  ios-sim-arm64|ios-device-arm64 (macOS), windows-x86_64 (Windows)")
@@ -684,6 +712,9 @@ just run {
         kp("  -o FILE     output path")
         kp("  -r FILE     compile, run, delete (like python file.py)")
         kp("  -e CODE     compile + run an inline snippet (like python -c)")
+        kp("  --fast      skip the stage-0 self-hosting rebuild and use the")
+        kp("              toolchain already on disk (same as KCC_FAST=1)")
+        kp("  --bootstrap alias for --fast")
         kp("  --version   print version")
         kp("  --help      this help")
         exit("0")
