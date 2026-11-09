@@ -198,6 +198,8 @@ just run {
     rejectCheck(valueTypes, "protocol-argument", "method protocol type mismatch", log)
     let protocols = compileCheck(root, work, "tests/macos/test_objk_protocols.k", "protocols")
     runCheck(protocols, "protocol conformance and inheritance", log)
+    let witness = compileCheck(root, work, "tests/macos/test_objk_witness.k", "witness")
+    runCheck(witness, "witness tables and multiple conformances", log)
     let textLifetime = compileCheck(root, work, "tests/macos/test_objk_text_lifetime.k", "text-lifetime")
     runCheck(textLifetime, "owned text fields", log)
     let invalidText = compileCheck(root, work, "tests/macos/fixtures/objk_text_invalid.k", "invalid-text")

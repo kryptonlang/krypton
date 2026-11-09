@@ -255,18 +255,38 @@ func objkStaticType(name) {
     emit name
 }
 
+func objkComma(text) {
+    let i = 0
+    while i < len(text) {
+        if text[i] == "," { emit i }
+        i += 1
+    }
+    emit 0 - 1
+}
+
 func objkStaticRequire(expected, actual, context, signatures) {
     if expected != "" && actual != "" && expected != actual {
         let ancestor = actual
         let depth = 0
         while ancestor != "" && depth < 128 {
             if ancestor == expected { emit 0 }
-            let protocol = irTypeOf(signatures, "__conforms." + ancestor)
-            let protocolDepth = 0
-            while protocol != "" && protocolDepth < 128 {
-                if protocol == expected { emit 0 }
-                protocol = irTypeOf(signatures, "__parent." + protocol)
-                protocolDepth += 1
+            let protocols = irTypeOf(signatures, "__conforms." + ancestor)
+            let pd = 0
+            while protocols != "" && pd < 128 {
+                let comma = objkComma(protocols)
+                let protocol = protocols
+                if comma >= 0 {
+                    protocol = substring(protocols, 0, comma)
+                    protocols = substring(protocols, comma + 1)
+                } else { protocols = "" }
+                let pcur = protocol
+                let pdepth = 0
+                while pcur != "" && pdepth < 128 {
+                    if pcur == expected { emit 0 }
+                    pcur = irTypeOf(signatures, "__parent." + pcur)
+                    pdepth += 1
+                }
+                pd += 1
             }
             ancestor = irTypeOf(signatures, "__parent." + ancestor)
             depth += 1
@@ -429,7 +449,7 @@ func irObjKSetup(tokens, ntoks) {
         let name = tokVal(tokAt(tokens, i + 2))
         if name == "" { printErr("kcc: Objective-K declaration needs name"); exit("1") }
         let parent = ""
-        let conformName = ""
+        let conformList = ""
         let p = i + 3
         while p < ntoks && tokAt(tokens, p) != "LBRACE" {
             let word = tokVal(tokAt(tokens, p))
@@ -438,16 +458,20 @@ func irObjKSetup(tokens, ntoks) {
                 p += 2
             } else if word == "conforms" {
                 p += 1
-                if tokType(tokAt(tokens, p)) != "ID" { printErr("kcc: conforms needs protocol name"); exit("1") }
-                conformName = tokVal(tokAt(tokens, p))
-                p += 1
-                if tokAt(tokens, p) == "COMMA" { printErr("kcc: one protocol per class is supported in this syntax stage"); exit("1") }
+                let more = 1
+                while more == 1 {
+                    if tokType(tokAt(tokens, p)) != "ID" { printErr("kcc: conforms needs protocol name"); exit("1") }
+                    let protoName = tokVal(tokAt(tokens, p))
+                    if conformList == "" { conformList = protoName } else { conformList = conformList + "," + protoName }
+                    p += 1
+                    if tokAt(tokens, p) == "COMMA" { p += 1 } else { more = 0 }
+                }
             } else { p += 1 }
         }
         if tokAt(tokens, p) != "LBRACE" { printErr("kcc: Objective-K declaration needs body"); exit("1") }
         if form == "class" { signatures = signatures + "__class." + name + "|1\n" }
         if parent != "" { signatures = signatures + "__parent." + name + "|" + parent + "\n" }
-        if conformName != "" { signatures = signatures + "__conforms." + name + "|" + conformName + "\n" }
+        if conformList != "" { signatures = signatures + "__conforms." + name + "|" + conformList + "\n" }
         code = code + "LOCAL " + name + "\nLOAD __objkRuntime\nPUSH \"" + name + "\"\n"
         if parent == "" { code = code + "PUSH 0\n" } else { code = code + "LOAD " + parent + "\n" }
         if form == "protocol" { code = code + "CALL okKProtocol 3\nSTORE " + name + "\n" }
@@ -521,7 +545,17 @@ func irObjKSetup(tokens, ntoks) {
         if form == "protocol" {
             code = code + "LOAD __objkRuntime\nLOAD " + name + "\nCALL doKRegisterProtocol 2\nPOP\n"
         } else {
-            if conformName != "" { code = code + "LOAD __objkRuntime\nLOAD " + name + "\nLOAD " + conformName + "\nCALL doKConform 3\nPOP\n" }
+            let cl = 0
+            while cl < len(conformList) {
+                let ce = cl
+                let scanning = 1
+                while ce < len(conformList) && scanning == 1 {
+                    if conformList[ce] == "," { scanning = 0 } else { ce += 1 }
+                }
+                let protoName = substring(conformList, cl, ce)
+                code = code + "LOAD __objkRuntime\nLOAD " + name + "\nLOAD " + protoName + "\nCALL doKConform 3\nPOP\n"
+                cl = ce + 1
+            }
             code = code + "LOAD __objkRuntime\nLOAD " + name + "\nCALL doKRegister 2\nPOP\n"
         }
         i = p + 1
@@ -3876,7 +3910,7 @@ just run {
         objkScan += 1
     }
     if hasObjK == 1 {
-        source = "import \"k:objk_runtime_macos\"\n" + source
+        source = "import \"k:objk_runtime\"\n" + source
         tokens = tokenize(source)
         ntoks = lineCount(tokens)
     }
