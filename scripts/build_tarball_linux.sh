@@ -36,18 +36,18 @@ fi
 # Compiler sources
 install -D -m0644 compiler/compile.k  "$ROOT/compiler/compile.k"
 [[ -f compiler/optimize.k ]] && install -D -m0644 compiler/optimize.k "$ROOT/compiler/optimize.k"
-# kweb — Krypton Web Framework CLI. Build a native Linux ELF from web/kweb.htk
+# kweb — Krypton Web Framework CLI. Build a native Linux ELF from kweb/kweb.htk
 # with the just-staged toolchain (no C compiler). k:htmk/k:server/k:fs compile
 # in; stdlib + headers are bundled below for any runtime import.
-if [[ -f web/kweb.htk ]]; then
-  echo "building kweb (web/kweb.htk -> native ELF) ..."
+if [[ -f kweb/kweb.htk ]]; then
+  echo "building kweb (kweb/kweb.htk -> native ELF) ..."
   mkdir -p "$ROOT/web"
   KWIR=$(mktemp /tmp/_kweb_XXXXXX.ir)
-  if KRYPTON_ROOT="$PWD" compiler/linux_x86/kcc-x64 --ir web/kweb.htk > "$KWIR" 2>/dev/null \
+  if KRYPTON_ROOT="$PWD" compiler/linux_x86/kcc-x64 --ir kweb/kweb.htk > "$KWIR" 2>/dev/null \
      && [[ -s "$KWIR" ]] \
      && compiler/linux_x86/elf_host "$KWIR" "$ROOT/web/kweb" 2>/dev/null; then
     chmod 0755 "$ROOT/web/kweb"
-    install -D -m0644 web/kweb.htk "$ROOT/web/kweb.htk"
+    install -D -m0644 kweb/kweb.htk "$ROOT/web/kweb.htk"
     echo "  bundled web/kweb ($(wc -c < "$ROOT/web/kweb") bytes)"
   else
     echo "build_tarball_linux: WARNING — kweb build failed, shipping without kweb" >&2
