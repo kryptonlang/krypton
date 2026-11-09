@@ -5,6 +5,7 @@
 
 enum Result { Ok(value), Err(message) }
 enum Triple { Both(a, b), Alone(c) }
+enum Opt { Some(v), None() }
 
 just run {
     let ok = Result.Ok(42)
@@ -59,14 +60,22 @@ just run {
     }
     if r4 != "zero" { kp("[FAIL] mixed int-pattern arm"); exit("1") }
 
-    // Constructors round-trip through plain member constants.
-    let plain = Result.Ok()
+    // Zero-arg payload case: constructs with no arguments; plain member
+    // comparison still works on tag.
+    let plain = Opt.None()
     let tag = 0
     switch plain {
-        case Result.Ok:  tag = 1
-        case Result.Err: tag = 2
+        case Opt.Some(v): tag = 1
+        case Opt.None(): tag = 2
     }
-    if tag != 1 { kp("[FAIL] zero-payload constructor"); exit("1") }
+    if tag != 2 { kp("[FAIL] zero-arg payload constructor"); exit("1") }
+    let viaPlain = Opt.Some(9)
+    let v2 = 0
+    switch viaPlain {
+        case Opt.Some(v): v2 = v
+        case Opt.None():  v2 = 0 - 1
+    }
+    if v2 != 9 { kp("[FAIL] zero-arg Some arm"); exit("1") }
 
     // Exhaustive two-case switch compiles only because both are covered.
     let done = ""
@@ -76,5 +85,16 @@ just run {
     }
     if done != "d" { kp("[FAIL] default path"); exit("1") }
 
-    kp("[PASS] payload enums (switch/match, multi-field, mixed, zero-payload)")
+    let combined = 0
+    switch ok {
+        case Result.Ok(v), Result.Err(v): combined = v
+    }
+    if combined != 42 { kp("[FAIL] combined payload patterns"); exit("1") }
+    switch err {
+        case Result.Ok(v), Result.Err(v):
+            if v == "boom" { combined = combined + 1 }
+    }
+    if combined != 43 { kp("[FAIL] combined patterns in successive switches"); exit("1") }
+
+    kp("[PASS] payload enums (switch/match, multi-field, mixed, zero-payload, combined patterns)")
 }

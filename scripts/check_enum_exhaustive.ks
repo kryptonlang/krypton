@@ -86,6 +86,12 @@ just run {
         "bindings must be bare identifiers", log)
     syntaxReject(root, "tests/macos/fixtures/enum_exhaustive_payload_cross_enum.k",
         "does not match switch on State", log)
+    syntaxReject(root, "tests/macos/fixtures/enum_mixed_payload_plain.k",
+        "mixes payload and plain cases", log)
+    syntaxReject(root, "tests/macos/fixtures/enum_constructor_arity.k",
+        "expects 1 argument(s)", log)
+    syntaxReject(root, "tests/macos/fixtures/enum_duplicate_member.k",
+        "duplicate member in enum", log)
     syntaxAccept(root, "tests/macos/fixtures/enum_exhaustive_default_ok.k", log)
     syntaxAccept(root, "tests/macos/fixtures/enum_exhaustive_else_ok.k", log)
     syntaxAccept(root, "tests/macos/fixtures/enum_exhaustive_ambiguous.k", log)

@@ -151,6 +151,18 @@ name. Inline bodies, fields, ownership annotations, and compile-time send
 checking are not implemented yet. Declarations currently
 belong in executable entry source; imported modules should use direct APIs.
 
+An inherited protocol can use the prefix of the declaring protocol's witness
+table. Count, slot, implementation, and send APIs are bounded by the protocol
+the caller requested, not by the size of that underlying table.
+
+`doKObserve` (also `okBind`) registers an instance field observer;
+`doKClassObserve` registers one that also sees writes to subclass instances.
+Callbacks receive `(runtime, object, name, oldValue, newValue)`, with `name` an
+arena text handle. They run after the write and may write other fields. The
+receiver and owned old/new values stay live through notification. Arguments
+are borrowed; release only separately owned references. Do not assume weak
+values remain live or write the same field unconditionally from its observer.
+
 ## Use From Krypton Or KryptScript
 
 ```krypton
