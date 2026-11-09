@@ -57,3 +57,9 @@ trace.txt          linguist-generated=true
 # (currently zero C in tree).
 *.c linguist-generated=true
 *.h linguist-generated=true
+
+# inno-setup
+*.iss	linguist-detectable=false
+
+# batchfiles
+*.bat	linguist-detectable=false
