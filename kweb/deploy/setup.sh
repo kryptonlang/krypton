@@ -59,7 +59,7 @@ echo "[3/7] Building site..."
 mkdir -p "$SITE_DIR"
 
 # Copy site source
-cp "$INSTALL_DIR/web/site/site.htk" "$SITE_DIR/site.htk"
+cp "$INSTALL_DIR/kweb/site/site.htk" "$SITE_DIR/site.htk"
 
 # Compile: Krypton → C → native binary
 cd "$SITE_DIR"

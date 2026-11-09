@@ -51,7 +51,7 @@ func remoteFolderIsSafe(folder) {
 
 func defaultKwebPath() {
     let cwd = cleanLine(exec("cd"))
-    emit cwd + "\\web\\kweb.exe"
+    emit cwd + "\\kweb\\kweb.exe"
 }
 
 func appendLog(msg) {
