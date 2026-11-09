@@ -3,8 +3,10 @@
 New readers: [Objective-K entry guide](objective_k.md) distinguishes the K-owned
 model, native application facade, and platform adapters before their APIs.
 
-Status: experimental object core. macOS arm64 only verified. Windows is not
-available for testing and is not part of this stage.
+Status: experimental object core. macOS arm64 execution verified; Linux and
+Windows execution remain unverified. The compiler auto-imports `k:objk_runtime`
+for Objective-K declarations. `k:objk_runtime_macos` remains a compatibility
+alias. Witness tables, multiple conformances and observers are unreleased.
 
 This module owns classes, objects, fields, text storage, and message lookup in
 Krypton. It does not import Cocoa, UIKit, Foundation, or `libobjc`. Existing
@@ -162,6 +164,10 @@ arena text handle. They run after the write and may write other fields. The
 receiver and owned old/new values stay live through notification. Arguments
 are borrowed; release only separately owned references. Do not assume weak
 values remain live or write the same field unconditionally from its observer.
+Instance observers run before class observers; derived classes run before base
+classes. `okBind` is a write observer, not a two-way binding or an initial value
+sync. Instance observers are removed when their object is released; there is
+no separate unregister API.
 
 ## Use From Krypton Or KryptScript
 

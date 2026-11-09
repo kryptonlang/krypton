@@ -23,7 +23,7 @@ can wrap script statements in an entry block. Explicit `just run` remains valid.
 
 The compiler accepts top-level `objk protocol` and `objk object` declarations
 and lowers them to K-owned runtime setup before entry work. It auto-imports
-`k:objk_runtime_macos`. Existing `class`/`struct`/`type` declarations are not
+`k:objk_runtime`. Existing `class`/`struct`/`type` declarations are not
 K-owned runtime classes. Direct runtime calls remain supported.
 
 This first declaration stage supports protocol/object inheritance, multiple
@@ -72,7 +72,10 @@ Handwritten IR must not bypass the builtin validation with an unrelated CALL.
 
 ## K-Owned Objective-K On macOS
 
-Implementation: [stdlib/objk_runtime_macos.k](stdlib/objk_runtime_macos.k).
+Implementation: [stdlib/objk_runtime.k](stdlib/objk_runtime.k).
+`k:objk_runtime_macos` is a compatibility import for this same core. Its
+implementation is platform-neutral; runtime execution is verified on macOS
+arm64 only.
 Usage and lifetime examples: [runtime guide](docs/objk_runtime_macos.md).
 No Cocoa, Foundation, AppKit, UIKit, or libobjc imports belong to this core.
 Existing GUI adapters still use native Apple frameworks. Choc/OKUI changes
@@ -120,6 +123,10 @@ for the argv path. This is a macOS adapter, not a portable replacement for
 | `doKRegisterProtocol(runtime, protocol)` | Seal protocol before adoption or use as parent. |
 | `doKConform(runtime, klass, protocol)` | Explicit adoption before class sealing. |
 | `okKConforms(runtime, object, protocol)` | Query inherited, declared conformance on readable object. |
+| `okKWitness(runtime, object, protocol)` | Retrieve the underlying witness table for a declared or inherited conformance. |
+| `okKWitnessCount` / `okKWitnessSlot` / `okKWitnessImplementation` | Inspect only the requested protocol's slots. The implementation pointer is the declaring-class resolution, not a virtual dispatch entry. |
+| `okKSlotSend` / `okKSlotSend1` / `okKSlotSend2` | Dispatch virtually through a 1-based requirement slot, with runtime arity and type checks. |
+| `doKObserve` / `okBind` / `doKClassObserve` | Observe committed field writes on one object or instances of a class and its subclasses. See the runtime guide for callback lifetimes. |
 
 Functions for allocation, lookup, raw record access, invocation, and freeing
 are implementation helpers, not supported app APIs. In particular, do not call
@@ -211,6 +218,10 @@ protocols from the entire class ancestry against the new class's effective
 method lookup. Each required method must exist with exactly matching arity and
 argument/result class constraints, including unconstrained 0 positions. This
 also revalidates inherited conformance when a subclass overrides methods.
+
+The bridge plan for selector-tagged `objk protocol` requirements is in
+[ObjC trampoline design](docs/design/objc_trampoline.md); nothing described
+there is implemented.
 
 `okKConforms` requires a readable object and sealed protocol. Conformance is
 nominal, not inferred from matching methods. Adopting a child protocol implies

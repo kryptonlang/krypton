@@ -151,12 +151,22 @@ assignments and direct calls between callbacks. See the
 an arena handle from `okKText`, not a raw string. Dynamic dispatch still checks
 at runtime. AppKit ABI checking is separate; this is not part of released 2.4.9.
 
+Unreleased builds also add multiple conformances, protocol witness tables, and
+K-owned field observers. See the [runtime contracts](objk_runtime_macos.md)
+and the [binding demo](../examples/objk/okbind_binding.ks). These are not native
+AppKit protocol registration or two-way bindings.
+
 ```sh
 ./bootstrap/kcc_driver_macos_aarch64 -r scripts/check_objk_runtime_macos.ks
 ```
 
-The focused macOS Objective-K gate passes 109 checks, including adapter and
-K-owned runtime regressions. The table demo's real typing, filter clearing,
+Use a frontend rebuilt from the checkout for the development gate. The checked-in
+frontend can lag the source, and packaging copies that binary as-is. Targeted
+enum, observer, and witness tests passed on macOS arm64, along with the native,
+enum-diagnostic and driver suites. The full Objective-K gate was stopped before
+completion after the latest fixes. Linux and Windows execution was not tested.
+
+The 2.4.9 release baseline passed 109 focused checks. The table demo's real typing, filter clearing,
 Down, Return, Escape, single/double clicks and retained-window close/reopen were
 checked through native UI. That is not a full
 compiler-suite, accessibility, IME, or cross-platform certification.

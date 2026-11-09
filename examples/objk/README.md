@@ -74,6 +74,15 @@ Windows parity check:
 
 ## Objective-K Focus
 
+`okbind_binding.ks` uses the unreleased `okBind` write observer to update a
+native label from a K-owned counter. It does not synchronize the label until
+the model is written. With the checkout's runtime and a matching compiler,
+run the automated smoke check on macOS:
+
+```sh
+KRYPTON_ROOT="$PWD" ./bootstrap/kcc_driver_macos_aarch64 -r examples/objk/okbind_binding.ks --smoke
+```
+
 `objective_k_focus.ks` is a macOS app built on the K-owned additions. It uses:
 
 - `Scoreable` protocol with required methods
