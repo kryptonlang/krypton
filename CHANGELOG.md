@@ -6,7 +6,14 @@ All notable changes to the Krypton language and compiler.
 
 - Check Objective-K callback arity, explicit annotations and known value
   types in returns, assignments and direct calls during frontend compilation.
-
+- Add multiple Objective-K protocol conformances and witness tables. Inherited
+  witness access is limited to the requested protocol's slots.
+- Add K-owned field observers and `okBind`, keeping the receiver and owned
+  values live through reentrant notifications.
+- Check enum coverage in `switch` and `match` where the compiler can identify
+  the enum and cases. Add payload constructors and destructuring, reject mixed
+  declarations and wrong constructor arity, and fix combined-pattern jumps.
+  Heap payloads still need separate GC roots.
 - Reject missing/extra arguments to defined Krypton functions on macOS,
   including imported Objective-K helpers, instead of reading unspecified native
   argument registers. Add dynamic-selector, rectangle and frame-pool regressions.

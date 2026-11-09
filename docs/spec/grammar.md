@@ -175,26 +175,23 @@ do_while_stmt     ::= "do" block "while" expr ";"?
 for_in_stmt       ::= "for" IDENT "in" expr block
 match_stmt        ::= "match" expr "{" match_arm* "}"
 match_arm         ::= (expr | "else") block
-(* Payload enums declare word slots: zero or more per case. An enum that mixes
-   plain and payload cases is a compile error — use an all-payload enum
-   (e.g. `enum R { Ok(v), None() }`). `case R.Ok(v):` arms compare the buffer
-   tag; payload words are bound to fresh locals whose names follow the usual
-   flat-locals rules (a binding that reuses an earlier `let` in the same
-   function rebinds that slot — Krypton has no block scoping — so bindings
-   do not shadow, they win). *)
-(* A switch/match on an A3 enum whose scrutinee is statically known (a direct
-   Enum.Member expression, or a variable consistently assigned only Enum.Member
-   values in this file) is checked for coverage: missing members are a
-   compile-time error unless a default/else arm is present. Arms that are not
-   plain enum-member references or resolvable int literals bail the check out
-   silently. Payload enums (`enum R { Ok(value), Err(msg) }`) declare
-   word-slot payloads; construction `R.Ok(v)` lowers to a heap buffer
-   [tag][payload words]. Heap references stored only in those words are not GC
-   roots; keep each heap payload separately rooted across collection until the
-   enum is no longer used. Case arms may destructure with a pattern
-   (`case R.Ok(v):` / `R.Ok(v) { ... }`), binding payload words to fresh
-   names. Pattern arms cover their member for the exhaustiveness check and
-   compare the buffer tag. *)
+(* Development enum support assigns tags in declaration order, starting at 0.
+   Explicit tag assignments are not supported. Duplicate names are rejected.
+   Keep declarations all-plain or all-payload: `enum R { Ok(v), None() }` uses
+   `None()` for a case with no payload slots. In value expressions, construct
+   payload cases with parentheses and exactly the declared argument count.
+   Destructuring patterns (`case R.Ok(v):` / `R.Ok(v) { ... }`) require exactly
+   the declared number of identifier bindings. Bindings follow flat-locals
+   rules: reusing a name overwrites its slot, not a block-scoped shadow.
+
+   Where the compiler identifies the enum and classifies the arms, missing
+   tags are errors unless switch has default or match has else. Coverage uses
+   recognized member references, integer literals and destructuring patterns.
+   This is not full flow-sensitive exhaustiveness or a runtime type check.
+
+   Payload values are buffers of [tag][payload words]. Heap references stored
+   only in those words are not GC roots; keep heap payloads separately rooted
+   across collection until the enum is no longer used. *)
 try_stmt          ::= "try" block ("catch" IDENT? block)?
 throw_stmt        ::= "throw" expr ";"?
 
