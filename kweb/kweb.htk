@@ -261,11 +261,14 @@ func doBuild() {
         let rc3 = shellRun(x64 + " " + tmpOpt + " " + bin)
         if rc3 != "0" { printErr("kweb: codegen failed")  exit("1") }
         if isWindows() == "1" {
-            let rt1 = root + "/compiler/windows_x86/krypton_rt.dll"
-            let rt2 = root + "/krypton_rt.dll"
+            let runtimeDll = rootTool(root, "/runtime/krypton_rt.dll", "/compiler/windows_x86/krypton_rt.dll")
+            if fsFileExists(runtimeDll) != "1" { runtimeDll = root + "/krypton_rt.dll" }
             let rtOut = tmpDir() + "/krypton_rt.dll"
-            exec("cmd /C copy /Y " + shellQuote(replace(rt1, "/", _bs())) + " " + shellQuote(replace(rtOut, "/", _bs())))
-            if fsFileExists(rtOut) != "1" { exec("cmd /C copy /Y " + shellQuote(replace(rt2, "/", _bs())) + " " + shellQuote(replace(rtOut, "/", _bs()))) }
+            let copyCmd = "cmd /C copy /Y " + DQ() + replace(runtimeDll, "/", _bs()) + DQ() + " " + DQ() + replace(rtOut, "/", _bs()) + DQ()
+            if fsFileExists(runtimeDll) != "1" || shellRun(copyCmd) != "0" {
+                printErr("kweb: could not stage the Windows runtime DLL")
+                exit(1)
+            }
         }
     } else {
         let cmd = kccCommand() + " export.htk -o " + shellQuote(bin) + " 2>&1"
