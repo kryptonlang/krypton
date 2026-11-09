@@ -14,7 +14,7 @@
 ![macOS](https://img.shields.io/badge/macOS-arm64%202.4.9-success)
 ![Linux](https://img.shields.io/badge/Linux-x86__64%202.4.4-yellow)
 ![Windows](https://img.shields.io/badge/Windows-x86__64%202.3.0-orange)
- 
+  
 ## Objective-K On macOS 2.4.9
 
 The current checkout adds macOS AppKit table selection, columns, independent
