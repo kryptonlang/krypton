@@ -74,7 +74,7 @@ just run {
     if isExec("compiler/macos_arm64/kcc-arm64") != "yes" { die("build_pkg.ks: missing compiler/macos_arm64/kcc-arm64 — run ./build.sh first") }
     if isExec(driver) != "yes" { die("build_pkg.ks: missing " + driver + " (the kcc.ks driver seed) — run ./build.sh first") }
     if isExec(host) != "yes"   { die("build_pkg.ks: missing " + host + " (the macho backend host seed)") }
-    if isExec("web/kweb") != "yes" { die("build_pkg.ks: missing web/kweb — build it first") }
+    if isExec("kweb/kweb") != "yes" { die("build_pkg.ks: missing kweb/kweb — build it first") }
     if isDir("dist/kweb.app") != "yes" { die("build_pkg.ks: missing dist/kweb.app — build it first") }
     let klsBin = ""
     if isExec("compiler/macos_arm64/kls") == "yes" { klsBin = "compiler/macos_arm64/kls" }
@@ -119,10 +119,10 @@ just run {
     exec("find \"" + r + "\" -type f -name '*.k' -exec chmod 0644 {} +")
 
     exec("mkdir -p \"" + r + "/web\"")
-    exec("install -m 0755 web/kweb \"" + r + "/web/kweb\"")
-    exec("install -m 0644 web/kweb.htk \"" + r + "/web/kweb.htk\"")
-    exec("install -m 0644 web/kweb_gui.ks \"" + r + "/web/kweb_gui.ks\"")
-    if isFile("web/README.md") == "yes" { exec("install -m 0644 web/README.md \"" + r + "/web/README.md\"") }
+    exec("install -m 0755 kweb/kweb \"" + r + "/web/kweb\"")
+    exec("install -m 0644 kweb/kweb.htk \"" + r + "/web/kweb.htk\"")
+    exec("install -m 0644 kweb/kweb_gui.ks \"" + r + "/web/kweb_gui.ks\"")
+    if isFile("kweb/README.md") == "yes" { exec("install -m 0644 kweb/README.md \"" + r + "/web/README.md\"") }
     exec("mkdir -p \"" + stage + "/Applications/Krypton\"")
     exec("env COPYFILE_DISABLE=1 ditto --norsrc dist/kweb.app \"" + stage + "/Applications/Krypton/kweb.app\"")
     if releaseSign { signPayload(stage, appIdentity) }

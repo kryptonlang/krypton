@@ -164,7 +164,7 @@ sync_repo() {
     --exclude .git \
     --exclude .qemu \
     --exclude releases \
-    --exclude web/site/dist \
+    --exclude kweb/site/dist \
     "$ROOT/" "$SSH_USER@127.0.0.1:$REMOTE_DIR/"
   echo "synced: $REMOTE_DIR"
 }
@@ -178,7 +178,7 @@ uname -a
 KRYPTON_ROOT=\"\$PWD\" ./bootstrap/kcc_driver_linux_x86_64 --version
 KRYPTON_ROOT=\"\$PWD\" ./bootstrap/kcc_driver_linux_x86_64 examples/fibonacci.k -o /tmp/krypton_fib
 /tmp/krypton_fib
-KRYPTON_ROOT=\"\$PWD\" ./bootstrap/kcc_driver_linux_x86_64 web/kweb.htk -o /tmp/kweb_linux
+KRYPTON_ROOT=\"\$PWD\" ./bootstrap/kcc_driver_linux_x86_64 kweb/kweb.htk -o /tmp/kweb_linux
 /tmp/kweb_linux
 ./scripts/build_tarball_linux.sh
 ls -lh releases/krypton-*-linux-x86_64.tar.gz

@@ -50,7 +50,7 @@ just run {
     if isExec(driver) != "yes" { die("build_tarball_macos: missing " + driver + " (run ./build.sh)") }
     if isExec(host) != "yes"   { die("build_tarball_macos: missing " + host) }
     if isExec("compiler/macos_arm64/kcc-arm64") != "yes" { die("build_tarball_macos: missing compiler/macos_arm64/kcc-arm64") }
-    if isExec("web/kweb") != "yes" { die("build_tarball_macos: missing web/kweb") }
+    if isExec("kweb/kweb") != "yes" { die("build_tarball_macos: missing kweb/kweb") }
     if isDir("dist/kweb.app") != "yes" { die("build_tarball_macos: missing dist/kweb.app") }
 
     // Version from the driver: `kcc version 2.4.0` -> 2.4.0
@@ -86,10 +86,10 @@ just run {
     if isFile("LICENSE") == "yes" { exec("cp LICENSE \"" + rootd + "/LICENSE\"") }
     exec("find \"" + rootd + "\" -type f -name '*.k' -exec chmod 0644 {} +")
     exec("mkdir -p \"" + rootd + "/web\" \"" + rootd + "/apps\"")
-    exec("install -m 0755 web/kweb \"" + rootd + "/web/kweb\"")
-    exec("install -m 0644 web/kweb.htk \"" + rootd + "/web/kweb.htk\"")
-    exec("install -m 0644 web/kweb_gui.ks \"" + rootd + "/web/kweb_gui.ks\"")
-    if isFile("web/README.md") == "yes" { exec("install -m 0644 web/README.md \"" + rootd + "/web/README.md\"") }
+    exec("install -m 0755 kweb/kweb \"" + rootd + "/web/kweb\"")
+    exec("install -m 0644 kweb/kweb.htk \"" + rootd + "/web/kweb.htk\"")
+    exec("install -m 0644 kweb/kweb_gui.ks \"" + rootd + "/web/kweb_gui.ks\"")
+    if isFile("kweb/README.md") == "yes" { exec("install -m 0644 kweb/README.md \"" + rootd + "/web/README.md\"") }
     exec("env COPYFILE_DISABLE=1 ditto --norsrc dist/kweb.app \"" + rootd + "/apps/kweb.app\"")
 
     // ── install.sh (BASH — bootstraps kcc on the user's machine) ──────────────

@@ -85,7 +85,7 @@ just run {
     }
     let versionParts = replace(version, ".", ",")
     if count(versionParts) != 3 || split(versionParts, 0) == "" || split(versionParts, 1) == "" || split(versionParts, 2) == "" { fail("version must be major.minor.patch") }
-    if icon == "" && name == "kweb" && root != "" { icon = root + "/web/kweb.icns" }
+    if icon == "" && name == "kweb" && root != "" { icon = root + "/kweb/kweb.icns" }
     if icon != "" && !fileExists(icon) { fail("icon not found: " + icon) }
     let parent = parentPath(output)
     run("mkdir -p " + q(parent))
@@ -103,7 +103,9 @@ just run {
     }
     if name == "kweb" {
         if root == "" { fail("kweb requires KRYPTON_ROOT for its bundled toolchain") }
-        installFile(root + "/web/kweb", mac + "/kweb-cli", "0755")
+        let cli = root + "/kweb/kweb"
+        if !fileExists(cli) { cli = root + "/web/kweb" }
+        installFile(cli, mac + "/kweb-cli", "0755")
         let payload = resources + "/krypton"
         run("mkdir -p " + q(payload + "/bootstrap") + " " + q(payload + "/compiler/macos_arm64"))
         installFile(root + "/bootstrap/kcc_driver_macos_aarch64", payload + "/bootstrap/kcc_driver_macos_aarch64", "0755")

@@ -32,7 +32,7 @@ HOST="bootstrap/macho_host_macos_aarch64"
 KLS_BIN=""
 [[ -x "compiler/macos_arm64/kls" ]] && KLS_BIN="compiler/macos_arm64/kls"
 [[ -z "$KLS_BIN" && -x "kls" ]]     && KLS_BIN="kls"
-[[ -x "web/kweb" ]] || { echo "build_pkg.sh: missing web/kweb — build it first"; exit 1; }
+[[ -x "kweb/kweb" ]] || { echo "build_pkg.sh: missing kweb/kweb — build it first"; exit 1; }
 [[ -d "dist/kweb.app" ]] || { echo "build_pkg.sh: missing dist/kweb.app — build it first"; exit 1; }
 
 # ── Version ────────────────────────────────────────────────────────────────
@@ -91,10 +91,10 @@ find "$ROOT" -type f -name '*.k' -exec chmod 0644 {} \;
 
 # kweb CLI + native GUI.
 mkdir -p "$ROOT/web"
-install -m 0755 web/kweb "$ROOT/web/kweb"
-install -m 0644 web/kweb.htk "$ROOT/web/kweb.htk"
-install -m 0644 web/kweb_gui.ks "$ROOT/web/kweb_gui.ks"
-[[ -f web/README.md ]] && install -m 0644 web/README.md "$ROOT/web/README.md"
+install -m 0755 kweb/kweb "$ROOT/web/kweb"
+install -m 0644 kweb/kweb.htk "$ROOT/web/kweb.htk"
+install -m 0644 kweb/kweb_gui.ks "$ROOT/web/kweb_gui.ks"
+[[ -f kweb/README.md ]] && install -m 0644 kweb/README.md "$ROOT/web/README.md"
 mkdir -p "$STAGE/Applications/Krypton"
 env COPYFILE_DISABLE=1 ditto --norsrc dist/kweb.app "$STAGE/Applications/Krypton/kweb.app"
 
