@@ -3017,7 +3017,7 @@ func opInstrCount(opTok) {
     if opTok == "BUILTIN_ENDSWITH"     { emit 29 }
     if opTok == "BUILTIN_ARG"          { emit 25 }  // inline-toInt + load argv + index
     if opTok == "BUILTIN_ARGCOUNT"     { emit 5 }
-    if opTok == "BUILTIN_READFILE"     { emit 41 }   // alloc(21) +6 from 35
+    if opTok == "BUILTIN_READFILE"     { emit 68 }   // open-err guard + alloc(21) +6
     if opTok == "BUILTIN_WRITEFILE"    { emit 22 }
     if opTok == "BUILTIN_WRITEBYTES"   { emit 54 }
     if opTok == "BUILTIN_TRIM"         { emit 56 }   // alloc(21) +6 from 50
@@ -4389,16 +4389,25 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             instrIdx = instrIdx + 5
         } else if opTok == "BUILTIN_READFILE" {
             // readFile(path): open, alloc 1 MB buf, read, close, NUL-terminate, return.
-            // 27 instructions. macOS arm64 syscalls: open=5, read=3, close=6.
+            // macOS arm64 syscalls: open=5, read=3, close=6.
             // Uses x19 (saved fd), x20 (saved buf ptr), x21 (saved bytes_read).
+            // 68 instructions; on open failure returns an empty string instead of
+            // reading / NUL-writing through an invalid fd.
+            //  0: pop x10   1: mov x0  2: movz x1=0  3: movz x16=5  4: svc
+            //  5: cmp x0, #0  6: b.lt .fail
+            //  7: mov x19  8: movz x4  9..29: 1 MB alloc
+            // 30..42: read/close/NUL/ret  43: b .exit
+            // .fail 44: movz x4=1  45..65: 1-byte alloc  66: strb wzr  67: push x0
             s = sbAppend(s, arm64_pop(10))  // x10 = path
             s = sbAppend(s, arm64_mov_xx(0, 10))
             s = sbAppend(s, arm64_movz_x_imm(1, 0))  // O_RDONLY
             s = sbAppend(s, arm64_movz_x_imm(16, 5))  // sys_open
             s = sbAppend(s, arm64_svc(0x80))
+            s = sbAppend(s, arm64_cmp_imm(0, 0))  // cmp x0, #0
+            s = sbAppend(s, arm64_b_cond(0xB, 38))  // b.lt .fail (44 = 6 + 38)
             s = sbAppend(s, arm64_mov_xx(19, 0))  // save fd
             s = sbAppend(s, arm64_movz_x_imm_lsl16(4, 0x10))  // x4 = 1 MB (DATA_VMSIZE = 1 GB; heap has 32 MB before shadow stack)
-            instrIdx = instrIdx + 7
+            instrIdx = instrIdx + 9
             s = sbAppend(s, emitAllocVar(instrIdx, textVaddr, textOff))
             instrIdx = instrIdx + 21
             s = sbAppend(s, arm64_mov_xx(20, 0))  // save buf
@@ -4414,7 +4423,15 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_strb_reg(31, 20, 21))  // strb wzr, [buf, bytes_read]  (NUL)
             s = sbAppend(s, arm64_mov_xx(0, 20))  // return buf
             s = sbAppend(s, arm64_push_x0())
+            s = sbAppend(s, arm64_b(25))  // b .exit (68 = 43 + 25)
             instrIdx = instrIdx + 13
+            s = sbAppend(s, arm64_movz_x_imm(4, 1))  // .fail: x4 = 1 (empty string)
+            instrIdx = instrIdx + 1
+            s = sbAppend(s, emitAllocVar(instrIdx, textVaddr, textOff))
+            instrIdx = instrIdx + 21
+            s = sbAppend(s, arm64_strb_imm(31, 0, 0))  // strb wzr, [x0, #0]
+            s = sbAppend(s, arm64_push_x0())
+            instrIdx = instrIdx + 2
         } else if opTok == "BUILTIN_TRIM" {
             // trim(s): strip leading/trailing whitespace — any byte <=32
             // (space, tab \t=9, nl \n=10, cr \r=13, other controls). 42 instr.
