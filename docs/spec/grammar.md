@@ -175,6 +175,17 @@ do_while_stmt     ::= "do" block "while" expr ";"?
 for_in_stmt       ::= "for" IDENT "in" expr block
 match_stmt        ::= "match" expr "{" match_arm* "}"
 match_arm         ::= (expr | "else") block
+(* A switch/match on an A3 enum whose scrutinee is statically known (a direct
+   Enum.Member expression, or a variable consistently assigned only Enum.Member
+   values in this file) is checked for coverage: missing members are a
+   compile-time error unless a default/else arm is present. Arms that are not
+   plain enum-member references or resolvable int literals bail the check out
+   silently. Payload enums (`enum R { Ok(value), Err(msg) }`) declare
+   word-slot payloads; construction `R.Ok(v)` lowers to a heap buffer
+   [tag][payload words]; case arms may destructure with a pattern
+   (`case R.Ok(v):` / `R.Ok(v) { ... }`), binding payload words to fresh
+   names. Pattern arms cover their member for the exhaustiveness check and
+   compare the buffer tag. *)
 try_stmt          ::= "try" block ("catch" IDENT? block)?
 throw_stmt        ::= "throw" expr ";"?
 
