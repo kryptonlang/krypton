@@ -26,14 +26,16 @@ and lowers them to K-owned runtime setup before entry work. It auto-imports
 `k:objk_runtime_macos`. Existing `class`/`struct`/`type` declarations are not
 K-owned runtime classes. Direct runtime calls remain supported.
 
-This first declaration stage supports protocol/object inheritance, one protocol
-conformance per object declaration, callback-backed methods, and 0..2 typed user
-arguments. Generated entry locals expose `__objkRuntime` and each declaration
-name. Types lower to runtime contracts: `int`/`integer`, `text`, a previously
+This first declaration stage supports protocol/object inheritance, multiple
+protocol conformances per object declaration (`conforms A, B`), callback-backed
+methods, and 0..2 typed user arguments. Declared conformances build witness
+tables per (declaring class, protocol) pair at registration. Generated entry
+locals expose `__objkRuntime` and each declaration name. Types lower to runtime
+contracts: `int`/`integer`, `text`, a previously
 declared object/protocol name, or unconstrained `any`/`do`. Method callbacks
 receive `(runtime, self)` before user arguments. Inline method bodies, fields,
-ownership syntax, multiple conformance syntax, and compile-time message checks
-remain planned. Declarations currently belong in executable entry source;
+ownership syntax, and compile-time message checks remain planned. Declarations
+currently belong in executable entry source;
 imported modules should use direct runtime APIs.
 
 Use `-> do` for an explicit no-result contract. Do not add `void` declarations

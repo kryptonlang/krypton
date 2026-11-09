@@ -41,14 +41,16 @@ macOS `callPtr` accepts 0..8 arguments after its pointer operand. Imported
 module globals initialize before executable entry work within the current
 import walker's limits; this is lowering behavior, not new syntax.
 
-This first syntax stage supports protocol inheritance, object inheritance, one
-declared conformance per object, 0..2 typed user arguments, and callback-backed
-methods. Types are `any`, `do`, `int`/`integer`, `text`, or a previously declared
-object/protocol handle. Generated entry locals are `__objkRuntime` and each
-declaration name. Method callbacks remain ordinary functions receiving
-`(runtime, self)` plus declared user arguments. Inline method bodies, fields,
-ownership annotations, multiple conformances, and compile-time send checking
-remain planned. Declarations currently belong in the executable entry source;
+This first syntax stage supports protocol inheritance, object inheritance,
+one or more `conforms` protocols per object (`conforms A, B`), 0..2 typed user
+arguments, and callback-backed methods. Types are `any`, `do`, `int`/`integer`,
+`text`, or a previously declared object/protocol handle. Generated entry locals
+are `__objkRuntime` and each declaration name. Witness tables are built per
+(declaring class, protocol) pair at registration; slot indices follow protocol
+declaration order, parents first. Method callbacks remain ordinary functions
+receiving `(runtime, self)` plus declared user arguments. Inline method bodies,
+fields, ownership annotations, and compile-time send checking remain planned.
+Declarations currently belong in the executable entry source;
 imported modules should use direct runtime APIs. Runtime registration calls
 remain available directly.
 See [implementation contract](../../spec.md) and

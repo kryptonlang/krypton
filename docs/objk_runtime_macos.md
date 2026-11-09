@@ -120,14 +120,35 @@ just run {
 }
 ```
 
+`k:objk_runtime` is the canonical, platform-neutral id for the K-owned runtime
+(no Apple or Win32 imports anywhere in it). `k:objk_runtime_macos` remains as a
+back-compat alias importing it. The compiler auto-imports `k:objk_runtime`.
+
+Windows and Linux status: the module and the `objk` frontend syntax are
+platform-neutral source — the same `compile.k` and the same runtime compile on
+all three OS families, and the runtime itself contains no Apple or Win32 calls.
+Machine-code verification of the K-owned suite on Linux x86_64/aarch64 and
+Windows is pending execution on real hosts (the Linux/Windows Mach-O-cross
+build of `elf.k`/`x64.k` crashes under the macOS backend — see repository
+follow-up notes). Do not claim Linux/Windows runtime support until those run.
+
 `objk` declarations auto-import this module. Protocols and objects may use one
-`extends` parent. Objects may declare one `conforms` protocol. Requirements and
+`extends` parent. Objects may declare one or more `conforms` protocols
+(`conforms A, B`). Requirements and methods assign fixed 1-based slots per
+protocol at `doKRegisterProtocol` time, parents before children, in
+declaration order. `doKRegister` seals conformance and builds a witness table
+per (declaring class, protocol) pair; tables are introspected with
+`okKWitness`, `okKWitnessCount`, `okKWitnessSlot` (requirement handle) and
+`okKWitnessImplementation` (fnPtr for the declaring class), and consumed by
+`okKSlotSend` / `okKSlotSend1` / `okKSlotSend2`. Slot dispatch is virtual
+(receiver-class lookup, identical behavior to `okKSend*`), so subclass
+overrides win. Requirements and
 methods accept 0..2 named, typed user arguments. Supported type forms are
 `any`, `do`, `int`/`integer`, `text`, and a previously declared object/protocol
 name. Methods bind to ordinary callback functions with `(runtime, self)` before
 user arguments. Generated entry locals are `__objkRuntime` and each declaration
-name. Inline bodies, fields, ownership annotations, multiple conformances, and
-compile-time send checking are not implemented yet. Declarations currently
+name. Inline bodies, fields, ownership annotations, and compile-time send
+checking are not implemented yet. Declarations currently
 belong in executable entry source; imported modules should use direct APIs.
 
 ## Use From Krypton Or KryptScript

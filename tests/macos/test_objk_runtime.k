@@ -1,4 +1,4 @@
-import "k:objk_runtime_macos"
+import "k:objk_runtime"
 
 func check(name, expected, actual) {
     if expected != actual {
