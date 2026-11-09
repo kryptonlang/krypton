@@ -68,6 +68,9 @@ with `brew install t3m3d/krypton/krypton`, or use the signed installer. Existing
 Homebrew users can run `brew update && brew upgrade krypton`. This is Developer
 ID distribution, not an App Store submission. Linux remains 2.4.4; Windows 2.3.0.
 
+The native and Node.js URL-shortener apps now live in the separate
+[KryptLink repository](https://github.com/t3m3d/kryptlink).
+
 ## File extensions
 
 Krypton recognises two sibling source extensions. **Same compiler, same
