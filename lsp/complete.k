@@ -25,7 +25,7 @@ func cpItem(label, kind, detail) {
 // Hand-curated keyword list. Mirrors lex.k's lxIsKW — both lists must
 // be kept in sync. Pipe-separated for cheap iteration.
 func cpKeywords() {
-    emit "func|fn|let|const|if|else|while|for|in|do|loop|until|break|continue|match|emit|return|try|catch|throw|module|import|export|struct|class|type|callback|jxt|just|go|true|false|null|quantum|qpute|process|measure|prepare"
+    emit "func|fn|let|const|if|else|while|for|in|do|loop|until|break|continue|match|emit|return|try|catch|throw|module|import|export|struct|class|type|objk|protocol|object|require|method|conforms|just|true|false|null|quantum|qpute|measure|prepare"
 }
 
 // Hand-curated builtins. Mirrors the regex in compile.k. Pipe-separated.
