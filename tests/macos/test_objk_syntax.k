@@ -26,8 +26,8 @@ func focusAdjust(runtime, self, amount) {
 func doubleScore(runtime, self) { emit focusScore(runtime, self) * 2 }
 
 func check(name, expected, actual) {
-    if expected != actual { kp("[FAIL] " + name); exit("1") }
-    kp("[PASS] " + name)
+    if expected != actual { print("[FAIL] " + name); exit("1") }
+    print("[PASS] " + name)
 }
 
 just run {

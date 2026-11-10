@@ -1,7 +1,7 @@
 import "k:objk_runtime_macos"
 
 func identity(runtime, self, value) {
-    if value == self { kp("[FAIL] bad argument reached callback"); exit("0") }
+    if value == self { print("[FAIL] bad argument reached callback"); exit("0") }
     emit value
 }
 func wrongResult(runtime, self, value) { emit self }
@@ -29,6 +29,6 @@ just run {
     if mode == "null" { okKSend1(runtime, object, "id", 0) }
     if mode == "stale" { doKRelease(runtime, value); okKNew(runtime, item) }
     okKSend1(runtime, object, "id", value)
-    kp("[FAIL] expected typed rejection")
+    print("[FAIL] expected typed rejection")
     exit("0")
 }

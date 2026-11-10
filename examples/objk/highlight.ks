@@ -7,7 +7,7 @@ just run {
   let win = cocoaWindow(app, "Syntax highlighting — pure Krypton on objk", 560, 360)
   let tv = cocoaScrollText(win, 10, 10, 540, 340)
   cocoaSetFont(tv, cocoaMonoFont(15))
-  let src = "// a comment, in grey\nfunc greet(name) {\n    kp(name)\n}\n"
+  let src = "// a comment, in grey\nfunc greet(name) {\n    print(name)\n}\n"
   cocoaTVSetString(tv, src)
   cocoaTVColorRange(tv, cocoaColorNamed("grayColor"), 0, indexOf(src, "\n"))
   cocoaTVColorRange(tv, cocoaColorNamed("purpleColor"), indexOf(src, "func"), 4)

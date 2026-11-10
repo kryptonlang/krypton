@@ -2,9 +2,9 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
@@ -16,8 +16,8 @@ func truthy(val) {
 }
 
 just run {
-    kp("Boolean/Truthiness Tests")
-    kp("========================")
+    print("Boolean/Truthiness Tests")
+    print("========================")
 
     // True/false literals
     check("true is truthy", "truthy", truthy(1))

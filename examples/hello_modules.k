@@ -6,16 +6,16 @@ import "k:math_utils"
 import "k:string_utils"
 
 just run {
-    kp("=== Hello Modules ===")
+    print("=== Hello Modules ===")
 
     // From math_utils.k
-    kp(`isPrime(7) = {isPrime(7)}`)
-    kp(`factorial(6) = {factorial(6)}`)
-    kp(`gcd(24, 36) = {gcd(24, 36)}`)
+    print(`isPrime(7) = {isPrime(7)}`)
+    print(`factorial(6) = {factorial(6)}`)
+    print(`gcd(24, 36) = {gcd(24, 36)}`)
 
     // From string_utils.k
     let s = "  hello krypton  "
-    kp(`trimmed: "{trim(s)}"`)
-    kp(`upper: {toUpper(trim(s))}`)
-    kp(`reversed: {reverse("krypton")}`)
+    print(`trimmed: "{trim(s)}"`)
+    print(`upper: {toUpper(trim(s))}`)
+    print(`reversed: {reverse("krypton")}`)
 }

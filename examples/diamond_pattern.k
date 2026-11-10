@@ -27,7 +27,7 @@ func diamond(size) {
     while i <= size {
         let spaces = printSpaces(size - i)
         let stars = printStars(2 * i - 1)
-        kp(spaces + stars)
+        print(spaces + stars)
         i += 1
     }
     // Bottom half
@@ -35,27 +35,27 @@ func diamond(size) {
     while i >= 1 {
         let spaces = printSpaces(size - i)
         let stars = printStars(2 * i - 1)
-        kp(spaces + stars)
+        print(spaces + stars)
         i -= 1
     }
 }
 
 func hollowDiamond(size) {
     // Top point
-    kp(printSpaces(size - 1) + "*")
+    print(printSpaces(size - 1) + "*")
 
     // Top half
     let i = 2
     while i < size {
         let spaces = printSpaces(size - i)
         let inner = printSpaces(2 * i - 3)
-        kp(spaces + "*" + inner + "*")
+        print(spaces + "*" + inner + "*")
         i += 1
     }
 
     // Middle
     if size > 1 {
-        kp("*" + printSpaces(2 * size - 3) + "*")
+        print("*" + printSpaces(2 * size - 3) + "*")
     }
 
     // Bottom half
@@ -63,19 +63,19 @@ func hollowDiamond(size) {
     while i >= 2 {
         let spaces = printSpaces(size - i)
         let inner = printSpaces(2 * i - 3)
-        kp(spaces + "*" + inner + "*")
+        print(spaces + "*" + inner + "*")
         i -= 1
     }
 
     // Bottom point
-    kp(printSpaces(size - 1) + "*")
+    print(printSpaces(size - 1) + "*")
 }
 
 just run {
-    kp("Diamond Pattern (size 5):")
+    print("Diamond Pattern (size 5):")
     diamond(5)
-    kp("")
-    kp("Hollow Diamond (size 6):")
+    print("")
+    print("Hollow Diamond (size 6):")
     hollowDiamond(6)
     emit "ok"
 }

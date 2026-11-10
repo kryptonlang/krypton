@@ -151,7 +151,7 @@ func mapPrint(m) {
     while i < lines {
         let line = getLine(m, i)
         if len(line) > 0 {
-            kp(line)
+            print(line)
         }
         i += 1
     }

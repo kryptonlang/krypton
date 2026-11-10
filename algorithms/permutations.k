@@ -3,7 +3,7 @@
 
 func permute(prefix, remaining) {
     if len(remaining) == 0 {
-        kp(prefix)
+        print(prefix)
     } else {
         let i = 0
         while i < len(remaining) {
@@ -27,11 +27,11 @@ func permute(prefix, remaining) {
 
 just run {
     let s = "ABC"
-    kp("Permutations of '" + s + "':")
+    print("Permutations of '" + s + "':")
     permute("", s)
 
-    kp("")
+    print("")
     let s2 = "1234"
-    kp("Permutations of '" + s2 + "':")
+    print("Permutations of '" + s2 + "':")
     permute("", s2)
 }

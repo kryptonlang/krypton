@@ -37,14 +37,14 @@ func lcsLength(a, b) {
 just run {
     let a = "ABCBDAB"
     let b = "BDCAB"
-    kp("String A: " + a)
-    kp("String B: " + b)
-    kp("LCS length: " + lcsLength(a, b))
+    print("String A: " + a)
+    print("String B: " + b)
+    print("LCS length: " + lcsLength(a, b))
 
     let c = "AGGTAB"
     let d = "GXTXAYB"
-    kp("")
-    kp("String C: " + c)
-    kp("String D: " + d)
-    kp("LCS length: " + lcsLength(c, d))
+    print("")
+    print("String C: " + c)
+    print("String D: " + d)
+    print("LCS length: " + lcsLength(c, d))
 }

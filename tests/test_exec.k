@@ -1,7 +1,7 @@
 // Test exec: capture child stdout.
 just run {
-    kp("before")
+    print("before")
     let out = exec("echo captured")
-    kp("captured = [" + out + "]")
-    kp("after")
+    print("captured = [" + out + "]")
+    print("after")
 }

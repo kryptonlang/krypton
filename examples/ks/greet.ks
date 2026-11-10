@@ -13,5 +13,5 @@ func greeting(who) { emit "Hello, " + who + "!" }
 let who = "world"
 if argCount() > 0 { who = arg(0) }
 
-kp(bold(cyan(greeting(who))))
-kp(gray("— written top-to-bottom, no boilerplate"))
+print(bold(cyan(greeting(who))))
+print(gray("— written top-to-bottom, no boilerplate"))

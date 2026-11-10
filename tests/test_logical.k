@@ -3,9 +3,9 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
@@ -15,8 +15,8 @@ func boolStr(val) {
 }
 
 just run {
-    kp("Logical Operator Tests")
-    kp("======================")
+    print("Logical Operator Tests")
+    print("======================")
 
     // AND
     check("and TT", "true", boolStr(1 && 1))

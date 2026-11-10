@@ -20,7 +20,7 @@ func binarySearch(list, target) {
 just run {
     // Must be sorted
     let data = "2,5,8,12,16,23,38,56,72,91"
-    kp("Data: " + data)
+    print("Data: " + data)
 
     let targets = "23,8,100,2,91,50"
     let i = 0
@@ -28,9 +28,9 @@ just run {
         let t = toInt(split(targets, i))
         let idx = binarySearch(data, t)
         if idx >= 0 {
-            kp("  Found " + t + " at index " + idx)
+            print("  Found " + t + " at index " + idx)
         } else {
-            kp("  " + t + " not found")
+            print("  " + t + " not found")
         }
         i += 1
     }

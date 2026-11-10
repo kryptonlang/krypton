@@ -6,7 +6,7 @@
 // Status (M1-M5): a real stack machine with integers + arithmetic (+ - * / %),
 // string interpolation (CAT/ADD via kr_plus), locals, control flow (loops/ifs),
 // and USER FUNCTIONS with recursion (call frames on sp, op stack in x20, heap in
-// x22). Compiles real programs: factorial/fib recursion, nested calls, kp("n="+n).
+// x22). Compiles real programs: factorial/fib recursion, nested calls, print("n="+n).
 // kp dispatches int vs string on the 0x7F000000 tag.
 //
 // NOTE: kp's bytes are built via a local sbAppend, NOT consecutive `code = sbAppend(code, ..`)

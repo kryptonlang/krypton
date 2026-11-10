@@ -60,17 +60,17 @@ func mergeSort(lst) {
 }
 
 just run {
-    kp("Merge Sort")
-    kp("==========")
+    print("Merge Sort")
+    print("==========")
     let cases = "5,3,8,1,4,2,7,6"
-    kp("  in:  " + cases)
-    kp("  out: " + mergeSort(cases))
+    print("  in:  " + cases)
+    print("  out: " + mergeSort(cases))
 
     let rev = "9,8,7,6,5,4,3,2,1"
-    kp("  in:  " + rev)
-    kp("  out: " + mergeSort(rev))
+    print("  in:  " + rev)
+    print("  out: " + mergeSort(rev))
 
     let dup = "4,2,4,1,2,4,1"
-    kp("  in:  " + dup)
-    kp("  out: " + mergeSort(dup))
+    print("  in:  " + dup)
+    print("  out: " + mergeSort(dup))
 }

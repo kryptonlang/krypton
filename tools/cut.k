@@ -2,7 +2,7 @@
 
 just run {
     if argCount() < 2 {
-        kp("Usage: cut <field_index> <file>")
+        print("Usage: cut <field_index> <file>")
     } else {
         let field = toInt(arg(0))
         let content = readFile(arg(1))
@@ -13,9 +13,9 @@ just run {
             if len(line) > 0 {
                 let fc = count(line)
                 if field < fc {
-                    kp(split(line, field))
+                    print(split(line, field))
                 } else {
-                    kp("")
+                    print("")
                 }
             }
             i = i + 1

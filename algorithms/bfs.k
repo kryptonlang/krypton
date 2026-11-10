@@ -74,5 +74,5 @@ just run {
         }
     }
 
-    kp("BFS from node 0: " + order)
+    print("BFS from node 0: " + order)
 }

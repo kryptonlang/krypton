@@ -161,22 +161,22 @@ func listReverse(store) {
 }
 
 just run {
-    kp("Singly-linked list (env-backed)")
-    kp("===============================")
+    print("Singly-linked list (env-backed)")
+    print("===============================")
 
     let s = newList()
     s = pushBack(s, "a")
     s = pushBack(s, "b")
     s = pushBack(s, "c")
     s = pushBack(s, "d")
-    kp("  push back a,b,c,d -> [" + toList(s) + "]   length=" + listLength(s))
+    print("  push back a,b,c,d -> [" + toList(s) + "]   length=" + listLength(s))
 
     s = pushFront(s, "z")
-    kp("  push front z       -> [" + toList(s) + "]   length=" + listLength(s))
+    print("  push front z       -> [" + toList(s) + "]   length=" + listLength(s))
 
     s = listReverse(s)
-    kp("  reverse            -> [" + toList(s) + "]")
+    print("  reverse            -> [" + toList(s) + "]")
 
     let empty = newList()
-    kp("  empty list         -> [" + toList(empty) + "]   length=" + listLength(empty))
+    print("  empty list         -> [" + toList(empty) + "]   length=" + listLength(empty))
 }

@@ -4,8 +4,8 @@ import "k:bytes"
 import "k:bytes_file_win"
 
 func bytesWinCheck(name, ok) {
-    if ok { kp("[PASS] " + name) }
-    else { kp("[FAIL] " + name)  exit("1") }
+    if ok { print("[PASS] " + name) }
+    else { print("[FAIL] " + name)  exit("1") }
 }
 
 just run {
@@ -21,11 +21,11 @@ just run {
     while i < 256 {
         if bytesGet(loaded, i) != bytesGet(all, i) {
             bytesDeleteFileWin(path)
-            kp("[FAIL] binary file byte " + i)
+            print("[FAIL] binary file byte " + i)
             exit("1")
         }
         i += 1
     }
     bytesDeleteFileWin(path)
     bytesWinCheck("binary file preserves 0x00-0xFF", 1)
-}
+}

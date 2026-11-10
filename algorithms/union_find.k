@@ -40,8 +40,8 @@ func _uf_connected(a, b, parents) {
 }
 
 just run {
-    kp("Union-Find")
-    kp("==========")
+    print("Union-Find")
+    print("==========")
     let p = envNew()
     let names = "A,B,C,D,E,F"
     let n = count(names)
@@ -52,14 +52,14 @@ just run {
     p = _uf_union("B", "C", p)
     p = _uf_union("D", "E", p)
 
-    kp("  A~B = " + _uf_connected("A", "B", p))   // 1
-    kp("  A~C = " + _uf_connected("A", "C", p))   // 1
-    kp("  A~D = " + _uf_connected("A", "D", p))   // 0
-    kp("  D~E = " + _uf_connected("D", "E", p))   // 1
-    kp("  E~F = " + _uf_connected("E", "F", p))   // 0
+    print("  A~B = " + _uf_connected("A", "B", p))   // 1
+    print("  A~C = " + _uf_connected("A", "C", p))   // 1
+    print("  A~D = " + _uf_connected("A", "D", p))   // 0
+    print("  D~E = " + _uf_connected("D", "E", p))   // 1
+    print("  E~F = " + _uf_connected("E", "F", p))   // 0
 
     p = _uf_union("C", "D", p)
-    kp("  after C~D union:")
-    kp("  A~E = " + _uf_connected("A", "E", p))   // 1
-    kp("  A~F = " + _uf_connected("A", "F", p))   // 0
+    print("  after C~D union:")
+    print("  A~E = " + _uf_connected("A", "E", p))   // 1
+    print("  A~F = " + _uf_connected("A", "F", p))   // 0
 }

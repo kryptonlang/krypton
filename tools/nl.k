@@ -2,7 +2,7 @@
 
 just run {
     if argCount() < 1 {
-        kp("Usage: nl <file>")
+        print("Usage: nl <file>")
     } else {
         let content = readFile(arg(0))
         let lc = lineCount(content)
@@ -16,7 +16,7 @@ just run {
             else if num < 1000 { prefix = "   " }
             else if num < 10000 { prefix = "  " }
             else { prefix = " " }
-            kp(prefix + num + "  " + getLine(content, i))
+            print(prefix + num + "  " + getLine(content, i))
             i = i + 1
         }
     }

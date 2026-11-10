@@ -85,7 +85,7 @@ func evaluate(expr) {
             if operand != 0 {
                 result = result / operand
             } else {
-                kp("Error: division by zero")
+                print("Error: division by zero")
                 emit "error"
             }
         }
@@ -94,8 +94,8 @@ func evaluate(expr) {
 }
 
 just run {
-    kp("Simple Calculator")
-    kp("=================")
+    print("Simple Calculator")
+    print("=================")
 
     let expressions = "2 + 3,10 - 4,6 * 7,100 / 5,15 + 20 - 3,2 * 3 + 4"
     let total = count(expressions)
@@ -103,7 +103,7 @@ just run {
     while i < total {
         let expr = split(expressions, i)
         let result = evaluate(expr)
-        kp("  " + expr + " = " + result)
+        print("  " + expr + " = " + result)
         i += 1
     }
     emit "ok"

@@ -59,14 +59,14 @@ just run {
         }
     }
     if len(path) == 0 {
-        kp("kbackend.exe not found in ./, ../kcode-win/, or C:\\krypton\\")
+        print("kbackend.exe not found in ./, ../kcode-win/, or C:\\krypton\\")
         exit("1")
     }
-    kp("spawning: " + path)
+    print("spawning: " + path)
 
     let p = procSpawn(path, "")
     if p == "0" {
-        kp("FAIL: procSpawn failed")
+        print("FAIL: procSpawn failed")
         exit("1")
     }
 
@@ -80,9 +80,9 @@ just run {
     procSleep(500)
     let buf = procRead(p, 65536)
 
-    kp("============================================================")
-    kp("RESPONSES")
-    kp("============================================================")
+    print("============================================================")
+    print("RESPONSES")
+    print("============================================================")
     let pos = 0
     let nf = 0
     while pos < len(buf) {
@@ -95,11 +95,11 @@ just run {
             let bodyLen = _contentLength(headers)
             let body = substring(tail, bodyOff, bodyOff + bodyLen)
             nf += 1
-            kp("\n--- frame " + nf + " (" + bodyLen + " bytes) ---")
-            kp(body)
+            print("\n--- frame " + nf + " (" + bodyLen + " bytes) ---")
+            print(body)
             pos = pos + bodyOff + bodyLen
         }
     }
-    kp("\n" + nf + " framed messages received")
+    print("\n" + nf + " framed messages received")
     procClose(p)
 }

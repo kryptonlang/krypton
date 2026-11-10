@@ -131,15 +131,15 @@ func analyzePassword(pwd) {
     if score >= 5 { rating = "Strong" }
     if score >= 6 { rating = "Very Strong" }
 
-    kp("Password: " + pwd)
-    kp("Score: " + score + "/7 - " + rating)
-    kp(details)
+    print("Password: " + pwd)
+    print("Score: " + score + "/7 - " + rating)
+    print(details)
 }
 
 just run {
-    kp("Password Strength Analyzer")
-    kp("==========================")
-    kp("")
+    print("Password Strength Analyzer")
+    print("==========================")
+    print("")
 
     analyzePassword("abc")
     analyzePassword("password")

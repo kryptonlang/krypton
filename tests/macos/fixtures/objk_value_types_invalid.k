@@ -28,6 +28,6 @@ just run {
     if mode == "text-argument" { okKSend1(runtime, object, "test", object) }
     if mode == "text-result" { okKSend1(runtime, object, "test", okKText(runtime, "text")) }
     if mode == "protocol-argument" { okKSend1(runtime, object, "test", okKNew(runtime, item)) }
-    kp("[FAIL] expected value type rejection")
+    print("[FAIL] expected value type rejection")
     exit("0")
 }

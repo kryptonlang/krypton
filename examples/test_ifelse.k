@@ -1,20 +1,20 @@
 just run {
     let val = 42
-    kp("val=" + val)
+    print("val=" + val)
     if val == 42 {
-        kp("found it")
+        print("found it")
     }
     if val == 42 {
-        kp("match")
+        print("match")
     } else {
-        kp("no match")
+        print("no match")
     }
     if val == 42 {
-        kp("yes")
+        print("yes")
     } else if val == 0 {
-        kp("zero")
+        print("zero")
     } else {
-        kp("other")
+        print("other")
     }
     emit "ok"
 }

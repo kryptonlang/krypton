@@ -2,15 +2,15 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
 just run {
-    kp("Operator Precedence Tests")
-    kp("=========================")
+    print("Operator Precedence Tests")
+    print("=========================")
 
     // Multiplication before addition
     check("2 + 3 * 4", "14", "" + (2 + 3 * 4))

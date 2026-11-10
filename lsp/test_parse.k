@@ -4,25 +4,25 @@ import "json_parse.k"
 
 just run {
     let frame = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\"}"
-    kp("input: " + frame)
+    print("input: " + frame)
 
     // step through manually
     let st = jpNew(frame)
-    kp("after jpNew: i=" + jpI(st) + " line=" + jpLine(st) + " col=" + jpCol(st))
-    kp("text len: " + len(jpText(st)))
-    kp("peek: '" + jpPeek(st) + "'")
+    print("after jpNew: i=" + jpI(st) + " line=" + jpLine(st) + " col=" + jpCol(st))
+    print("text len: " + len(jpText(st)))
+    print("peek: '" + jpPeek(st) + "'")
     st = jpSkipWS(st)
-    kp("after skipWS: i=" + jpI(st))
-    kp("peek: '" + jpPeek(st) + "'")
+    print("after skipWS: i=" + jpI(st))
+    print("peek: '" + jpPeek(st) + "'")
 
     let m0 = jmNew()
     let r = jpParseValue(st, "", m0)
-    kp("parsed result len: " + len(r))
+    print("parsed result len: " + len(r))
     let mAfter = jpMap(r)
-    kp("map after: '" + mAfter + "' len=" + len(mAfter))
+    print("map after: '" + mAfter + "' len=" + len(mAfter))
 
     let m = jpParse(frame)
-    kp("map len: " + len(m))
+    print("map len: " + len(m))
     // Dump map with control chars made visible
     let i = 0
     let sb = sbNew()
@@ -35,10 +35,10 @@ just run {
         else { sb = sbAppend(sb, c) }
         i += 1
     }
-    kp("map dump:")
-    kp(sbToString(sb))
-    kp("---")
-    kp("method = '" + jpGet(m, "method") + "'")
-    kp("id = '" + jpGet(m, "id") + "'")
-    kp("jsonrpc = '" + jpGet(m, "jsonrpc") + "'")
+    print("map dump:")
+    print(sbToString(sb))
+    print("---")
+    print("method = '" + jpGet(m, "method") + "'")
+    print("id = '" + jpGet(m, "id") + "'")
+    print("jsonrpc = '" + jpGet(m, "jsonrpc") + "'")
 }

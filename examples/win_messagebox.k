@@ -14,5 +14,5 @@ import "head:user32"
 just run {
     // MB_OK | MB_ICONINFORMATION = 0 | 0x40 = 64
     MessageBoxA("0", "Hello from Krypton!", "Krypton GUI", "64")
-    kp("dialog dismissed")
+    print("dialog dismissed")
 }

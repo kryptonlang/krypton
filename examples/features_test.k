@@ -9,54 +9,54 @@ func greet(name) {
 just run {
     // Test function calls
     let x = add(3, 4)
-    kp(x)
+    print(x)
 
     // Test string ops
     let msg = greet("Krypton")
-    kp(msg)
+    print(msg)
 
     // Test while loop
     let i = 0
     while i < 5 {
-        kp(i)
+        print(i)
         i += 1
     }
 
     // Test if/else if/else
     let val = 42
     if val == 42 {
-        kp("found it")
+        print("found it")
     } else if val == 0 {
-        kp("zero")
+        print("zero")
     } else {
-        kp("other")
+        print("other")
     }
 
     // Test string indexing
     let s = "abc"
-    kp(s[0])
-    kp(s[1])
-    kp(s[2])
+    print(s[0])
+    print(s[1])
+    print(s[2])
 
     // Test comparisons
     if 10 > 5 {
-        kp("10 > 5")
+        print("10 > 5")
     }
 
     // Test split and toInt
     let pair = "hello,world"
     let first = split(pair, 0)
     let second = split(pair, 1)
-    kp(first)
-    kp(second)
+    print(first)
+    print(second)
 
     // Test startsWith
     if startsWith("hello world", "hello") {
-        kp("starts with hello")
+        print("starts with hello")
     }
 
     // Test len
-    kp(len("test"))
+    print(len("test"))
 
     emit "ok"
 }

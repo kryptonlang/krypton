@@ -73,13 +73,13 @@ func evalRPN(tokens) {
 just run {
     // "3 4 + 2 *" = (3+4)*2 = 14
     let expr1 = "3,4,+,2,*"
-    kp(expr1 + " = " + evalRPN(expr1))
+    print(expr1 + " = " + evalRPN(expr1))
 
     // "5 1 2 + 4 * + 3 -" = 5+((1+2)*4)-3 = 14
     let expr2 = "5,1,2,+,4,*,+,3,-"
-    kp(expr2 + " = " + evalRPN(expr2))
+    print(expr2 + " = " + evalRPN(expr2))
 
     // "2 3 * 4 5 * +" = 6+20 = 26
     let expr3 = "2,3,*,4,5,*,+"
-    kp(expr3 + " = " + evalRPN(expr3))
+    print(expr3 + " = " + evalRPN(expr3))
 }

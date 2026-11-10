@@ -170,7 +170,7 @@ export func kr_range(start, end) {
 //   [base + 0 .. base + 7]   length qword  (count of data bytes; not NUL)
 //   [base + 8 .. base + N-1] data buffer (NUL-terminated within capacity)
 // User-facing pointer is `base + 8` — a normal NUL-terminated C-string
-// so len(sb) / kp(sb) / sb + s / etc. all work without changes.
+// so len(sb) / print(sb) / sb + s / etc. all work without changes.
 //
 // Capacity is read from the stage-1.5 alloc header at `base - 8`
 // (size+flags qword, low 2 bits masked off). On overflow, allocate a

@@ -7,12 +7,12 @@
 // inline x86-64 codegen (C-free), mirroring x64.k's Phase C buffer machinery.
 
 func check(name, expected, actual) {
-    if expected == actual { kp("[PASS] " + name) } else { kp("[FAIL] " + name + " exp=" + expected + " got=" + actual) }
+    if expected == actual { print("[PASS] " + name) } else { print("[FAIL] " + name + " exp=" + expected + " got=" + actual) }
 }
 
 just run {
-    kp("Buffer Builtin Tests")
-    kp("====================")
+    print("Buffer Builtin Tests")
+    print("====================")
     let b = bufNew(16)
     bufSetByte(b, 0, 72)    // 'H'
     bufSetByte(b, 1, 105)   // 'i'

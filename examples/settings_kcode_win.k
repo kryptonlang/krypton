@@ -48,13 +48,13 @@ func resolveKbackend() {
 
 just run {
     let s = loadSettings()
-    kp("config file: " + settingsDir(APP_NAME))
-    kp("")
-    kp("kcc       = " + resolveKcc())
-    kp("kls       = " + resolveKls())
-    kp("kbackend  = " + resolveKbackend())
-    kp("")
-    kp("font      = " + settingsGet(s, "font_family", "Consolas"))
-    kp("font size = " + settingsGet(s, "font_size", "11"))
-    kp("theme     = " + settingsGet(s, "theme", "system"))
+    print("config file: " + settingsDir(APP_NAME))
+    print("")
+    print("kcc       = " + resolveKcc())
+    print("kls       = " + resolveKls())
+    print("kbackend  = " + resolveKbackend())
+    print("")
+    print("font      = " + settingsGet(s, "font_family", "Consolas"))
+    print("font size = " + settingsGet(s, "font_size", "11"))
+    print("theme     = " + settingsGet(s, "theme", "system"))
 }

@@ -5,7 +5,7 @@ import "k:htmk"
 
 func expect(label, got, want) {
     if got != want {
-        kp("FAIL " + label)
+        print("FAIL " + label)
         exit("1")
     }
 }
@@ -24,5 +24,5 @@ just run {
     expect("hx-get",   htHxGet("/api"),           " hx-get=\"/api\"")
     expect("hx-swap",  htHxSwap("outerHTML"),     " hx-swap=\"outerHTML\"")
 
-    kp("ok")
+    print("ok")
 }

@@ -30,8 +30,8 @@ func nextPrime(n) {
 }
 
 just run {
-    kp("Prime Numbers up to 100:")
-    kp("========================")
+    print("Prime Numbers up to 100:")
+    print("========================")
     let primeCount = 0
     let sb = sbNew()
     let i = 2
@@ -45,12 +45,12 @@ just run {
         }
         i += 1
     }
-    kp(sbToString(sb))
-    kp("")
-    kp("Total primes found: " + primeCount)
+    print(sbToString(sb))
+    print("")
+    print("Total primes found: " + primeCount)
 
-    kp("")
-    kp("Prime gaps (consecutive primes and their differences):")
+    print("")
+    print("Prime gaps (consecutive primes and their differences):")
     let prev = 2
     let current = 3
     let gapCount = 0
@@ -58,13 +58,13 @@ just run {
         if isPrime(current) {
             let gap = current - prev
             if gap > 2 {
-                kp("  Gap of " + gap + " between " + prev + " and " + current)
+                print("  Gap of " + gap + " between " + prev + " and " + current)
                 gapCount = gapCount + 1
             }
             prev = current
         }
         current = current + 1
     }
-    kp("Gaps > 2 found: " + gapCount)
+    print("Gaps > 2 found: " + gapCount)
     emit "ok"
 }

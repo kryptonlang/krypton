@@ -12,13 +12,13 @@ func reverseStr(s) {
 
 just run {
     if argCount() < 1 {
-        kp("Usage: rev <file>")
+        print("Usage: rev <file>")
     } else {
         let content = readFile(arg(0))
         let lc = lineCount(content)
         let i = 0
         while i < lc {
-            kp(reverseStr(getLine(content, i)))
+            print(reverseStr(getLine(content, i)))
             i = i + 1
         }
     }

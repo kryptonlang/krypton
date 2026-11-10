@@ -1,3 +1,3 @@
 just run {
-    kp("hello world")
+    print("hello world")
 }

@@ -2,15 +2,15 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
 just run {
-    kp("Unary Operator Tests")
-    kp("====================")
+    print("Unary Operator Tests")
+    print("====================")
 
     // Unary negation
     let x = 5

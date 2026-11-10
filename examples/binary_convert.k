@@ -50,40 +50,40 @@ func padBinary(bin, width) {
 }
 
 just run {
-    kp("Binary Number Converter")
-    kp("=======================")
-    kp("")
+    print("Binary Number Converter")
+    print("=======================")
+    print("")
 
-    kp("Decimal to Binary:")
+    print("Decimal to Binary:")
     let nums = "0,1,2,7,8,15,16,42,100,255,256,1000"
     let total = count(nums)
     let i = 0
     while i < total {
         let n = toInt(split(nums, i))
         let bin = toBinary(n)
-        kp("  " + n + " => " + padBinary(bin, 12))
+        print("  " + n + " => " + padBinary(bin, 12))
         i += 1
     }
 
-    kp("")
-    kp("Binary to Decimal:")
+    print("")
+    print("Binary to Decimal:")
     let bins = "0,1,10,111,1000,1111,10000,101010,1100100,11111111"
     total = count(bins)
     i = 0
     while i < total {
         let b = split(bins, i)
         let dec = fromBinary(b)
-        kp("  " + padBinary(b, 12) + " => " + dec)
+        print("  " + padBinary(b, 12) + " => " + dec)
         i += 1
     }
 
     // Powers of 2 in binary
-    kp("")
-    kp("Powers of 2:")
+    print("")
+    print("Powers of 2:")
     let p = 1
     let exp = 0
     while exp <= 10 {
-        kp("  2^" + exp + " = " + p + " = " + padBinary(toBinary(p), 12))
+        print("  2^" + exp + " = " + p + " = " + padBinary(toBinary(p), 12))
         p = p * 2
         exp = exp + 1
     }

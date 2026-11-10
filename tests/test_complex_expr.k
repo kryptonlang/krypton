@@ -2,9 +2,9 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
@@ -30,8 +30,8 @@ func m_clamp(v, lo, hi) {
 }
 
 just run {
-    kp("Complex Expression Tests")
-    kp("========================")
+    print("Complex Expression Tests")
+    print("========================")
 
     // Multi-operation expressions
     check("chain ops", "30", "" + ((2 + 3) * (4 + 2)))

@@ -58,9 +58,9 @@ func decompress(s) {
 }
 
 just run {
-    kp("Run-Length Encoding")
-    kp("===================")
-    kp("")
+    print("Run-Length Encoding")
+    print("===================")
+    print("")
 
     let tests = "AAABBBCCCA,AABBBCCCC,ABCDE,AAAAAAA,AABBCCDD,ABABABAB"
     let total = count(tests)
@@ -70,16 +70,16 @@ just run {
         let compressed = compress(original)
         let decompressed = decompress(compressed)
         let ratio = (len(compressed) * 100) / len(original)
-        kp("  Original:     " + original)
-        kp("  Compressed:   " + compressed)
-        kp("  Decompressed: " + decompressed)
-        kp("  Ratio:        " + ratio + "% of original")
+        print("  Original:     " + original)
+        print("  Compressed:   " + compressed)
+        print("  Decompressed: " + decompressed)
+        print("  Ratio:        " + ratio + "% of original")
         let matched = "OK"
         if original != decompressed {
             matched = "MISMATCH"
         }
-        kp("  Verify:       " + matched)
-        kp("")
+        print("  Verify:       " + matched)
+        print("")
         i += 1
     }
     emit "ok"

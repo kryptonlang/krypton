@@ -9,8 +9,8 @@ func protocolIdentity(runtime, self, value) { emit value }
 func score(runtime, self) { emit 1 }
 
 func check(name, expected, actual) {
-    if expected != actual { kp("[FAIL] " + name); exit("1") }
-    kp("[PASS] " + name)
+    if expected != actual { print("[FAIL] " + name); exit("1") }
+    print("[PASS] " + name)
 }
 
 just run {

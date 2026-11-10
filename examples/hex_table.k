@@ -3,13 +3,13 @@
 
 just run {
     const title = "Number Base Conversion Table"
-    kp(title)
-    kp(repeat("=", len(title)))
+    print(title)
+    print(repeat("=", len(title)))
 
     // Header
     const header = padRight("Dec", 6, " ") + padRight("Hex", 8, " ") + "Bin"
-    kp(header)
-    kp(repeat("-", 28))
+    print(header)
+    print(repeat("-", 28))
 
     // Print table for 0-31
     for n in range(0, 32) {
@@ -17,16 +17,16 @@ just run {
         const hexStr = padRight("0x" + padLeft(hex(n), 2, "0"), 8, " ")
         const binStr = padLeft(bin(n), 8, "0")
 
-        kp(decStr + hexStr + binStr)
+        print(decStr + hexStr + binStr)
     }
 
-    kp(repeat("-", 28))
+    print(repeat("-", 28))
 
     // Show some larger values
-    kp("\nNotable values:")
+    print("\nNotable values:")
     const notable = "64,127,128,255,256,1000,1024,65535"
     for n in notable {
-        kp("  " + padRight(n, 6, " ") + "= 0x" + hex(n) + " = " + bin(n) + "b")
+        print("  " + padRight(n, 6, " ") + "= 0x" + hex(n) + " = " + bin(n) + "b")
     }
     emit "ok"
 }

@@ -1,4 +1,4 @@
 just run {
     let name = "World"
-    kp(`Hello, {name}!`)
+    print(`Hello, {name}!`)
 }

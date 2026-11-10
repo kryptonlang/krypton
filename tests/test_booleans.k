@@ -2,9 +2,9 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
@@ -58,8 +58,8 @@ func boolXor(a, b) {
 }
 
 just run {
-    kp("Boolean Tests")
-    kp("=============")
+    print("Boolean Tests")
+    print("=============")
 
     // Literals stringify to "true" / "false"
     check("true literal",  "true",  "" + true)

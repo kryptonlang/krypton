@@ -3,9 +3,9 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
@@ -17,8 +17,8 @@ func boolStr(val) {
 }
 
 just run {
-    kp("Comparison Tests")
-    kp("================")
+    print("Comparison Tests")
+    print("================")
 
     // Equality
     check("eq numbers", "true", boolStr(5 == 5))

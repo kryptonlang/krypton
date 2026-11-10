@@ -37,9 +37,9 @@ func activity(n) {
 
 just run {
     const title = "Weekly Planner"
-    kp(title)
-    kp(repeat("=", len(title)))
-    kp("")
+    print(title)
+    print(repeat("=", len(title)))
+    print("")
 
     let weekdays = 0
     let weekends = 0
@@ -59,7 +59,7 @@ just run {
         }
     }
 
-    kp("")
-    kp("Weekdays: " + weekdays + "  Weekend days: " + weekends)
+    print("")
+    print("Weekdays: " + weekdays + "  Weekend days: " + weekends)
     emit "ok"
 }

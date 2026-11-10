@@ -1,8 +1,8 @@
 just run {
     let x = 10 > 5
-    kp(x)
+    print(x)
     if x {
-        kp("yes")
+        print("yes")
     }
     emit "ok"
 }

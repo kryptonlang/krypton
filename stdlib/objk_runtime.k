@@ -3,7 +3,7 @@
 module objk_runtime
 
 func okKFail(message) {
-    kp("Objective-K: " + message)
+    print("Objective-K: " + message)
     exit("1")
 }
 

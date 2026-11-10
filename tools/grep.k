@@ -2,7 +2,7 @@
 
 just run {
     if argCount() < 2 {
-        kp("Usage: grep <pattern> <file>")
+        print("Usage: grep <pattern> <file>")
     } else {
         let pattern = arg(0)
         let filename = arg(1)
@@ -23,13 +23,13 @@ just run {
                 j = j + 1
             }
             if found {
-                kp(line)
+                print(line)
                 matches = matches + 1
             }
             i = i + 1
         }
         if matches == 0 {
-            kp("No matches found.")
+            print("No matches found.")
         }
     }
 }

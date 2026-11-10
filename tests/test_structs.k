@@ -17,23 +17,23 @@ just run {
     v.x = "1"
     v.y = "2"
     v.z = "3"
-    if v.x == "1" { kp("PASS constructor+assign") } else { kp("FAIL constructor+assign") }
-    if v.z == "3" { kp("PASS multi-field") } else { kp("FAIL multi-field") }
+    if v.x == "1" { print("PASS constructor+assign") } else { print("FAIL constructor+assign") }
+    if v.z == "3" { print("PASS multi-field") } else { print("FAIL multi-field") }
 
     // Struct literal
     let v2 = Vec { x: "10", y: "20", z: "30" }
-    if v2.x == "10" { kp("PASS literal x") } else { kp("FAIL literal x") }
-    if v2.y == "20" { kp("PASS literal y") } else { kp("FAIL literal y") }
-    if v2.z == "30" { kp("PASS literal z") } else { kp("FAIL literal z") }
+    if v2.x == "10" { print("PASS literal x") } else { print("FAIL literal x") }
+    if v2.y == "20" { print("PASS literal y") } else { print("FAIL literal y") }
+    if v2.z == "30" { print("PASS literal z") } else { print("FAIL literal z") }
 
     // Field update
     v2.x = "99"
-    if v2.x == "99" { kp("PASS field update") } else { kp("FAIL field update") }
+    if v2.x == "99" { print("PASS field update") } else { print("FAIL field update") }
 
     // Struct in function (nested func decl, hoisted by compile.k)
     func boxVal(b) { emit b.value }
     let b = Box { label: "score", value: "42" }
-    if boxVal(b) == "42" { kp("PASS struct in func") } else { kp("FAIL struct in func") }
+    if boxVal(b) == "42" { print("PASS struct in func") } else { print("FAIL struct in func") }
 
     // Dynamic struct
     // Per spec, setField returns the updated env; assign back so the
@@ -42,11 +42,11 @@ just run {
     let obj = structNew()
     obj = setField(obj, "a", "hello")
     obj = setField(obj, "b", "world")
-    if getField(obj, "a") == "hello" { kp("PASS dynamic get") } else { kp("FAIL dynamic get") }
-    if hasField(obj, "b") == "1" { kp("PASS hasField") } else { kp("FAIL hasField") }
-    if hasField(obj, "z") == "0" { kp("PASS hasField missing") } else { kp("FAIL hasField missing") }
+    if getField(obj, "a") == "hello" { print("PASS dynamic get") } else { print("FAIL dynamic get") }
+    if hasField(obj, "b") == "1" { print("PASS hasField") } else { print("FAIL hasField") }
+    if hasField(obj, "z") == "0" { print("PASS hasField missing") } else { print("FAIL hasField missing") }
     let fields = structFields(obj)
-    if contains(fields, "a") { kp("PASS structFields") } else { kp("FAIL structFields") }
+    if contains(fields, "a") { print("PASS structFields") } else { print("FAIL structFields") }
 
-    kp("struct tests done")
+    print("struct tests done")
 }

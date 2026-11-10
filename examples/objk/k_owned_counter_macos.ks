@@ -78,15 +78,15 @@ just run {
         msg_1(plus, "performClick:", 0)
         msg_1(minus, "performClick:", 0)
         if okKSend(counterRuntime, counterModel, "value") != 1 || text(counterDisplay) != "1" {
-            kp("[FAIL] K model/native callback integration")
+            print("[FAIL] K model/native callback integration")
             exit("1")
         }
         doKRelease(counterRuntime, counterState)
         if okKRefCount(counterRuntime, counterModel) != 0 || counterCleanupRuns != 1 {
-            kp("[FAIL] K model ownership cleanup")
+            print("[FAIL] K model ownership cleanup")
             exit("1")
         }
-        kp("[PASS] K model/native callback integration")
+        print("[PASS] K model/native callback integration")
         exit("0")
     }
 

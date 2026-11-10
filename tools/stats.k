@@ -15,7 +15,7 @@ func isBlankLine(line) {
 
 just run {
     if argCount() < 1 {
-        kp("Usage: stats <file>")
+        print("Usage: stats <file>")
     } else {
         let filename = arg(0)
         let content = readFile(filename)
@@ -37,15 +37,15 @@ just run {
             i = i + 1
         }
 
-        kp("File: " + filename)
-        kp("Characters: " + chars)
-        kp("Lines: " + lc)
-        kp("Blank lines: " + blank)
-        kp("Non-blank: " + (lc - blank))
+        print("File: " + filename)
+        print("Characters: " + chars)
+        print("Lines: " + lc)
+        print("Blank lines: " + blank)
+        print("Non-blank: " + (lc - blank))
         if lc > 0 {
-            kp("Longest line: " + longest + " chars")
-            kp("Shortest line: " + shortest + " chars")
-            kp("Avg line length: " + (totalLen / lc) + " chars")
+            print("Longest line: " + longest + " chars")
+            print("Shortest line: " + shortest + " chars")
+            print("Avg line length: " + (totalLen / lc) + " chars")
         }
     }
 }

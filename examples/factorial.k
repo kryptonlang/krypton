@@ -18,6 +18,6 @@ func factIterative(n) {
 just run {
     for n in range(0, 13) {
         let ni = toInt(n)
-        kp(`{n}! = ` + factRecursive(ni))
+        print(`{n}! = ` + factRecursive(ni))
     }
 }

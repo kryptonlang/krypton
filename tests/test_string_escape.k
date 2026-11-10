@@ -2,15 +2,15 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
 just run {
-    kp("String Escape Tests")
-    kp("===================")
+    print("String Escape Tests")
+    print("===================")
 
     // Newline
     let nl = "a\nb"

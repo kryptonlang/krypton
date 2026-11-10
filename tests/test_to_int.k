@@ -2,15 +2,15 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
 just run {
-    kp("toInt Tests")
-    kp("===========")
+    print("toInt Tests")
+    print("===========")
 
     check("zero", "0", "" + toInt("0"))
     check("one", "1", "" + toInt("1"))

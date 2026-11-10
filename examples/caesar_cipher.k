@@ -44,24 +44,24 @@ func decrypt(text, shift) {
 }
 
 just run {
-    kp("Caesar Cipher")
-    kp("=============")
+    print("Caesar Cipher")
+    print("=============")
 
     let message = "Hello World from Krypton"
     let shift = 3
 
-    kp("Original:  " + message)
+    print("Original:  " + message)
     let encrypted = encrypt(message, shift)
-    kp("Encrypted: " + encrypted + " (shift=" + shift + ")")
+    print("Encrypted: " + encrypted + " (shift=" + shift + ")")
     let decrypted = decrypt(encrypted, shift)
-    kp("Decrypted: " + decrypted)
-    kp("")
+    print("Decrypted: " + decrypted)
+    print("")
 
     // Try all shifts
-    kp("All possible decryptions of '" + encrypted + "':")
+    print("All possible decryptions of '" + encrypted + "':")
     let s = 0
     while s < 26 {
-        kp("  shift " + s + ": " + decrypt(encrypted, s))
+        print("  shift " + s + ": " + decrypt(encrypted, s))
         s = s + 1
     }
     emit "ok"

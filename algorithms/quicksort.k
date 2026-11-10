@@ -89,21 +89,21 @@ func sortList(lst) {
 }
 
 just run {
-    kp("Quicksort")
-    kp("=========")
+    print("Quicksort")
+    print("=========")
     let cases = "5,3,8,1,4,2,7,6"
-    kp("  in:  " + cases)
-    kp("  out: " + sortList(cases))
+    print("  in:  " + cases)
+    print("  out: " + sortList(cases))
 
     let small = "3,1,2"
-    kp("  in:  " + small)
-    kp("  out: " + sortList(small))
+    print("  in:  " + small)
+    print("  out: " + sortList(small))
 
     let dup = "4,2,4,1,2,4,1"
-    kp("  in:  " + dup)
-    kp("  out: " + sortList(dup))
+    print("  in:  " + dup)
+    print("  out: " + sortList(dup))
 
     let one = "42"
-    kp("  in:  " + one)
-    kp("  out: " + sortList(one))
+    print("  in:  " + one)
+    print("  out: " + sortList(one))
 }

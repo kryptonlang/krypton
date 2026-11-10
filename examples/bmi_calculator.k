@@ -31,15 +31,15 @@ func formatBMI(bmi10) {
 }
 
 just run {
-    kp("BMI Calculator")
-    kp("==============")
-    kp("")
+    print("BMI Calculator")
+    print("==============")
+    print("")
 
     // Sample data: weight(kg), height(cm)
-    kp("Sample calculations:")
-    kp("")
-    kp("Weight(kg)  Height(cm)  BMI      Category")
-    kp("----------  ----------  -------  -----------")
+    print("Sample calculations:")
+    print("")
+    print("Weight(kg)  Height(cm)  BMI      Category")
+    print("----------  ----------  -------  -----------")
 
     let weights = "50,60,70,75,80,90,100,110"
     let heights = "160,165,170,175,180,175,180,185"
@@ -58,15 +58,15 @@ just run {
         let bStr = formatBMI(bmi)
         while len(bStr) < 8 { bStr = bStr + " " }
 
-        kp(wStr + "  " + hStr + "  " + bStr + " " + cat)
+        print(wStr + "  " + hStr + "  " + bStr + " " + cat)
         i += 1
     }
 
-    kp("")
-    kp("BMI Ranges:")
-    kp("  < 18.5  : Underweight")
-    kp("  18.5-24.9: Normal")
-    kp("  25.0-29.9: Overweight")
-    kp("  >= 30.0 : Obese")
+    print("")
+    print("BMI Ranges:")
+    print("  < 18.5  : Underweight")
+    print("  18.5-24.9: Normal")
+    print("  25.0-29.9: Overweight")
+    print("  >= 30.0 : Obese")
     emit "ok"
 }

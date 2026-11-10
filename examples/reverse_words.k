@@ -35,9 +35,9 @@ just run {
     while i < n {
         let ch = inputs[i]
         if ch == "|" {
-            kp("input:  " + cur)
-            kp("output: " + reverseWords(cur))
-            kp("")
+            print("input:  " + cur)
+            print("output: " + reverseWords(cur))
+            print("")
             cur = ""
         } else {
             cur = cur + ch
@@ -45,7 +45,7 @@ just run {
         i += 1
     }
     if len(cur) > 0 {
-        kp("input:  " + cur)
-        kp("output: " + reverseWords(cur))
+        print("input:  " + cur)
+        print("output: " + reverseWords(cur))
     }
 }

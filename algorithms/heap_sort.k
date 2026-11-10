@@ -70,17 +70,17 @@ func heapSort(lst) {
 }
 
 just run {
-    kp("Heap Sort")
-    kp("=========")
+    print("Heap Sort")
+    print("=========")
     let cases = "5,3,8,1,4,2,7,6"
-    kp("  in:  " + cases)
-    kp("  out: " + heapSort(cases))
+    print("  in:  " + cases)
+    print("  out: " + heapSort(cases))
 
     let rev = "9,8,7,6,5,4,3,2,1"
-    kp("  in:  " + rev)
-    kp("  out: " + heapSort(rev))
+    print("  in:  " + rev)
+    print("  out: " + heapSort(rev))
 
     let dup = "4,2,4,1,2,4,1"
-    kp("  in:  " + dup)
-    kp("  out: " + heapSort(dup))
+    print("  in:  " + dup)
+    print("  out: " + heapSort(dup))
 }

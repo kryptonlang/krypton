@@ -3,15 +3,15 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
 just run {
-    kp("Substring Tests")
-    kp("===============")
+    print("Substring Tests")
+    print("===============")
 
     let s = "Hello, World!"
 

@@ -10,11 +10,11 @@ func checkBundle(root, src, name) {
         src + " " + name + " >" + log + " 2>&1"
     let rc = shellRun(cmd)
     if rc != "0" {
-        kp("FAIL iOS " + name + " rc=" + rc)
-        kp(trim(exec("tail -20 " + log)))
+        print("FAIL iOS " + name + " rc=" + rc)
+        print(trim(exec("tail -20 " + log)))
         exit("1")
     }
-    kp("OK iOS " + name)
+    print("OK iOS " + name)
 }
 
 just run {
@@ -31,6 +31,6 @@ just run {
     checkBundle(root, "examples/ios/visual_touch.ks", "KryptonTouch")
 
     if trim(exec(xcrun + " --find simctl 2>/dev/null")) == "" {
-        kp("SKIP iOS launch: Simulator tools missing")
+        print("SKIP iOS launch: Simulator tools missing")
     }
 }

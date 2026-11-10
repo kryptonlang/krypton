@@ -3,15 +3,15 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
 just run {
-    kp("While/Break Tests")
-    kp("=================")
+    print("While/Break Tests")
+    print("=================")
 
     // Basic while
     let sum = 0

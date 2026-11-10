@@ -37,7 +37,7 @@ just run {
     let rc = shellRun(q(root + "/bootstrap/kcc_driver_macos_aarch64") +
         " --target ios-sim-arm64 " + q(src) + " -o " + q(executable))
     if rc != "0" {
-        kp("build-ios-app: compiler failed rc=" + rc)
+        print("build-ios-app: compiler failed rc=" + rc)
         exit("1")
     }
 
@@ -62,29 +62,29 @@ just run {
 
     let signRc = shellRun("codesign --force --sign - " + q(app))
     if signRc != "0" {
-        kp("build-ios-app: ad-hoc signing failed rc=" + signRc)
+        print("build-ios-app: ad-hoc signing failed rc=" + signRc)
         exit("1")
     }
 
-    kp("built " + app)
+    print("built " + app)
     if launch == 1 {
         if trim(exec(xcrun + " --find simctl 2>/dev/null")) == "" {
-            kp("build-ios-app: iOS Simulator tools missing; install Simulator runtime in Xcode")
+            print("build-ios-app: iOS Simulator tools missing; install Simulator runtime in Xcode")
             exit("1")
         }
         let installRc = shellRun(xcrun + " simctl install booted " + q(app))
         if installRc != "0" {
-            kp("build-ios-app: simulator install failed rc=" + installRc)
+            print("build-ios-app: simulator install failed rc=" + installRc)
             exit("1")
         }
         let launchRc = shellRun(xcrun + " simctl launch booted " + bundleId)
         if launchRc != "0" {
-            kp("build-ios-app: simulator launch failed rc=" + launchRc)
+            print("build-ios-app: simulator launch failed rc=" + launchRc)
             exit("1")
         }
-        kp("launched " + bundleId)
+        print("launched " + bundleId)
     } else {
-        kp("install: " + xcrun + " simctl install booted " + q(app))
-        kp("launch:  " + xcrun + " simctl launch booted " + bundleId)
+        print("install: " + xcrun + " simctl install booted " + q(app))
+        print("launch:  " + xcrun + " simctl launch booted " + bundleId)
     }
 }

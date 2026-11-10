@@ -233,10 +233,10 @@ func _isWordBoundaryBefore(s, i) {
 // Krypton has no interpreter, so this is an accumulating REPL: lines
 // starting with `import`/`func`/`struct`/`let` are remembered and
 // re-emitted around each new line, which is compiled + run fresh.
-// Bare expressions/statements run once (type `kp(expr)` to see a value).
+// Bare expressions/statements run once (type `print(expr)` to see a value).
 
 func _repl() {
-    kp("KryptScript REPL — Krypton 2.3.0  (:help, :q to quit)")
+    print("KryptScript REPL — Krypton 2.3.0  (:help, :q to quit)")
     let imports = sbNew()
     let defs = sbNew()
     // readLine returns "" both for "user hit Enter" and "stdin closed".
@@ -256,7 +256,7 @@ func _repl() {
         if line == ":quit"  { break }
         if line == ":exit"  { break }
         if line == ":help"  { _replHelp() continue }
-        if line == ":reset" { imports = sbNew()  defs = sbNew()  kp("(state cleared)") continue }
+        if line == ":reset" { imports = sbNew()  defs = sbNew()  print("(state cleared)") continue }
         if line == ":list"  { _replList(imports, defs) continue }
 
         // Multi-line continuation until braces balance.
@@ -311,23 +311,23 @@ func _repl() {
         DeleteFileA(tmpExe)
         DeleteFileA(tmp)
     }
-    kp("bye")
+    print("bye")
 }
 
 func _replHelp() {
-    kp("  Krypton expressions/statements run immediately.")
-    kp("  import/func/struct/let are remembered for later lines.")
-    kp("  :list   show remembered defs    :reset  clear them")
-    kp("  :q      quit                    (Ctrl-Z+Enter also quits)")
+    print("  Krypton expressions/statements run immediately.")
+    print("  import/func/struct/let are remembered for later lines.")
+    print("  :list   show remembered defs    :reset  clear them")
+    print("  :q      quit                    (Ctrl-Z+Enter also quits)")
 }
 
 func _replList(imports, defs) {
     let i = sbToString(imports)
     let d = sbToString(defs)
-    if len(i) > 0 { kp(i) }
-    if len(d) > 0 { kp(d) }
+    if len(i) > 0 { print(i) }
+    if len(d) > 0 { print(d) }
     if len(i) == 0 {
-        if len(d) == 0 { kp("(nothing remembered yet)") }
+        if len(d) == 0 { print("(nothing remembered yet)") }
     }
 }
 

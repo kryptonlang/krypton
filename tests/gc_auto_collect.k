@@ -16,18 +16,18 @@ just run {
         i = i + 1
     }
     let live = gcAllocCount()
-    kp("live=" + live)
-    kp("s=" + s)
+    print("live=" + live)
+    print("s=" + s)
     // s must be intact (safepoint preserved the live root across collects).
     if s != "x599" {
-        kp("[FAIL] live root corrupted by auto-collect: " + s)
+        print("[FAIL] live root corrupted by auto-collect: " + s)
         exit("1")
     }
     // With a 100-alloc threshold over 600 allocs the live set must stay small —
     // far below the ~600 we'd see with auto-collect disabled.
     if toInt(live) > 50 {
-        kp("[FAIL] auto-collect did not bound the live set: " + live)
+        print("[FAIL] auto-collect did not bound the live set: " + live)
         exit("1")
     }
-    kp("[OK] auto-collect fired; live root preserved")
+    print("[OK] auto-collect fired; live root preserved")
 }

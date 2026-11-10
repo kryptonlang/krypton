@@ -36,34 +36,34 @@ just run {
     let t3 = createTask("3", "Update docs", "medium")
     let t4 = createTask("4", "Fix bug #42", "low")
 
-    kp("=== Task Manager ===")
-    kp(taskSummary(t1))
-    kp(taskSummary(t2))
-    kp(taskSummary(t3))
-    kp(taskSummary(t4))
+    print("=== Task Manager ===")
+    print(taskSummary(t1))
+    print(taskSummary(t2))
+    print(taskSummary(t3))
+    print(taskSummary(t4))
 
     // Complete a task
     t1 = completTask(t1)
-    kp("")
-    kp("After completing task 1:")
-    kp(taskSummary(t1))
+    print("")
+    print("After completing task 1:")
+    print(taskSummary(t1))
 
     // Exception handling for invalid operations
     try {
         let badPriority = "critical"
         match badPriority {
-            "high"   { kp("high priority") }
-            "medium" { kp("medium priority") }
-            "low"    { kp("low priority") }
+            "high"   { print("high priority") }
+            "medium" { print("medium priority") }
+            "low"    { print("low priority") }
             else     { throw `unknown priority: {badPriority}` }
         }
     } catch e {
-        kp(`Error: {e}`)
+        print(`Error: {e}`)
     }
 
     // Summary stats
     let total = 4
     let done = 1
-    kp("")
-    kp(`Progress: {done}/{total} tasks complete`)
+    print("")
+    print(`Progress: {done}/{total} tasks complete`)
 }

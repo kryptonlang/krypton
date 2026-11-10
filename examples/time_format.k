@@ -17,6 +17,6 @@ just run {
     let cases = "0,7,59,60,61,3599,3600,3661,86399,90061"
     for c in cases {
         let n = toInt(c)
-        kp(c + " seconds = " + format(n))
+        print(c + " seconds = " + format(n))
     }
 }

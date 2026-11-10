@@ -11,22 +11,22 @@ interface Doubler {
     func plus(m)
 }
 
-func double(n)    { return n * 2 }
-func plus(n, m)   { return n + m }
-func describe(n)  { return "n=" + n }
-func shout(s)     { return s + "!" }
+func double(n)    { emit n * 2 }
+func plus(n, m)   { emit n + m }
+func describe(n)  { emit "n=" + n }
+func shout(s)     { emit s + "!" }
 
 just run {
     let x = 21
-    if x.double() != 42 { kp("[FAIL] method no-arg on int"); exit("1") }
-    if x.plus(9) != 30 { kp("[FAIL] method with arg"); exit("1") }
-    if x.describe() != "n=21" { kp("[FAIL] method returning string"); exit("1") }
+    if x.double() != 42 { print("[FAIL] method no-arg on int"); exit("1") }
+    if x.plus(9) != 30 { print("[FAIL] method with arg"); exit("1") }
+    if x.describe() != "n=21" { print("[FAIL] method returning string"); exit("1") }
 
     let s = "hi"
-    if s.shout() != "hi!" { kp("[FAIL] method on string receiver"); exit("1") }
+    if s.shout() != "hi!" { print("[FAIL] method on string receiver"); exit("1") }
 
     let y = x.double()          // 42
-    if y.plus(x) != 63 { kp("[FAIL] method result reused as receiver"); exit("1") }
+    if y.plus(x) != 63 { print("[FAIL] method result reused as receiver"); exit("1") }
 
-    kp("[PASS] interfaces (UFCS dispatch on value receivers + interface decl)")
+    print("[PASS] interfaces (UFCS dispatch on value receivers + interface decl)")
 }

@@ -31,20 +31,20 @@ func findPattern(text, pattern) {
 just run {
     let text = "AABAACAADAABAABA"
     let pattern = "AABA"
-    kp("Text: " + text)
-    kp("Pattern: " + pattern)
+    print("Text: " + text)
+    print("Pattern: " + pattern)
 
     let positions = findPattern(text, pattern)
     if len(positions) > 0 {
-        kp("Found at positions: " + positions)
+        print("Found at positions: " + positions)
         let n = count(positions)
         let i = 0
         while i < n {
             let pos = toInt(split(positions, i))
-            kp("  Position " + pos + ": " + substring(text, pos, pos + len(pattern)))
+            print("  Position " + pos + ": " + substring(text, pos, pos + len(pattern)))
             i += 1
         }
     } else {
-        kp("Pattern not found")
+        print("Pattern not found")
     }
 }

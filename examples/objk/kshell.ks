@@ -9,7 +9,7 @@ func dsSelect(self, cmd, notif) {
   let tv = msg(notif, "object")
   let row = msg(tv, "selectedRow")
   let editor = cocoaGetAssoc(self)
-  cocoaTVSetString(editor, "// src/file_" + row + ".k  (loaded by a pure-Krypton delegate)\nfunc f" + row + "() {\n    kp(\"this is file " + row + "\")\n}\n")
+  cocoaTVSetString(editor, "// src/file_" + row + ".k  (loaded by a pure-Krypton delegate)\nfunc f" + row + "() {\n    print(\"this is file " + row + "\")\n}\n")
 }
 
 just run {

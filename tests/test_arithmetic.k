@@ -3,15 +3,15 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
 just run {
-    kp("Arithmetic Tests")
-    kp("================")
+    print("Arithmetic Tests")
+    print("================")
 
     // Addition
     check("add positive", "5", "" + (2 + 3))

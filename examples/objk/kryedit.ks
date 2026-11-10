@@ -39,13 +39,13 @@ func onSave(self, cmd, sender) {
   let tv = cocoaGetAssoc(sender)
   let path = arg(0)
   writeFile(path, cocoaTVGetString(tv))
-  kp("saved: " + path)
+  print("saved: " + path)
 }
 
 just run {
   let path = arg(0)
   let src = readFile(path)
-  if len(src) == 0 { src = "// kryedit — pure-Krypton editor on objk\nfunc hello() {\n    kp(\"hi\")\n}\n" }
+  if len(src) == 0 { src = "// kryedit — pure-Krypton editor on objk\nfunc hello() {\n    print(\"hi\")\n}\n" }
 
   let app = cocoaInit()
   let win = cocoaWindow(app, "kryedit — " + path, 760, 560)

@@ -1277,11 +1277,11 @@ func onOpen(self, cmd, sender) { let f = chooseFile()  if len(f) > 0 { openTab(f
 func onSave(self, cmd, sender) {
   let app = appH()
   let cp = cocoaGetAssocKey(app, "brain.curpath")
-  if cp == 0 { kp("brain: no file open")  emit "1" }
+  if cp == 0 { print("brain: no file open")  emit "1" }
   let path = msg(cp, "UTF8String")
   saveCurTab()
   writeFile(path, cocoaTVGetString(cocoaGetAssocKey(app, "brain.editor")))
-  kp("brain: saved " + path)
+  print("brain: saved " + path)
 }
 
 // ── integrated console (run shell commands, see output) ────────────────

@@ -25,8 +25,8 @@ func reverseStr(s) {
 }
 
 just run {
-    kp("Palindrome Checker")
-    kp("==================")
+    print("Palindrome Checker")
+    print("==================")
 
     let words = "racecar,hello,madam,level,world,kayak,rotator,noon,civic,python"
     let total = count(words)
@@ -35,9 +35,9 @@ just run {
         let word = split(words, i)
         let reversed = reverseStr(word)
         if isPalindrome(word) {
-            kp("  '" + word + "' -> palindrome (reversed: " + reversed + ")")
+            print("  '" + word + "' -> palindrome (reversed: " + reversed + ")")
         } else {
-            kp("  '" + word + "' -> NOT a palindrome (reversed: " + reversed + ")")
+            print("  '" + word + "' -> NOT a palindrome (reversed: " + reversed + ")")
         }
         i += 1
     }

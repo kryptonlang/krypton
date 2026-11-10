@@ -4,6 +4,6 @@ func add(a, b) {
 
 just run {
     let x = add(3, 4)
-    kp(x)
+    print(x)
     emit "ok"
 }

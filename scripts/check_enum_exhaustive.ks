@@ -38,37 +38,37 @@ func syntaxReject(root, source, expected, log) {
     let binary = log + ".bin"
     let stage = compileFixture(root, source, binary, log)
     if stage == "ok" {
-        kp("FAIL no diagnostic for " + source)
-        kp(readFile(log))
+        print("FAIL no diagnostic for " + source)
+        print(readFile(log))
         exit("1")
     }
     if !contains(readFile(log), expected) {
-        kp("FAIL wrong diagnostic for " + source)
-        kp(readFile(log))
+        print("FAIL wrong diagnostic for " + source)
+        print(readFile(log))
         exit("1")
     }
-    kp("OK rejects " + source)
+    print("OK rejects " + source)
 }
 
 func syntaxAccept(root, source, log) {
     let binary = log + ".bin"
     let stage = compileFixture(root, source, binary, log)
     if stage != "ok" {
-        kp("FAIL compile " + source)
-        kp(readFile(log))
+        print("FAIL compile " + source)
+        print(readFile(log))
         exit("1")
     }
-    kp("OK accepts " + source)
+    print("OK accepts " + source)
 }
 
 just run {
     if trim(exec("uname -s")) != "Darwin" {
-        kp("SKIP macOS enum exhaustiveness checks")
+        print("SKIP macOS enum exhaustiveness checks")
         exit("0")
     }
     let root = trim(exec("pwd"))
     let work = trim(exec("mktemp -d /tmp/check_enum_exh.XXXXXX"))
-    if work == "" { kp("FAIL temporary directory"); exit("1") }
+    if work == "" { print("FAIL temporary directory"); exit("1") }
     let log = work + "/run.log"
     syntaxReject(root, "tests/macos/fixtures/enum_exhaustive_missing.k",
         "non-exhaustive switch on State", log)
@@ -97,5 +97,5 @@ just run {
     syntaxAccept(root, "tests/macos/fixtures/enum_exhaustive_ambiguous.k", log)
     syntaxAccept(root, "tests/macos/fixtures/enum_exhaustive_int_full.k", log)
     syntaxAccept(root, "tests/macos/fixtures/enum_exhaustive_hex_ok.k", log)
-    kp("OK enum exhaustiveness checks")
+    print("OK enum exhaustiveness checks")
 }

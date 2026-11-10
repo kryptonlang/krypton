@@ -23,7 +23,7 @@ func _argsFor(name) {
 just run {
     let list = exec("cmd /C dir /b tools\\*.k")
     if len(list) == 0 {
-        kp("FAIL: no tools/")
+        print("FAIL: no tools/")
         exit("1")
     }
     let pass = 0
@@ -62,9 +62,9 @@ just run {
         }
         i += 1
     }
-    kp("PASS=" + pass + " FAIL=" + fail)
+    print("PASS=" + pass + " FAIL=" + fail)
     if fail > 0 {
-        kp("FAILED:" + failed)
+        print("FAILED:" + failed)
         exit("1")
     }
 }

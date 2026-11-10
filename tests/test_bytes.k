@@ -3,8 +3,8 @@
 import "k:bytes"
 
 func bytesCheck(name, ok) {
-    if ok { kp("[PASS] " + name) }
-    else { kp("[FAIL] " + name)  exit("1") }
+    if ok { print("[PASS] " + name) }
+    else { print("[FAIL] " + name)  exit("1") }
 }
 
 func byteAt(s, i) { emit toInt(charCode(substring(s, i, i + 1))) }
@@ -15,7 +15,7 @@ just run {
     while i < 256 { bytesSet(all, i, i)  i += 1 }
     i = 0
     while i < 256 {
-        if toInt(bytesGet(all, i)) != i { kp("[FAIL] all byte values at " + i)  exit("1") }
+        if toInt(bytesGet(all, i)) != i { print("[FAIL] all byte values at " + i)  exit("1") }
         i += 1
     }
     bytesCheck("all 256 byte values survive", 1)
@@ -86,5 +86,5 @@ just run {
     let roundtrip = utf16leDecode(wide, 1)
     bytesCheck("UTF-16LE supplementary roundtrip", len(roundtrip) == 4 && byteAt(roundtrip, 0) == 240 && byteAt(roundtrip, 3) == 128)
 
-    kp("[PASS] binary buffer acceptance suite")
+    print("[PASS] binary buffer acceptance suite")
 }

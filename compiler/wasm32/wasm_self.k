@@ -1244,7 +1244,7 @@ func wasmTypes() {
 
 func wasmImports() {
     // 11 imports total. Slots 0,1 stay as console_log / console_log_int
-    // (the lesson kp() pipeline depends on those exact indices). Slots 2-10
+    // (the lesson print() pipeline depends on those exact indices). Slots 2-10
     // are the browser-side surface KryptScript .ks files use to drive the
     // DOM canvas (see WASM host ABI notes). All declared
     // unconditionally — unused imports are zero-cost overhead, but having

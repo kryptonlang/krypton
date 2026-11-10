@@ -21,27 +21,27 @@ func countFileLines(content) {
 
 // Print a line with a prefix
 func printWithPrefix(prefix, msg) {
-    kp(prefix + msg)
+    print(prefix + msg)
 }
 
 // Print an error message
 func printError(msg) {
-    kp("[ERROR] " + msg)
+    print("[ERROR] " + msg)
 }
 
 // Print a warning message
 func printWarning(msg) {
-    kp("[WARN]  " + msg)
+    print("[WARN]  " + msg)
 }
 
 // Print an info message
 func printInfo(msg) {
-    kp("[INFO]  " + msg)
+    print("[INFO]  " + msg)
 }
 
 // Print a debug message
 func printDebug(msg) {
-    kp("[DEBUG] " + msg)
+    print("[DEBUG] " + msg)
 }
 
 // Print a numbered list from a comma-separated list
@@ -50,7 +50,7 @@ func printNumbered(list) {
     let i = 0
     while i < size {
         let num = i + 1
-        kp("" + num + ". " + split(list, i))
+        print("" + num + ". " + split(list, i))
         i += 1
     }
 }
@@ -63,14 +63,14 @@ func printHeader(title) {
         line = line + "="
         i += 1
     }
-    kp(line)
-    kp("  " + title)
-    kp(line)
+    print(line)
+    print("  " + title)
+    print(line)
 }
 
 // Print a blank line
 func printBlank() {
-    kp("")
+    print("")
 }
 
 // Read command line argument with default
@@ -85,7 +85,7 @@ func argOrDefault(idx, defaultVal) {
 func printArgs() {
     let i = 0
     while i < argCount() {
-        kp("arg[" + i + "] = " + arg(i))
+        print("arg[" + i + "] = " + arg(i))
         i += 1
     }
 }

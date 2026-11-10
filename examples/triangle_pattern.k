@@ -2,7 +2,7 @@
 // Various triangle shapes using characters
 
 func rightTriangle(n) {
-    kp("Right Triangle:")
+    print("Right Triangle:")
     let i = 1
     while i <= n {
         let sb = sbNew()
@@ -11,13 +11,13 @@ func rightTriangle(n) {
             sb = sbAppend(sb, "*")
             j += 1
         }
-        kp(sbToString(sb))
+        print(sbToString(sb))
         i += 1
     }
 }
 
 func invertedTriangle(n) {
-    kp("Inverted Triangle:")
+    print("Inverted Triangle:")
     let i = n
     while i >= 1 {
         let sb = sbNew()
@@ -26,13 +26,13 @@ func invertedTriangle(n) {
             sb = sbAppend(sb, "*")
             j += 1
         }
-        kp(sbToString(sb))
+        print(sbToString(sb))
         i -= 1
     }
 }
 
 func centeredTriangle(n) {
-    kp("Centered Triangle:")
+    print("Centered Triangle:")
     let i = 1
     while i <= n {
         let sb = sbNew()
@@ -47,13 +47,13 @@ func centeredTriangle(n) {
             sb = sbAppend(sb, "*")
             j += 1
         }
-        kp(sbToString(sb))
+        print(sbToString(sb))
         i += 1
     }
 }
 
 func numberTriangle(n) {
-    kp("Number Triangle:")
+    print("Number Triangle:")
     let i = 1
     while i <= n {
         let sb = sbNew()
@@ -62,13 +62,13 @@ func numberTriangle(n) {
             sb = sbAppend(sb, "" + j)
             j += 1
         }
-        kp(sbToString(sb))
+        print(sbToString(sb))
         i += 1
     }
 }
 
 func pascalTriangle(n) {
-    kp("Pascal's Triangle:")
+    print("Pascal's Triangle:")
     let row = "1"
     let i = 0
     while i < n {
@@ -89,7 +89,7 @@ func pascalTriangle(n) {
             sb = sbAppend(sb, split(row, j))
             j += 1
         }
-        kp(sbToString(sb))
+        print(sbToString(sb))
 
         // Compute next row
         let newRow = "1"
@@ -108,13 +108,13 @@ func pascalTriangle(n) {
 just run {
     let size = 6
     rightTriangle(size)
-    kp("")
+    print("")
     invertedTriangle(size)
-    kp("")
+    print("")
     centeredTriangle(size)
-    kp("")
+    print("")
     numberTriangle(size)
-    kp("")
+    print("")
     pascalTriangle(7)
     emit "ok"
 }

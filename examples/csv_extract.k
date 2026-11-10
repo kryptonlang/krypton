@@ -21,7 +21,7 @@ func column(row, idx) {
 }
 
 func processRow(row) {
-    kp("  name=" + column(row, 0) + "  age=" + column(row, 1) + "  role=" + column(row, 2))
+    print("  name=" + column(row, 0) + "  age=" + column(row, 1) + "  role=" + column(row, 2))
 }
 
 just run {
@@ -29,7 +29,7 @@ just run {
     let n = len(data)
     let i = 0
     let cur = ""
-    kp("Parsed rows:")
+    print("Parsed rows:")
     while i < n {
         let ch = data[i]
         if ch == "|" {

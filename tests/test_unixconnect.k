@@ -11,12 +11,12 @@
 // there would crash rather than return cleanly).
 
 func check(name, cond) {
-    if cond { kp("[PASS] " + name) } else { kp("[FAIL] " + name) }
+    if cond { print("[PASS] " + name) } else { print("[FAIL] " + name) }
 }
 
 just run {
-    kp("unixConnect Tests")
-    kp("=================")
+    print("unixConnect Tests")
+    print("=================")
     let r = unixConnect("/tmp/.krypton-no-such-socket-zzzz")
     check("bogus path returns negative errno", r < 0)
     check("ENOENT (-2) for missing socket",    r == 0 - 2)

@@ -4,10 +4,10 @@ let weakCleanupCount = 0
 
 func check(name, expected, actual) {
     if expected != actual {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
         exit("1")
     }
-    kp("[PASS] " + name)
+    print("[PASS] " + name)
 }
 
 func weakCleanup(runtime, self) {

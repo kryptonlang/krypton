@@ -3,8 +3,8 @@
 import "k:process_win"
 
 func processWinCheck(name, ok) {
-    if ok { kp("[PASS] " + name) }
-    else { kp("[FAIL] " + name)  exit("1") }
+    if ok { print("[PASS] " + name) }
+    else { print("[FAIL] " + name)  exit("1") }
 }
 
 just run {
@@ -26,7 +26,7 @@ just run {
     let child = processSpawn(powershell, args, environment, "C:\\Windows", options)
     processWinCheck("CreateProcessW spawn", processIsValid(child))
     if !processIsValid(child) {
-        kp("GetLastError=" + processLastError(child))
+        print("GetLastError=" + processLastError(child))
         exit("1")
     }
 
@@ -34,7 +34,7 @@ just run {
     if code == -2 {
         processKill(child, 1)
         processClose(child)
-        kp("[FAIL] process timeout")
+        print("[FAIL] process timeout")
         exit("1")
     }
     processWinCheck("process exit code", code == 0)
@@ -47,5 +47,5 @@ just run {
     processWinCheck("explicit working directory", contains(toLower(stdoutText), "c:\\windows"))
     processWinCheck("stderr separate", stderrText == "stderr-ok")
     processClose(child)
-    kp("[PASS] structured Windows process smoke")
+    print("[PASS] structured Windows process smoke")
 }

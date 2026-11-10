@@ -19,22 +19,22 @@ func pad(s, w) {
 }
 
 just run {
-    kp("Celsius   Fahrenheit")
-    kp("-------   ----------")
+    print("Celsius   Fahrenheit")
+    print("-------   ----------")
     let c = 0 - 40
     while c <= 100 {
         let f = cToF(c)
-        kp(pad("" + c, "5") + "     " + pad("" + f, "8"))
+        print(pad("" + c, "5") + "     " + pad("" + f, "8"))
         c += 10
     }
 
-    kp("")
-    kp("Fahrenheit   Celsius")
-    kp("----------   -------")
+    print("")
+    print("Fahrenheit   Celsius")
+    print("----------   -------")
     let f = 0 - 40
     while f <= 212 {
         let c2 = fToC(f)
-        kp(pad("" + f, "5") + "        " + pad("" + c2, "5"))
+        print(pad("" + f, "5") + "        " + pad("" + c2, "5"))
         f += 20
     }
 }

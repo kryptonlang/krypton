@@ -32,8 +32,8 @@ func sieveSet(sieve, idx, val) {
 
 just run {
     let n = 50
-    kp("Sieve of Eratosthenes up to " + n)
-    kp("================================")
+    print("Sieve of Eratosthenes up to " + n)
+    print("================================")
 
     let sieve = makeSieve(n)
 
@@ -67,7 +67,7 @@ just run {
         i += 1
     }
 
-    kp("Primes: " + primes)
-    kp("Count: " + primeCount)
+    print("Primes: " + primes)
+    print("Count: " + primeCount)
     emit "ok"
 }

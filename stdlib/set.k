@@ -159,5 +159,5 @@ func setEqual(a, b) {
 
 // Print set elements
 func setPrint(s) {
-    kp("{" + s + "}")
+    print("{" + s + "}")
 }

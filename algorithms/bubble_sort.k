@@ -38,7 +38,7 @@ func bubbleSort(list) {
 
 just run {
     let data = "64,34,25,12,22,11,90"
-    kp("Before: " + data)
+    print("Before: " + data)
     let sorted = bubbleSort(data)
-    kp("After:  " + sorted)
+    print("After:  " + sorted)
 }

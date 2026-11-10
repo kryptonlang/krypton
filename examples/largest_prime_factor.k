@@ -23,6 +23,6 @@ just run {
     let nums = "2,3,12,15,28,100,600851475,13195"
     for s in nums {
         let n = toInt(s)
-        kp(s + " → largest prime factor = " + largestPrimeFactor(n))
+        print(s + " → largest prime factor = " + largestPrimeFactor(n))
     }
 }

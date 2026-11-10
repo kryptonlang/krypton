@@ -2,15 +2,15 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
 just run {
-    kp("Negative Number Tests")
-    kp("=====================")
+    print("Negative Number Tests")
+    print("=====================")
 
     // Negation
     check("negate 5", "-5", "" + (0 - 5))

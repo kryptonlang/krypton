@@ -5,8 +5,8 @@ func identity(runtime, self, item) { emit item }
 func pair(runtime, self, first, second) { emit second }
 
 func check(name, expected, actual) {
-    if expected != actual { kp("[FAIL] " + name); exit("1") }
-    kp("[PASS] " + name)
+    if expected != actual { print("[FAIL] " + name); exit("1") }
+    print("[PASS] " + name)
 }
 
 just run {
@@ -65,5 +65,5 @@ just run {
     check("protocol metadata survives GC", 1, okKConforms(runtime, object, readable))
     doKRelease(runtime, object)
     doKRelease(runtime, item)
-    if mode != "" { kp("[FAIL] expected protocol rejection"); exit("0") }
+    if mode != "" { print("[FAIL] expected protocol rejection"); exit("0") }
 }

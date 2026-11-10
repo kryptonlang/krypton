@@ -1,6 +1,6 @@
 just run {
-    kp("before")
+    print("before")
     let out = exec("echo captured")
-    kp(out)
-    kp("after")
+    print(out)
+    print("after")
 }

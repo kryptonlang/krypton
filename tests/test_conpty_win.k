@@ -3,8 +3,8 @@
 import "k:conpty_win"
 
 func conptyCheck(name, ok) {
-    if ok { kp("[PASS] " + name) }
-    else { kp("[FAIL] " + name)  exit("1") }
+    if ok { print("[PASS] " + name) }
+    else { print("[FAIL] " + name)  exit("1") }
 }
 
 just run {
@@ -20,7 +20,7 @@ just run {
     let terminal = conptySpawn(powershell, args, environment, "", 80, 24, options)
     conptyCheck("ConPTY spawn", conptyIsValid(terminal))
     if !conptyIsValid(terminal) {
-        kp("ConPTY error=" + conptyLastError(terminal))
+        print("ConPTY error=" + conptyLastError(terminal))
         exit("1")
     }
 
@@ -35,7 +35,7 @@ just run {
     if code == -2 {
         conptyKill(terminal, 1)
         conptyClose(terminal)
-        kp("[FAIL] ConPTY timeout")
+        print("[FAIL] ConPTY timeout")
         exit("1")
     }
     conptyCheck("ConPTY child exit", code == 0)
@@ -46,5 +46,5 @@ just run {
     conptyCheck("terminal environment", contains(text, "TERM=xterm-256color") && contains(text, "COLOR=truecolor"))
     conptyCheck("NO_COLOR removed", contains(text, "NO="))
     conptyClose(terminal)
-    kp("[PASS] ConPTY integration smoke")
+    print("[PASS] ConPTY integration smoke")
 }

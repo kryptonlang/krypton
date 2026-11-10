@@ -3,19 +3,19 @@ just run {
     let b = 5
     let li = toInt(a)
     let ri = toInt(b)
-    kp("a=" + a)
-    kp("b=" + b)
-    kp("li=" + li)
-    kp("ri=" + ri)
+    print("a=" + a)
+    print("b=" + b)
+    print("li=" + li)
+    print("ri=" + ri)
     let numL = li + "" == a
     let numR = ri + "" == b
-    kp("numL=" + numL)
-    kp("numR=" + numR)
+    print("numL=" + numL)
+    print("numR=" + numR)
     if li > ri {
-        kp("li > ri")
+        print("li > ri")
     }
     if a > b {
-        kp("a > b")
+        print("a > b")
     }
     emit "ok"
 }

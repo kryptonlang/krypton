@@ -5,7 +5,7 @@
 import "k:fs"
 
 func _smokeSource(headerName) {
-    emit "import \"head:" + headerName + "\"\n\njust run { kp(\"ok\") }\n"
+    emit "import \"head:" + headerName + "\"\n\njust run { print(\"ok\") }\n"
 }
 
 just run {
@@ -14,7 +14,7 @@ just run {
 
     let list = exec("cmd /C dir /b headers\\*.krh")
     if len(list) == 0 {
-        kp("FAIL: no headers/")
+        print("FAIL: no headers/")
         exit("1")
     }
 
@@ -46,9 +46,9 @@ just run {
     }
     fsRmdir(tmpDir)
 
-    kp("PASS=" + pass + " FAIL=" + fail)
+    print("PASS=" + pass + " FAIL=" + fail)
     if fail > 0 {
-        kp("FAILED:" + failed)
+        print("FAILED:" + failed)
         exit("1")
     }
 }

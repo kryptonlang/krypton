@@ -2,15 +2,15 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
 just run {
-    kp("File Read Tests")
-    kp("===============")
+    print("File Read Tests")
+    print("===============")
 
     // Read our own source file and verify properties
     if argCount() >= 1 {
@@ -35,7 +35,7 @@ just run {
         let firstLine = getLine(content, 0)
         check("first line is comment", "1", "" + startsWith(firstLine, "//"))
     } else {
-        kp("[SKIP] No file argument provided")
+        print("[SKIP] No file argument provided")
     }
 
     emit "ok"

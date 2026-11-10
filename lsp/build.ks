@@ -10,27 +10,27 @@ import "k:fs"
 just run {
     let root = fsCwd()
 
-    kp("[1/2] kcc.exe lsp/kls.k -> lsp/_kls.c")
+    print("[1/2] kcc.exe lsp/kls.k -> lsp/_kls.c")
     let rcKcc = shellRun("kcc.exe lsp\\kls.k > lsp\\_kls.c")
     if rcKcc != "0" {
-        kp("kcc failed (rc=" + rcKcc + ")")
+        print("kcc failed (rc=" + rcKcc + ")")
         exit("1")
     }
 
     // DEPRECATED step — when kls.k builds via native, drop steps 1+2
     // and replace with a single `kcc.exe -o kls.exe lsp/kls.k`.
-    kp("[2/2] gcc lsp/_kls.c -> kls.exe")
+    print("[2/2] gcc lsp/_kls.c -> kls.exe")
     let rcGcc = shellRun("gcc lsp\\_kls.c -o kls.exe -w")
     if rcGcc != "0" {
-        kp("gcc failed (rc=" + rcGcc + ")")
+        print("gcc failed (rc=" + rcGcc + ")")
         exit("1")
     }
 
-    kp("")
-    kp("built kls.exe")
+    print("")
+    print("built kls.exe")
     if fsFileExists("kls.exe") == "1" {
-        kp("kls.exe present in " + root)
+        print("kls.exe present in " + root)
     } else {
-        kp("WARN: kls.exe not found after build")
+        print("WARN: kls.exe not found after build")
     }
 }

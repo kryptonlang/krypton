@@ -55,31 +55,31 @@ func reverseNumber(n) {
 }
 
 just run {
-    kp("Digit Operations")
-    kp("================")
-    kp("")
+    print("Digit Operations")
+    print("================")
+    print("")
 
-    kp("Digit sums:")
+    print("Digit sums:")
     let nums = "123,456,789,999,1234,9999,12345"
     let total = count(nums)
     let i = 0
     while i < total {
         let n = toInt(split(nums, i))
-        kp("  " + n + " -> digit sum: " + digitSum(n) + ", digital root: " + digitalRoot(n))
+        print("  " + n + " -> digit sum: " + digitSum(n) + ", digital root: " + digitalRoot(n))
         i += 1
     }
-    kp("")
+    print("")
 
-    kp("Digit products:")
+    print("Digit products:")
     i = 0
     while i < total {
         let n = toInt(split(nums, i))
-        kp("  " + n + " -> digit product: " + digitProduct(n))
+        print("  " + n + " -> digit product: " + digitProduct(n))
         i += 1
     }
-    kp("")
+    print("")
 
-    kp("Number reversal:")
+    print("Number reversal:")
     let revNums = "1234,5678,12321,10000,9876"
     total = count(revNums)
     i = 0
@@ -90,13 +90,13 @@ just run {
         if n == rev {
             isPalin = "yes"
         }
-        kp("  " + n + " -> " + rev + " (palindrome: " + isPalin + ")")
+        print("  " + n + " -> " + rev + " (palindrome: " + isPalin + ")")
         i += 1
     }
-    kp("")
+    print("")
 
     // Find all numbers 1-100 where digit sum is 10
-    kp("Numbers 1-100 with digit sum = 10:")
+    print("Numbers 1-100 with digit sum = 10:")
     let sb = sbNew()
     let n = 1
     while n <= 100 {
@@ -105,6 +105,6 @@ just run {
         }
         n += 1
     }
-    kp("  " + sbToString(sb))
+    print("  " + sbToString(sb))
     emit "ok"
 }

@@ -3,8 +3,8 @@ import "k:objk_runtime"
 func answerFn(runtime, self) { emit 42 }
 func writeFn(runtime, self, value) { emit value }
 func check(name, expected, actual) {
-    if expected != actual { kp("[FAIL] " + name); exit("1") }
-    kp("[PASS] " + name)
+    if expected != actual { print("[FAIL] " + name); exit("1") }
+    print("[PASS] " + name)
 }
 
 objk protocol Readable {

@@ -10,7 +10,7 @@ func isExec(p) { emit trim(exec("test -x \"" + p + "\" && echo yes || echo no"))
 func isFile(p) { emit trim(exec("test -f \"" + p + "\" && echo yes || echo no")) }
 func isDir(p)  { emit trim(exec("test -d \"" + p + "\" && echo yes || echo no")) }
 func has(c)    { emit trim(exec("command -v " + c + " >/dev/null 2>&1 && echo yes || echo no")) }
-func die(m)    { kp(m)  exit("1") }
+func die(m)    { print(m)  exit("1") }
 func envValue(name) { emit trim(exec("printenv " + name + " 2>/dev/null || true")) }
 
 func signPayload(stage, identity) {
@@ -92,7 +92,7 @@ just run {
     let r = stage + prefix
     exec("mkdir -p \"" + r + "\"")
 
-    kp("staging payload for " + version + " ...")
+    print("staging payload for " + version + " ...")
     exec("mkdir -p \"" + r + "/bootstrap\"")
     exec("install -m 0755 " + driver + " \"" + r + "/" + driver + "\"")
     exec("install -m 0755 kr \"" + r + "/kr\"")
@@ -155,7 +155,7 @@ just run {
 
     exec("mkdir -p releases")
     exec("rm -f \"" + pkgFile + "\"")
-    kp("building " + pkgFile + "...")
+    print("building " + pkgFile + "...")
     let buildCmd = "env COPYFILE_DISABLE=1 pkgbuild --root \"" + stage + "\" --identifier \"" + pkgId + "\" --version \"" + version + "\" --scripts \"" + scriptsDir + "\" --install-location / --filter '(^|/)[.]_[^/]*$' --filter '(^|/)[.]DS_Store$' --filter '(^|/)CVS($|/)' --filter '(^|/)[.]svn($|/)' \"" + pkgFile + "\""
     if shellRun(buildCmd) != "0" { die("build_pkg.ks: pkgbuild failed") }
     cleanPkgAppleDouble(pkgFile)
@@ -176,10 +176,10 @@ just run {
     }
     exec("rm -rf \"" + stage + "\" \"" + scriptsDir + "\"")
 
-    kp("")
-    kp("wrote " + pkgFile + " (" + trim(exec("stat -f%z \"" + pkgFile + "\"")) + " bytes)")
-    kp("install:    sudo installer -pkg " + pkgFile + " -target /")
-    kp("verify:     kcc --version   # -> kcc version " + version)
-    kp("            kweb")
-    kp("            open /Applications/Krypton/kweb.app")
+    print("")
+    print("wrote " + pkgFile + " (" + trim(exec("stat -f%z \"" + pkgFile + "\"")) + " bytes)")
+    print("install:    sudo installer -pkg " + pkgFile + " -target /")
+    print("verify:     kcc --version   # -> kcc version " + version)
+    print("            kweb")
+    print("            open /Applications/Krypton/kweb.app")
 }

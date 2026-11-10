@@ -8,7 +8,7 @@
 //
 // This module bridges those two representations:
 //   bool(v)        — coerce any value to "true" or "false"
-//   kpBool(v)      — kp(bool(v))
+//   kpBool(v)      — print(bool(v))
 //   boolToInt(v)   — coerce to "1" or "0"
 //   boolEq(a, b)   — truthy-equality regardless of "1" vs "true" form
 //   boolAnd/Or/Xor/Not — explicit boolean ops returning "true"/"false"
@@ -33,7 +33,7 @@ func bool(v) {
 
 // Convenience: print a value in true/false form.
 func kpBool(v) {
-    kp(bool(v))
+    print(bool(v))
 }
 
 // Coerce to the "1" / "0" form (matches what comparison ops return).

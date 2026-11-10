@@ -3,9 +3,9 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
@@ -41,8 +41,8 @@ func countDown(n) {
 }
 
 just run {
-    kp("Recursion Tests")
-    kp("===============")
+    print("Recursion Tests")
+    print("===============")
 
     // Factorial
     check("fact 0", "1", "" + factorial(0))

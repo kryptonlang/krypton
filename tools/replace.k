@@ -6,7 +6,7 @@
 
 just run {
     if argCount() < 3 {
-        kp("Usage: replace <find> <replace> <file>")
+        print("Usage: replace <find> <replace> <file>")
     } else {
         let find = arg(0)
         let repl = arg(1)
@@ -17,13 +17,13 @@ just run {
         while i < lc {
             let line = getLine(content, i)
             if contains(line, find) {
-                kp(replace(line, find, repl))
+                print(replace(line, find, repl))
                 changes = changes + 1
             } else {
-                kp(line)
+                print(line)
             }
             i = i + 1
         }
-        kp("(" + changes + " lines changed)")
+        print("(" + changes + " lines changed)")
     }
 }

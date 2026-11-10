@@ -3,8 +3,8 @@
 import "k:process_win_argv"
 
 func processArgvCheck(name, ok) {
-    if ok { kp("[PASS] " + name) }
-    else { kp("[FAIL] " + name)  exit("1") }
+    if ok { print("[PASS] " + name) }
+    else { print("[FAIL] " + name)  exit("1") }
 }
 
 func processArgvByte(s, index) {
@@ -38,5 +38,5 @@ just run {
     let command = processCommandLine("C:\\Program Files\\Krypton\\tool.exe", args)
     processArgvCheck("executable path quoted", startsWith(command, "\"C:\\Program Files\\Krypton\\tool.exe\""))
     processArgvCheck("command keeps empty argv", contains(command, " \"\" "))
-    kp("[PASS] Windows argv acceptance suite")
+    print("[PASS] Windows argv acceptance suite")
 }

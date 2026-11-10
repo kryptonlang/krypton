@@ -6244,7 +6244,7 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_push_x0())
             instrIdx = instrIdx + 3
         } else if opTok == "BUILTIN_KP" {
-            // kp(v): write v to stdout + newline. Handles both strings and ints.
+            // print(v): write v to stdout + newline. Handles both strings and ints.
             // Dispatch: if v < 0 it's an int; else a pointer (heap or __TEXT).
             // String path = 19 instr (was 21 — same as before, sans pop).
             // Int path = inline itoa + write. 69 instructions total.

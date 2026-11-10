@@ -3,15 +3,15 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
 just run {
-    kp("String Operations Tests")
-    kp("=======================")
+    print("String Operations Tests")
+    print("=======================")
 
     // Concatenation
     check("concat basic", "hello world", "hello" + " " + "world")

@@ -114,8 +114,8 @@ func _dj_addNode(nodes, n) {
 }
 
 just run {
-    kp("Dijkstra's Shortest Path")
-    kp("========================")
+    print("Dijkstra's Shortest Path")
+    print("========================")
     //   A --1-- B --2-- C
     //   |       |       |
     //   4       5       1
@@ -145,8 +145,8 @@ just run {
     nodes = _dj_addNode(nodes, "E")
     nodes = _dj_addNode(nodes, "F")
 
-    kp("  A -> F = " + dijkstra(g, nodes, "A", "F"))   // 4 (A-B-C-F)
-    kp("  A -> E = " + dijkstra(g, nodes, "A", "E"))   // 5
-    kp("  A -> A = " + dijkstra(g, nodes, "A", "A"))   // 0
-    kp("  C -> D = " + dijkstra(g, nodes, "C", "D"))   // 5
+    print("  A -> F = " + dijkstra(g, nodes, "A", "F"))   // 4 (A-B-C-F)
+    print("  A -> E = " + dijkstra(g, nodes, "A", "E"))   // 5
+    print("  A -> A = " + dijkstra(g, nodes, "A", "A"))   // 0
+    print("  C -> D = " + dijkstra(g, nodes, "C", "D"))   // 5
 }

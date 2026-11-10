@@ -55,7 +55,7 @@ func _jstr(s) {
 just run {
     let filePath = "algorithms/run_length_encoding.k"
     if fsFileExists(filePath) != "1" {
-        kp("FAIL: " + filePath + " not found (run from repo root)")
+        print("FAIL: " + filePath + " not found (run from repo root)")
         exit("1")
     }
     let text = readFile(filePath)
@@ -66,7 +66,7 @@ just run {
 
     let p = procSpawn(klsPath, "")
     if p == "0" {
-        kp("FAIL: kls.exe not found")
+        print("FAIL: kls.exe not found")
         exit("1")
     }
 
@@ -80,7 +80,7 @@ just run {
     procSleep(500)
     let buf = procRead(p, 65536)
 
-    kp("DOCUMENT SYMBOLS:")
+    print("DOCUMENT SYMBOLS:")
     let pos = 0
     let nf = 0
     while pos < len(buf) {
@@ -90,12 +90,12 @@ just run {
         else {
             let body = substring(tail, off, off + _cLen(substring(tail, 0, off - 4)))
             if contains(body, "\"id\":2") {
-                kp(body)
+                print(body)
                 nf += 1
             }
             pos = pos + off + _cLen(substring(tail, 0, off - 4))
         }
     }
-    if nf == 0 { kp("(no documentSymbol response received)") }
+    if nf == 0 { print("(no documentSymbol response received)") }
     procClose(p)
 }
