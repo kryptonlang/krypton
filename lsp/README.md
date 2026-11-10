@@ -1,8 +1,9 @@
 # kls — Krypton Language Server
 
-Self-hosted LSP 3.17 server for Krypton (`.k` files), written entirely in
-Krypton plus a single `cfunc` block for binary-mode stdio. Compiled to a
-~480 KB native Windows executable.
+Self-hosted LSP 3.17 server for Krypton (`.k` files), written in Krypton with
+platform-specific stdio framing. Native builds are the target; the checked-in
+Windows wrapper remains a legacy fallback until native Windows validation is
+complete.
 
 ## Status
 
@@ -80,7 +81,7 @@ Current version: **0.2.0**.
 | [json_emit.k](json_emit.k) | ~135 | Nested JSON builder (jeStr/jeNum/jeObj/jeArr/jeDiagnostic/jeRange) |
 | [jsonrpc.k](jsonrpc.k)     | ~115 | Content-Length framed stdio (cfunc — `_setmode(_O_BINARY)` defeats CRLF mangling) |
 | [kls.k](kls.k)             | ~245 | Main loop, dispatch, document table |
-| [build.bat](build.bat)     | —    | Two-step build (kcc → gcc) |
+| [build.bat](build.bat)     | —    | Windows build wrapper |
 | [test_kls.py](test_kls.py) | —    | Smoke driver (pipes framed requests, prints framed responses) |
 
 ## Build
@@ -89,11 +90,23 @@ Current version: **0.2.0**.
 lsp\build.bat
 ```
 
-Produces `kls.exe` at the repo root.
+The intended native commands are:
 
-Requires:
-- `kcc.exe` (Krypton compiler) at the repo root
-- `gcc` on PATH (mingw-w64 or similar)
+```sh
+KRYPTON_ROOT=/absolute/path/to/krypton kcc lsp/kls.k -o lsp/kls
+```
+
+```bat
+kcc lsp\kls.k -o kls.exe
+```
+
+The current Windows wrapper may still use its legacy fallback until native
+Windows stdio and Win32 argument handling are verified. Do not commit generated
+`_kls.c` files.
+
+Requires the matching Krypton compiler and `KRYPTON_ROOT` pointing to the same
+checkout or installation. Do not mix a stale frontend binary with current
+`compile.k`; it can report false syntax errors in valid `just run` programs.
 
 ## Smoke test
 

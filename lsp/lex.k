@@ -65,6 +65,12 @@ func lxIsKW(w) {
     if w == "struct" { emit 1 }
     if w == "class" { emit 1 }
     if w == "type" { emit 1 }
+    if w == "objk" { emit 1 }
+    if w == "protocol" { emit 1 }
+    if w == "object" { emit 1 }
+    if w == "require" { emit 1 }
+    if w == "method" { emit 1 }
+    if w == "conforms" { emit 1 }
     if w == "callback" { emit 1 }
     if w == "jxt" { emit 1 }
     if w == "just" { emit 1 }

@@ -6,15 +6,11 @@
 //   - documentSymbolProvider    : top-level decls (func/struct/module/let)
 //   - completionProvider        : keywords + builtins + buffer funcs
 //
-// Build (currently C+gcc — see lsp/build.bat):
-//   .\kcc.exe lsp\kls.k > lsp\_kls.c
-//   gcc lsp\_kls.c -o kls.exe -w
-//
-// Native PE path (`kcc.exe -o kls.exe lsp\kls.k`) and a cfunc-free
-// stdlib/jsonrpc.k port to `k:winio` are both ready in source but
-// blocked on (a) the x64 codegen RAM blowup at this program size and
-// (b) C-emit not yet marshalling Win32 int args (GetStdHandle gets a
-// pointer-to-string instead of a DWORD). Both 2.1 work items.
+// Native build target:
+//   kcc lsp/kls.k -o lsp/kls       (POSIX)
+//   kcc lsp\kls.k -o kls.exe       (Windows)
+// The checked-in Windows build wrapper still uses the legacy C path until the
+// native kls binary is verified on that platform.
 
 import "lex.k"
 import "validate.k"
