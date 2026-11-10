@@ -237,7 +237,12 @@ func chocScrollText(win, x, y, w, h) {
     emit tv
 }
 func chocTVSetString(tv, s) { msg_1(tv, "setString:", nsString(s))  emit "1" }
-func chocTVGetString(tv)    { emit msg(msg(tv, "string"), "UTF8String") }
+func chocTVGetString(tv) {
+    if tv == 0 { emit "" }
+    let s = msg(tv, "string")
+    if s == 0 { emit "" }
+    emit msg(s, "UTF8String")
+}
 // Disable soft-wrap: the grid / source defines line breaks (terminal behaviour).
 func chocTVNoWrap(tv) {
     let tc = msg(tv, "textContainer")
@@ -259,18 +264,20 @@ func chocTVAppend(tv, s) {
 // addAttribute:value:range: is a plain msg_4. Attribute keys use their stable
 // runtime string values ("NSColor" = foreground, "NSFont" = font).
 func chocTVColorRange(tv, color, loc, len) {
+    if tv == 0 || color == 0 || loc < 0 || len <= 0 { emit "1" }
     let ts = msg(tv, "textStorage")
     let total = msg(ts, "length")
-    if loc >= total { emit "1" }
+    if ts == 0 || loc >= total { emit "1" }
     let l = len
     if loc + l > total { l = total - loc }
     msg_4(ts, "addAttribute:value:range:", nsString("NSColor"), color, loc, l)
     emit "1"
 }
 func chocTVFontRange(tv, font, loc, len) {
+    if tv == 0 || font == 0 || loc < 0 || len <= 0 { emit "1" }
     let ts = msg(tv, "textStorage")
     let total = msg(ts, "length")
-    if loc >= total { emit "1" }
+    if ts == 0 || loc >= total { emit "1" }
     let l = len
     if loc + l > total { l = total - loc }
     msg_4(ts, "addAttribute:value:range:", nsString("NSFont"), font, loc, l)
@@ -283,7 +290,12 @@ func chocTVLength(tv) { emit msg(msg(tv, "textStorage"), "length") }
 // the delegate receives (notif object); guard on chocTSEditedChars so re-adding
 // attributes (which itself fires the delegate) does not recurse.
 func chocTVSetStorageDelegate(tv, d) { msg_1(msg(tv, "textStorage"), "setDelegate:", d)  emit "1" }
-func chocTSString(ts)     { emit msg(msg(ts, "string"), "UTF8String") }
+func chocTSString(ts) {
+    if ts == 0 { emit "" }
+    let s = msg(ts, "string")
+    if s == 0 { emit "" }
+    emit msg(s, "UTF8String")
+}
 func chocTSLength(ts)     { emit msg(ts, "length") }
 func chocTSEditedChars(ts){ emit bitAnd(msg(ts, "editedMask"), 2) }   // 2 = NSTextStorageEditedCharacters (1 = attributes)
 func chocTSClearColor(ts) {
@@ -291,6 +303,7 @@ func chocTSClearColor(ts) {
     emit "1"
 }
 func chocTSColorRange(ts, color, loc, len) {
+    if ts == 0 || color == 0 || loc < 0 || len <= 0 { emit "1" }
     let total = msg(ts, "length")
     if loc >= total { emit "1" }
     let l = len
@@ -772,6 +785,7 @@ func chocFrameRestore(win, key) {
 
 func chocSelectionNew() { emit msg(cls("NSMutableIndexSet"), "indexSet") }
 func chocSelection(table) {
+    if table == 0 { emit 0 }
     let snapshot = msg(msg(table, "selectedRowIndexes"), "copy")
     emit msg(snapshot, "autorelease")
 }
@@ -783,6 +797,7 @@ func chocSelectionAdd(rows, row) {
     emit "1"
 }
 func chocSelectionAt(rows, offset) {
+    if rows == 0 { emit "" }
     if offset < 0 || offset >= msg(rows, "count") { emit "" }
     let row = msg(rows, "firstIndex")
     let i = 0
