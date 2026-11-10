@@ -59,6 +59,14 @@ func macArgQuote(text) {
 // install is often stale (missing newly-added stdlib). Returns "" if none.
 // A valid root has at least one platform frontend (macOS arm64, Linux x86,
 // FreeBSD x86, or Windows x86-64).
+// --kbi: opt-in KBI (Krypton Binary Interface) fast ABI. Returns " --kbi"
+// when the flag is set, so frontend invocations can splice it directly.
+// KBI is macOS-arm64-only for now; other hosts hard-exit in main().
+func _kbi() {
+    if hasFlag("--kbi") == "1" { emit " --kbi" }
+    emit ""
+}
+
 func hasFrontend(root) {
     if exists(root + "/compiler/macos_arm64/kcc-arm64") == "1" { emit "1" }
     if exists(root + "/compiler/linux_x86/kcc-x64") == "1" { emit "1" }
@@ -240,7 +248,7 @@ func baseName(src) {
 func streamFrontendIR(root, fe, src) {
     let tmpir = tmpPath("_kccir", ".kir")
     let tmperr = tmpPath("_kccirerr", ".txt")
-    let rc = shellRun("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir " + q(src) + " > " + q(tmpir) + " 2> " + q(tmperr))
+    let rc = shellRun("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir" + _kbi() + " " + q(src) + " > " + q(tmpir) + " 2> " + q(tmperr))
     let ir = readText(tmpir)
     let err = readText(tmperr)
     rm(tmpir)
@@ -258,7 +266,7 @@ func streamFrontendIRTarget(root, fe, src, target) {
     let tmpir = tmpPath("_kccir", ".kir")
     let tmperr = tmpPath("_kccirerr", ".txt")
     exec("KRYPTON_TARGET=" + q(target) + " KRYPTON_ROOT=" + q(root) + " " +
-        q(fe) + " --target " + q(target) + " --ir " + q(src) +
+        q(fe) + " --target " + q(target) + " --ir" + _kbi() + " " + q(src) +
         " > " + q(tmpir) + " 2> " + q(tmperr))
     let ir = readText(tmpir)
     let err = readText(tmperr)
@@ -320,7 +328,7 @@ func compileMacos(root, src, out) {
         rm(tmpir)
         emit "0"
     }
-    let codeRc = shellRun(q(host) + " --ir " + q(tmpir) + " " + q(staged))
+    let codeRc = shellRun(q(host) + " --ir " + q(tmpir) + " " + q(staged) + _kbi())
     rm(tmpir)
     if codeRc != "0" || size(staged) == 0 {
         printErr("kcc: native codegen failed for " + src + "\n")
@@ -348,7 +356,7 @@ func compileIos(root, src, out, target) {
     if ensureHost(root) == "0" { emit "0" }
     let tmpir = tmpPath("_kccios", ".kir")
     exec("KRYPTON_TARGET=" + q(target) + " KRYPTON_ROOT=" + q(root) + " " +
-        q(fe) + " --target " + q(target) + " --ir " + q(src) + " > " + q(tmpir))
+        q(fe) + " --target " + q(target) + " --ir" + _kbi() + " " + q(src) + " > " + q(tmpir))
     if size(tmpir) == 0 {
         kp("kcc: iOS IR emission failed for " + src)
         rm(tmpir)
@@ -706,6 +714,7 @@ just run {
         kp("  --fast      use the on-disk stage-0 toolchain (skip 10-min self-host rebuild)")
         kp("  --bootstrap alias for --fast")
         kp("  --ir        emit Krypton IR to stdout")
+        kp("  --kbi       opt in to the KBI fast ABI (macOS arm64 only)")
         kp("  --arm64     cross-compile to a static aarch64 ELF")
         kp("  --target T  ios-sim-arm64|ios-device-arm64 (macOS), windows-x86_64 (Windows)")
         kp("  --subsystem console|windows (Windows)")
@@ -733,6 +742,9 @@ just run {
     }
 
     let os = sh("uname -s")
+    // --kbi is macOS arm64 only (v0); fail fast elsewhere rather than silently
+    // shipping KBI-flagged binaries on x86_64 / Windows / FreeBSD.
+    if hasFlag("--kbi") == "1" && os != "Darwin" { kp("kcc: --kbi is macOS arm64 only")  exit("1") }
     let requestedTarget = optValue("--target", "")
     if requestedTarget != "" && os != "Darwin" && environ("OS") != "Windows_NT" &&
         startsWith(os, "MINGW") != "1" && startsWith(os, "MSYS") != "1" && startsWith(os, "CYGWIN") != "1" {
