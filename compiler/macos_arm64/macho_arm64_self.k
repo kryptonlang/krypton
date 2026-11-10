@@ -229,6 +229,11 @@ let g_FILE_TOTAL_SIZE     = 0xC0C0 + 244
 
 // objk FFI: foreign (dylib-imported) symbols used by the program.
 // g_NFOREIGN==0 ⇒ pure syscall-only binary (byte-identical to pre-objk output).
+// --kbi: KBI (Krypton Binary Interface) mode opt-in. Set from the IR
+// "; KBI: 1" marker line, or forced by --kbi on the command line.
+// Default "0" keeps output byte-identical to pre-KBI builds.
+let g_KBI = "0"
+
 let g_NFOREIGN  = 0
 let g_FORSYMS   = ""    // newline-sep import symbols, with leading "_" (e.g. "_getpid")
 let g_FORLIB    = ""    // newline-sep 1-based dylib ordinal, parallel to g_FORSYMS
@@ -385,22 +390,28 @@ func arm64_load64(xd, val) {
 // instruction count for a CALL_FUNC (must match the byte emitter). The NSRect
 // window-init special form is 15 instrs (3 GP pops + 4×(pop+scvtf) + 2 GP pops + bl + push).
 func cfCount(cname, argc) {
-    if cname == "callPtr" { emit argc + 4 }
-    if cname == "objc_msgSend_rect" { emit 15 }
-    if cname == "objc_msgSend_frame" { emit 12 }   // (obj,sel,x,y,w,h): rect-only NSRect arg
-    if cname == "objc_msgSend_d1" { emit 6 }        // (obj,sel,n): one CGFloat arg -> d0
-    if cname == "objc_msgSend_rectp" { emit 13 }    // (obj,sel,x,y,w,h,p): NSRect d0..d3 + ptr x2
-    if cname == "objc_msgSend_timer" { emit 13 }    // (self,sel,ms,target,actsel,info,rep): ms/1000->d0 + x2..x5
-    if cname == "objc_msgSend_rgb" { emit 17 }      // (self,sel,r,g,b): r/g/b/255->d0..d2, 1.0->d3 (colorWithRed:green:blue:alpha:)
-    if cname == "objc_msgSend_d2" { emit 8 }        // (self,sel,a,b): NSSize a->d0, b->d1 (setSize:/setMaxSize:)
-    if cname == "objc_msgSend_d3" { emit 10 }       // (self,sel,a,b,c): CGFloat args d0..d2
-    if cname == "objc_msgSend_pd1" { emit 7 }
-    if cname == "objc_msgSend_rounded" { emit 16 }
-    if cname == "objc_msgSend_rgba" { emit 18 }
-    if cname == "objc_msgSend_point_x" { emit 6 }   // (self,sel,obj): CGPoint d0 -> x0
-    if cname == "objc_msgSend_point_y" { emit 6 }   // (self,sel,obj): CGPoint d1 -> x0
-    if cname == "objc_msgSend_rect_w" { emit 5 }    // (self,sel): NSRect d2 -> x0
-    if cname == "objc_msgSend_rect_h" { emit 5 }    // (self,sel): NSRect d3 -> x0
+    let kbi = 0
+    if g_KBI == "1" { kbi = 4 }
+    if cname == "callPtr" { emit argc + 4 + kbi }
+    if cname == "objc_msgSend_rect" { emit 15 + kbi }
+    if cname == "objc_msgSend_frame" { emit 12 + kbi }   // (obj,sel,x,y,w,h): rect-only NSRect arg
+    if cname == "objc_msgSend_d1" { emit 6 + kbi }        // (obj,sel,n): one CGFloat arg -> d0
+    if cname == "objc_msgSend_rectp" { emit 13 + kbi }    // (obj,sel,x,y,w,h,p): NSRect d0..d3 + ptr x2
+    if cname == "objc_msgSend_timer" { emit 13 + kbi }    // (self,sel,ms,target,actsel,info,rep): ms/1000->d0 + x2..x5
+    if cname == "objc_msgSend_rgb" { emit 17 + kbi }      // (self,sel,r,g,b): r/g/b/255->d0..d2, 1.0->d3 (colorWithRed:green:blue:alpha:)
+    if cname == "objc_msgSend_d2" { emit 8 + kbi }        // (self,sel,a,b): NSSize a->d0, b->d1 (setSize:/setMaxSize:)
+    if cname == "objc_msgSend_d3" { emit 10 + kbi }       // (self,sel,a,b,c): CGFloat args d0..d2
+    if cname == "objc_msgSend_pd1" { emit 7 + kbi }
+    if cname == "objc_msgSend_rounded" { emit 16 + kbi }
+    if cname == "objc_msgSend_rgba" { emit 18 + kbi }
+    if cname == "objc_msgSend_point_x" { emit 6 + kbi }   // (self,sel,obj): CGPoint d0 -> x0
+    if cname == "objc_msgSend_point_y" { emit 6 + kbi }   // (self,sel,obj): CGPoint d1 -> x0
+    if cname == "objc_msgSend_rect_w" { emit 5 + kbi }    // (self,sel): NSRect d2 -> x0
+    if cname == "objc_msgSend_rect_h" { emit 5 + kbi }    // (self,sel): NSRect d3 -> x0
+    // generic dispatch: the else path only adds the FFI wrap when the callee is
+    // foreign (foreignIdx >= 0). Internal Krypton-to-Krypton calls take the
+    // standard path without the 4-instr wrap.
+    if foreignIdx(cname) >= 0 { emit argc + 2 + kbi }
     emit argc + 2
 }
 // 0-based index of foreign symbol "_"+name in g_FORSYMS, or -1 if not foreign.
@@ -1338,6 +1349,29 @@ func emitAllocN(n, instrIdx, textVaddr, textOff) {
 //   Path 2 (bump): advance bump pointer, push header onto gcAllocsHead.
 // No size_flags masking needed: swept (freelisted) nodes have the mark bit
 // (bit 63) cleared and sizes are 8-aligned, so size_flags == exact size.
+// ── --kbi FFI helpers ──────────────────────────────────────────────────────
+// Flush rBUMP (x28) into the bump cell and reload it. Used around every
+// foreign call site (ObjC msgSend special forms, CALL_FUNC foreign path, and
+// callPtr). Writes to cell @ g_TEXT_VMSIZE+0x8000 (cached via adrp on each
+// site). x17 (IP1) is caller-saved AAPCS-wide, so it is safe to clobber here.
+// Mapping to x17 keeps the emit sites dependency-free.
+func emitKbiFlushBump(instrIdx, textOff) {
+    let cell = g_TEXT_VMSIZE + 0x8000
+    let imm21 = cell / 4096 - (textOff + instrIdx * 4) / 4096
+    let s = ""
+    s = s + arm64_adrp(17, imm21)                        // adrp x17, bumpCell@PAGE
+    s = s + arm64_str_imm(28, 17, 0)                     // str x28, [x17]
+    emit s
+}
+
+func emitKbiReloadBump(instrIdx, textOff) {
+    let cell = g_TEXT_VMSIZE + 0x8000
+    let imm21 = cell / 4096 - (textOff + instrIdx * 4) / 4096
+    let s = ""
+    s = s + arm64_adrp(17, imm21)                        // adrp x17, bumpCell@PAGE
+    s = s + arm64_ldr_imm(28, 17, 0)                     // ldr x28, [x17]
+    emit s
+}
 func emitRtAllocHelper(instrIdx, textOff) {
     let imm21 = (g_TEXT_VMSIZE + 0x8000) / 4096 - (textOff + instrIdx * 4) / 4096
     let s = ""
@@ -1423,6 +1457,100 @@ func emitRtAllocHelper(instrIdx, textOff) {
     emit s
 }
 
+// ── __kbi_alloc helper — KBI variant of __rt_alloc ─────────────
+// Same 123-instr structure with ONLY the BUMP source changed: reads rBUMP (x28)
+// instead of __DATA bump cell, writes back to BOTH cell AND x28 so the GC
+// frontier stays coherent. WRITE BACK means cell+x28 after every alloc; x28 is
+// reloaded from cell at __main__ entry, not at call sites.
+// When rBUMP == 0 (mmap failed) we fall through to the classic cell path so
+// we never silently stall. 126 instructions.
+func emitKbiAllocHelper(instrIdx, textOff) {
+    let imm21 = (g_TEXT_VMSIZE + 0x8000) / 4096 - (textOff + instrIdx * 4) / 4096
+    let s = ""
+    s = s + arm64_adrp(1, imm21)                        // 0
+    s = s + arm64_add_imm(1, 1, 0)                      // 1: x1 = gcGlobals base
+    s = s + arm64_ldr_imm(9, 1, 3)                      // 2: x9 = alloc_total (+24)
+    s = s + arm64_add_xxx(9, 9, 4)                      // 3: x9 += size
+    s = s + arm64_str_imm(9, 1, 3)                      // 4: store alloc_total
+    s = s + arm64_ldr_imm(2, 1, 4)                      // 5: x2 = alloc_limit (+32)
+    s = s + arm64_cbz(2, 4)                             // 6: if limit==0 → +4 (instr 10)
+    s = s + arm64_cmp_xx(9, 2)                          // 7: cmp total, limit
+    s = s + arm64_b_cond(0x09, 2)                       // 8: b.ls +2 (instr 10)
+    s = s + arm64_brk(99)                               // 9: brk #99 (limit exceeded)
+    // ── freelist check @10 ──
+    s = s + arm64_ldr_imm(0, 1, 11)                     // 10: x0 = free_head
+    s = s + arm64_cbz(0, 11)                            // 11: if null → BUMP (+11 = 22)
+    s = s + arm64_ldr_imm(9, 0, 1)                      // 12: x9 = size_flags
+    s = s + arm64_cmp_xx(9, 4)                          // 13: cmp free size, request
+    s = s + arm64_b_cond(0x03, 8)                       // 14: b.lo → BUMP (+8 = 22)
+    s = s + arm64_ldr_imm(2, 0, 0)                      // 15: x2 = node.next
+    s = s + arm64_str_imm(2, 1, 11)                     // 16: free_head = node.next
+    s = s + arm64_ldr_imm(11, 1, 6)                     // 17: x11 = old gcAllocsHead (+48)
+    s = s + arm64_str_imm(11, 0, 0)                     // 18: node.next = old head
+    s = s + arm64_str_imm(0, 1, 6)                      // 19: gcAllocsHead = node (+48)
+    s = s + arm64_add_imm(0, 0, 16)                     // 20: x0 = node + 16 (user ptr)
+    s = s + arm64_b(16)                                 // 21: → TAIL @37
+    // ── BUMP path @22 ──
+    // rBUMP = x28: non-zero → fast path; zero → fall back to classic cell.
+    s = s + arm64_mov_xx(0, 28)                         // 22: x0 = rBUMP
+    s = s + arm64_cbnz(0, 4)                            // 23: rBUMP != 0 → +4 (skip fallback → 27)
+    // Fallback: rBUMP == 0 → classic cell walk
+    s = s + arm64_ldr_imm(0, 1, 0)                      // 24: x0 = current free (cell)
+    s = s + arm64_cbnz(0, 2)                            // 25: cell!=0 → +2 (skip 26)
+    s = s + arm64_add_imm(0, 1, 112)                    // 26: first-time heap base (+112)
+    // Shared BUMP body @27
+    s = s + arm64_add_xxx(2, 0, 4)                      // 27: x2 = x0 + size
+    s = s + arm64_add_imm(2, 2, 16)                     // 28: x2 += 16 (header)
+    s = s + arm64_str_imm(2, 1, 0)                      // 29: writeback cell (GC sees frontier)
+    s = s + arm64_mov_xx(28, 2)                         // 30: writeback rBUMP
+    s = s + arm64_ldr_imm(11, 1, 6)                     // 31: x11 = old gcAllocsHead
+    s = s + arm64_str_imm(11, 0, 0)                     // 32: header.next = old head
+    s = s + arm64_str_imm(4, 0, 1)                      // 33: header.size_flags = size
+    s = s + arm64_str_imm(0, 1, 6)                      // 34: gcAllocsHead = header
+    s = s + arm64_add_imm(0, 0, 16)                     // 35: x0 += 16 (user ptr)
+    s = s + arm64_b(1)                                  // 36: → TAIL @37
+    // ── TAIL @37 ──
+    s = s + arm64_ldr_imm(9, 1, 13)                     // 37: x9 = allocs_since (+104)
+    s = s + arm64_add_imm(9, 9, 1)                      // 38: x9 += 1
+    s = s + arm64_str_imm(9, 1, 13)                     // 39: store allocs_since
+    s = s + arm64_ldr_imm(2, 1, 12)                     // 40: x2 = collect_threshold (+96)
+    s = s + arm64_cbz(2, 84)                            // 41: threshold 0 → DONE @125
+    s = s + arm64_cmp_xx(9, 2)                          // 42: cmp allocs_since, threshold
+    s = s + arm64_b_cond(0x3, 82)                       // 43: b.lo → DONE @125
+    // SAFEPOINT spill x0..x18 + x30 @44..53:
+    s = s + arm64_stp_pre16(0, 1)                       // 44
+    s = s + arm64_stp_pre16(2, 3)                       // 45
+    s = s + arm64_stp_pre16(4, 5)                       // 46
+    s = s + arm64_stp_pre16(6, 7)                       // 47
+    s = s + arm64_stp_pre16(8, 9)                       // 48
+    s = s + arm64_stp_pre16(10, 11)                     // 49
+    s = s + arm64_stp_pre16(12, 13)                     // 50
+    s = s + arm64_stp_pre16(14, 15)                     // 51
+    s = s + arm64_stp_pre16(16, 17)                     // 52
+    s = s + arm64_stp_pre16(18, 30)                     // 53
+    // COLLECT body @54..113:
+    s = s + emitGcCollectBody(instrIdx + 54, textOff)   // 54..113
+    // reset counter @114:
+    s = s + arm64_str_imm(31, 1, 13)                    // 114: allocs_since = 0
+    // RESTORE x0..x18 + x30 @115..124:
+    s = s + arm64_ldp_post16(18, 30)                    // 115
+    s = s + arm64_ldp_post16(16, 17)                    // 116
+    s = s + arm64_ldp_post16(14, 15)                    // 117
+    s = s + arm64_ldp_post16(12, 13)                    // 118
+    s = s + arm64_ldp_post16(10, 11)                    // 119
+    s = s + arm64_ldp_post16(8, 9)                      // 120
+    s = s + arm64_ldp_post16(6, 7)                      // 121
+    s = s + arm64_ldp_post16(4, 5)                      // 122
+    s = s + arm64_ldp_post16(2, 3)                      // 123
+    s = s + arm64_ldp_post16(0, 1)                      // 124
+    // DONE @125:
+    s = s + arm64_ret()                                 // 125
+    emit s
+}
+func kbiAllocInstrCount() { emit 126 }
+// Number of instructions in the allocator helper (either classic __rt_alloc
+// or KBI's __kbi_alloc). KBI is exactly 126 due to the extra rBUMP bookkeeping.
+func allocInstrCount() { if g_KBI == "1" { emit 126 } emit 123 }
 func rtAllocInstrCount() { emit 123 }
 // A1 float helper sizes (must match the emit funcs below).
 func fLoad1InstrCount() { emit 7 }
@@ -3123,6 +3251,7 @@ func computeFunctionInstrs(parsed, fIdx) {
     n = n + nP                     // save each param
     // __main__ also saves argc/argv to fixed cells (4 instr)
     if funcName(parsed, fIdx) == "__main__" { n = n + 26 }  // 5 argc/argv/envp + 14 mmap-heap seed + 7 stack-base/heap-min capture
+    if g_KBI == "1" && funcName(parsed, fIdx) == "__main__" { n = n + 1 }  // rBUMP seed
     let oi = 0
     while oi < nO {
         let opLine = funcOp(parsed, fIdx, oi)
@@ -3169,6 +3298,7 @@ func buildFunctionLabelTable(parsed, fIdx, funcStartInstr) {
     if frame > 0 { n = n + 1 }
     n = n + nP
     if funcName(parsed, fIdx) == "__main__" { n = n + 26 }  // 5 argc/argv/envp + 14 mmap-heap seed + 7 stack-base/heap-min capture
+    if g_KBI == "1" && funcName(parsed, fIdx) == "__main__" { n = n + 1 }  // rBUMP seed
     let opBase = funcStartLine(parsed, fIdx) + 1 + nP + funcNLocals(parsed, fIdx)
     let oi = 0
     while oi < nO {
@@ -3282,7 +3412,7 @@ func computeUserTextInstrs(parsed) {
 
 // Total __text size in bytes — all user functions + the __rt_alloc helper.
 func computeTextSize(parsed) {
-    emit (computeUserTextInstrs(parsed) + rtAllocInstrCount()
+    emit (computeUserTextInstrs(parsed) + allocInstrCount()
         + fLoad1InstrCount() + fLoad2InstrCount() + fBoxInstrCount()
         + fFormatInstrCount()) * 4
 }
@@ -3352,6 +3482,13 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
         s = sbAppend(s, arm64_b_cond(0x3, 2))            // 12: b.lo SKIP (mmap failed → keep 0)
         s = sbAppend(s, arm64_str_imm(0, 9, 0))          // 13: bump_cell+0 = mmap base
         instrIdx = instrIdx + 14
+        // --kbi: seed rBUMP (x28) with the current frontier. x28 stays
+        // untouched elsewhere until __rt_alloc/__main__ actually bump it in a
+        // later KBI phase; today it's a read-only mirror of bump_cell+0.
+        if g_KBI == "1" {
+            s = sbAppend(s, arm64_ldr_imm(28, 9, 0))    // rBUMP = bump_cell+0
+            instrIdx = instrIdx + 1
+        }
         // Stage 6 / conservative GC: set up the stack-scan base cells at
         // [bump_cell + 0x50000000] (the old shadow-stack region):
         //   +0  stack_base = main's fp (outermost frame; scan upper bound)
@@ -6207,12 +6344,20 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                     instrIdx += 1
                     reg -= 1
                 }
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiFlushBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
                 s = sbAppend(s, arm64_pop(16))
                 s = sbAppend(s, arm64_cbnz(16, 2))
                 s = sbAppend(s, arm64_brk(101))
                 s = sbAppend(s, arm64_blr(16))
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiReloadBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
                 s = sbAppend(s, arm64_push_x0())
-                instrIdx += 5
+                instrIdx += 7
             } else if cname == "objc_msgSend_rect" {
                 s = sbAppend(s, arm64_pop(4))  instrIdx = instrIdx + 1   // defer
                 s = sbAppend(s, arm64_pop(3))  instrIdx = instrIdx + 1   // backing
@@ -6228,8 +6373,17 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                 s = sbAppend(s, arm64_pop(1))  instrIdx = instrIdx + 1   // sel
                 s = sbAppend(s, arm64_pop(0))  instrIdx = instrIdx + 1   // obj
                 let rti = textSz / 4 + foreignIdx("objc_msgSend_rect") * 3
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiFlushBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
+
                 s = sbAppend(s, arm64_bl(rti - instrIdx))  instrIdx = instrIdx + 1
                 s = sbAppend(s, arm64_push(0))  instrIdx = instrIdx + 1
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiReloadBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
             } else if cname == "objc_msgSend_frame" {
                 // (obj,sel,x,y,w,h): NSRect{x,y,w,h} -> d0..d3 (initWithFrame:)
                 s = sbAppend(s, arm64_pop(9))  instrIdx = instrIdx + 1   // h
@@ -6243,8 +6397,17 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                 s = sbAppend(s, arm64_pop(1))  instrIdx = instrIdx + 1   // sel
                 s = sbAppend(s, arm64_pop(0))  instrIdx = instrIdx + 1   // obj
                 let fti = textSz / 4 + foreignIdx("objc_msgSend_frame") * 3
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiFlushBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
+
                 s = sbAppend(s, arm64_bl(fti - instrIdx))  instrIdx = instrIdx + 1
                 s = sbAppend(s, arm64_push(0))  instrIdx = instrIdx + 1
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiReloadBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
             } else if cname == "objc_msgSend_d1" {
                 // (obj,sel,n): n -> d0 (CGFloat), self x0, sel x1
                 s = sbAppend(s, arm64_pop(9))  instrIdx = instrIdx + 1   // n
@@ -6252,8 +6415,17 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                 s = sbAppend(s, arm64_pop(1))  instrIdx = instrIdx + 1   // sel
                 s = sbAppend(s, arm64_pop(0))  instrIdx = instrIdx + 1   // obj
                 let dti = textSz / 4 + foreignIdx("objc_msgSend_d1") * 3
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiFlushBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
+
                 s = sbAppend(s, arm64_bl(dti - instrIdx))  instrIdx = instrIdx + 1
                 s = sbAppend(s, arm64_push(0))  instrIdx = instrIdx + 1
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiReloadBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
             } else if cname == "objc_msgSend_rectp" {
                 // (obj,sel,x,y,w,h,p): NSRect{x,y,w,h} -> d0..d3, ptr -> x2 (drawInRect:withAttributes:)
                 s = sbAppend(s, arm64_pop(2))  instrIdx = instrIdx + 1   // p
@@ -6268,8 +6440,17 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                 s = sbAppend(s, arm64_pop(1))  instrIdx = instrIdx + 1   // sel
                 s = sbAppend(s, arm64_pop(0))  instrIdx = instrIdx + 1   // obj
                 let pti = textSz / 4 + foreignIdx("objc_msgSend_rectp") * 3
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiFlushBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
+
                 s = sbAppend(s, arm64_bl(pti - instrIdx))  instrIdx = instrIdx + 1
                 s = sbAppend(s, arm64_push(0))  instrIdx = instrIdx + 1
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiReloadBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
             } else if cname == "objc_msgSend_timer" {
                 // (self,sel,ms,target,actsel,info,rep): ms/1000.0 -> d0 (TimeInterval),
                 // target x2, actsel x3, info x4, rep x5
@@ -6285,8 +6466,17 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                 s = sbAppend(s, arm64_pop(1))  instrIdx = instrIdx + 1   // sel
                 s = sbAppend(s, arm64_pop(0))  instrIdx = instrIdx + 1   // self
                 let tti = textSz / 4 + foreignIdx("objc_msgSend_timer") * 3
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiFlushBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
+
                 s = sbAppend(s, arm64_bl(tti - instrIdx))  instrIdx = instrIdx + 1
                 s = sbAppend(s, arm64_push(0))  instrIdx = instrIdx + 1
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiReloadBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
             } else if cname == "objc_msgSend_rgb" {
                 // (self,sel,r,g,b): r/255->d0, g/255->d1, b/255->d2, alpha 1.0->d3
                 s = sbAppend(s, arm64_pop(9))  instrIdx = instrIdx + 1   // b
@@ -6305,8 +6495,17 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                 s = sbAppend(s, arm64_pop(1))  instrIdx = instrIdx + 1   // sel
                 s = sbAppend(s, arm64_pop(0))  instrIdx = instrIdx + 1   // self
                 let rgi = textSz / 4 + foreignIdx("objc_msgSend_rgb") * 3
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiFlushBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
+
                 s = sbAppend(s, arm64_bl(rgi - instrIdx))  instrIdx = instrIdx + 1
                 s = sbAppend(s, arm64_push(0))  instrIdx = instrIdx + 1
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiReloadBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
             } else if cname == "objc_msgSend_d2" {
                 // (self,sel,a,b): NSSize a->d0, b->d1
                 s = sbAppend(s, arm64_pop(9))  instrIdx = instrIdx + 1   // b
@@ -6316,8 +6515,17 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                 s = sbAppend(s, arm64_pop(1))  instrIdx = instrIdx + 1   // sel
                 s = sbAppend(s, arm64_pop(0))  instrIdx = instrIdx + 1   // self
                 let d2i = textSz / 4 + foreignIdx("objc_msgSend_d2") * 3
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiFlushBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
+
                 s = sbAppend(s, arm64_bl(d2i - instrIdx))  instrIdx = instrIdx + 1
                 s = sbAppend(s, arm64_push(0))  instrIdx = instrIdx + 1
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiReloadBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
             } else if cname == "objc_msgSend_d3" {
                 // (self,sel,a,b,c): CGFloat args d0..d2
                 s = sbAppend(s, arm64_pop(9))  instrIdx = instrIdx + 1   // c
@@ -6329,8 +6537,17 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                 s = sbAppend(s, arm64_pop(1))  instrIdx = instrIdx + 1   // sel
                 s = sbAppend(s, arm64_pop(0))  instrIdx = instrIdx + 1   // self
                 let d3i = textSz / 4 + foreignIdx("objc_msgSend_d3") * 3
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiFlushBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
+
                 s = sbAppend(s, arm64_bl(d3i - instrIdx))  instrIdx = instrIdx + 1
                 s = sbAppend(s, arm64_push(0))  instrIdx = instrIdx + 1
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiReloadBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
             } else if cname == "objc_msgSend_pd1" {
                 s = sbAppend(s, arm64_pop(9))  instrIdx += 1
                 s = sbAppend(s, arm64_scvtf_d_x(0, 9))  instrIdx += 1
@@ -6338,8 +6555,20 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                 s = sbAppend(s, arm64_pop(1))  instrIdx += 1
                 s = sbAppend(s, arm64_pop(0))  instrIdx += 1
                 let fti = textSz / 4 + foreignIdx(cname) * 3
+                if g_KBI == "1" {
+
+                    s = sbAppend(s, emitKbiFlushBump(instrIdx, textOff))
+
+                    instrIdx = instrIdx + 2
+
+                }
+
                 s = sbAppend(s, arm64_bl(fti - instrIdx))  instrIdx += 1
                 s = sbAppend(s, arm64_push(0))  instrIdx += 1
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiReloadBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
             } else if cname == "objc_msgSend_rounded" {
                 let d = 5
                 while d >= 0 {
@@ -6350,8 +6579,20 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                 s = sbAppend(s, arm64_pop(1))  instrIdx += 1
                 s = sbAppend(s, arm64_pop(0))  instrIdx += 1
                 let fti = textSz / 4 + foreignIdx(cname) * 3
+                if g_KBI == "1" {
+
+                    s = sbAppend(s, emitKbiFlushBump(instrIdx, textOff))
+
+                    instrIdx = instrIdx + 2
+
+                }
+
                 s = sbAppend(s, arm64_bl(fti - instrIdx))  instrIdx += 1
                 s = sbAppend(s, arm64_push(0))  instrIdx += 1
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiReloadBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
             } else if cname == "objc_msgSend_rgba" {
                 let d = 3
                 while d >= 0 {
@@ -6369,8 +6610,20 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                 s = sbAppend(s, arm64_pop(1))  instrIdx += 1
                 s = sbAppend(s, arm64_pop(0))  instrIdx += 1
                 let fti = textSz / 4 + foreignIdx(cname) * 3
+                if g_KBI == "1" {
+
+                    s = sbAppend(s, emitKbiFlushBump(instrIdx, textOff))
+
+                    instrIdx = instrIdx + 2
+
+                }
+
                 s = sbAppend(s, arm64_bl(fti - instrIdx))  instrIdx += 1
                 s = sbAppend(s, arm64_push(0))  instrIdx += 1
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiReloadBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
             } else if cname == "objc_msgSend_rect_w" || cname == "objc_msgSend_rect_h" {
                 // (self,sel): NSRect return in d0..d3, selected size -> x0.
                 s = sbAppend(s, arm64_pop(1))  instrIdx += 1
@@ -6405,6 +6658,8 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                 ai = ai - 1
             }
             // bl <target> — foreign symbol routes to its __stubs entry (C ABI: args already in x0..xN)
+            // Krypton-to-Krypton dispatch: 4 instructions fewer — no FFI
+            // flush/reload (the callee may itself advance rBUMP through __rt_alloc).
             let fidx = foreignIdx(cname)
             let targetInstr = findLabel(funcTable, cname)
             if fidx < 0 && targetInstr < 0 {
@@ -6412,9 +6667,17 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                 exit("1")
             }
             if fidx >= 0 { targetInstr = textSz / 4 + fidx * 3 }   // stub i at __text_end + i*12
+            if g_KBI == "1" && fidx >= 0 {
+                s = sbAppend(s, emitKbiFlushBump(instrIdx, textOff))
+                instrIdx = instrIdx + 2
+            }
             let delta = targetInstr - instrIdx
             s = sbAppend(s, arm64_bl(delta))
             instrIdx = instrIdx + 1
+            if g_KBI == "1" && fidx >= 0 {
+                s = sbAppend(s, emitKbiReloadBump(instrIdx, textOff))
+                instrIdx = instrIdx + 2
+            }
             s = sbAppend(s, arm64_push(0))
             instrIdx = instrIdx + 1
             }
@@ -6914,7 +7177,7 @@ func emitTextFromIR(parsed, strOffsets, textSz) {
     g_RT_ALLOC_INSTR = computeUserTextInstrs(parsed)
     // A1 float helpers sit right after __rt_alloc; set indices before the emit
     // loop so fp-builtin `bl __f_*` displacements resolve.
-    g_F_LOAD1_INSTR = g_RT_ALLOC_INSTR + rtAllocInstrCount()
+    g_F_LOAD1_INSTR = g_RT_ALLOC_INSTR + allocInstrCount()
     g_F_LOAD2_INSTR = g_F_LOAD1_INSTR + fLoad1InstrCount()
     g_F_BOX_INSTR   = g_F_LOAD2_INSTR + fLoad2InstrCount()
     g_F_FORMAT_INSTR = g_F_BOX_INSTR + fBoxInstrCount()
@@ -6927,8 +7190,12 @@ func emitTextFromIR(parsed, strOffsets, textSz) {
         s = sbAppend(s, fcode)
         oi += 1
     }
-    // Append the __rt_alloc helper at instr index g_RT_ALLOC_INSTR.
-    s = sbAppend(s, emitRtAllocHelper(g_RT_ALLOC_INSTR, g_TEXT_OFF))
+    // Append the appropriate allocator at instr index g_RT_ALLOC_INSTR.
+    if g_KBI == "1" {
+        s = sbAppend(s, emitKbiAllocHelper(g_RT_ALLOC_INSTR, g_TEXT_OFF))
+    } else {
+        s = sbAppend(s, emitRtAllocHelper(g_RT_ALLOC_INSTR, g_TEXT_OFF))
+    }
     // A1 float helpers, in the order their indices were assigned above.
     s = sbAppend(s, emitFLoad1Helper())
     s = sbAppend(s, emitFLoad2Helper())
@@ -7707,6 +7974,24 @@ just run {
         if len(ir) == 0 {
             printErr("macho_arm64_self: cannot read " + inFile)
             exit("1")
+        }
+        // --kbi: pick up the "; KBI: n" marker header (set by the frontend
+        // when invoked with --kbi). Absent marker ⇒ default ABI.
+        let nLinesHdr = lineCount(ir)
+        let li = 0
+        while li < nLinesHdr {
+            let ln = trim(getLine(ir, li))
+            if len(ln) >= 7 && ln[0] == ";" && ln[1] == " " && ln[2] == "K" && ln[3] == "B" && ln[4] == "I" {
+                let rest = trim(substring(ln, 5, len(ln)))
+                if len(rest) >= 2 && rest[0] == ":" { g_KBI = "1" }
+                else if rest == "1" { g_KBI = "1" }
+            }
+            li += 1
+        }
+        let _ai = 0
+        while _ai < argCount() {
+            if arg(_ai + "") == "--kbi" { g_KBI = "1" }
+            _ai += 1
         }
         irOps = parseFullIR(ir)
         detectForeign(irOps)

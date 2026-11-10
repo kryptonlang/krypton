@@ -4339,6 +4339,7 @@ just run {
     // invoked as `kcc foo.k` (no flags) should still emit IR, not nothing.
     let irMode = 1
     let portMode = 0
+    let kbi = "0"               // --kbi: enable Krypton Binary Interface (macho arm64 only for now)
     // Install root resolution order (2.1.1):
     //   1. $KRYPTON_ROOT env var (set by kcc.sh wrapper from $SCRIPT_DIR).
     //   2. POSIX default ($HOME present) → /usr/local/krypton.
@@ -4385,7 +4386,7 @@ just run {
         _aRej += 1
     }
 
-    while file == "--ir" || file == "-o" || file == "--target" || file == "--port-1to2" {
+    while file == "--ir" || file == "-o" || file == "--target" || file == "--port-1to2" || file == "--kbi" {
         if file == "--ir" {
             irMode = 1
             argIdx += 1
@@ -4402,6 +4403,10 @@ just run {
                 printErr("kcc: --target needs a target name")
                 emit 1
             }
+            argIdx += 1
+        }
+        if file == "--kbi" {
+            kbi = "1"
             argIdx += 1
         }
         if file == "--port-1to2" {
@@ -5153,7 +5158,9 @@ just run {
         if irMode {
             // DLL/library IR mode: emit IR for export funcs, no entry point
             let sbIRlib = sbNew()
-            sbIRlib = sbAppend(sbIRlib, "; Krypton IR\n; Source: " + file + "\n\n")
+            let irKbi1 = ""
+            if kbi == "1" { irKbi1 = "; KBI: 1\n" }
+            sbIRlib = sbAppend(sbIRlib, "; Krypton IR\n; Source: " + file + "\n" + irKbi1 + "\n")
             sbIRlib = sbAppend(sbIRlib, importedIR)
             let irlibI = 0
             let libStructTypes = kccStructTypes(tokens, ntoks)
@@ -5211,7 +5218,9 @@ just run {
 
     if irMode {
         let sbIR = sbNew()
-        sbIR = sbAppend(sbIR, "; Krypton IR\n; Source: " + file + "\n\n")
+        let irKbi2 = ""
+        if kbi == "1" { irKbi2 = "; KBI: 1\n" }
+        sbIR = sbAppend(sbIR, "; Krypton IR\n; Source: " + file + "\n" + irKbi2 + "\n")
         sbIR = sbAppend(sbIR, importedIR)
 
         // Collect top-level globals (let/const at file scope) so we can prepend
