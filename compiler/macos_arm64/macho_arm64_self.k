@@ -1796,6 +1796,8 @@ func findInList(list, count, name) {
 
 // sb-backed intern: search current sb content for `name`; if missing, append.
 // Returns the index. Avoids the O(N²) list-copy cost of internIntoList.
+// Root the interned string so the GC cannot sweep it out from under the
+// string table before the cstring blob is written to disk.
 func internSb(sbHandle, count, name) {
     let snap = sbToString(sbHandle)
     let i = 0
@@ -1803,6 +1805,7 @@ func internSb(sbHandle, count, name) {
         if getLine(snap, i) == name { emit i }
         i += 1
     }
+    gcShadowPush(name)
     if count > 0 { sbAppend(sbHandle, "\n") }
     sbAppend(sbHandle, name)
     emit count
@@ -2507,6 +2510,9 @@ func parseFullIR(ir) {
                     } else if bname == "toInt" {
                         curOps = sbAppend(curOps, "BUILTIN_TOINT\n")
                         nOps += 1
+                    } else if bname == "toStr" {
+                        curOps = sbAppend(curOps, "BUILTIN_TOSTR\n")
+                        nOps += 1
                     } else if bname == "indexOf" {
                         curOps = sbAppend(curOps, "BUILTIN_INDEXOF\n")
                         nOps += 1
@@ -3056,6 +3062,7 @@ func opInstrCount(opTok) {
     if opTok == "BUILTIN_GCSLABCOUNT"      { emit 2 }
     if opTok == "BUILTIN_GCSLABBYTES"      { emit 2 }
     if opTok == "BUILTIN_FROMCHARCODE" { emit 26 }
+    if opTok == "BUILTIN_TOSTR"        { emit 54 }
     if opTok == "BUILTIN_READLINE"     { emit 46 }
     if opTok == "BUILTIN_SHELLRUN"     { emit 84 }
     if opTok == "BUILTIN_EXEC"         { emit 98 }
@@ -5493,6 +5500,51 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_strb_imm(31, 0, 1))
             s = sbAppend(s, arm64_push_x0())
             instrIdx = instrIdx + 26
+        } else if opTok == "BUILTIN_TOSTR" {
+            // toStr(x): pointer (already a string) passes through; otherwise
+            // itoa into a 32-byte heap buffer, NUL-terminated, and return it.
+            s = sbAppend(s, arm64_pop(3))            // 0: x3 = arg
+            s = sbAppend(s, arm64_movz_x_imm_lsl32(14, 1))  // 1: x14 = 1<<32
+            s = sbAppend(s, arm64_cmp_xx(3, 14))     // 2
+            s = sbAppend(s, arm64_b_cond(0xa, 50))   // 3: b.ge -> PTR (53-3)
+            s = sbAppend(s, arm64_movz_x_imm(4, 32))  // 4: alloc size
+            instrIdx = instrIdx + 5
+            s = sbAppend(s, emitAllocN(32, instrIdx, textVaddr, textOff))  // 5-25
+            instrIdx = instrIdx + 21
+            s = sbAppend(s, arm64_add_imm(4, 0, 31))  // 26: x4 = x0 + 31
+            s = sbAppend(s, arm64_strb_imm(31, 4, 0))  // 27: NUL at end
+            s = sbAppend(s, arm64_movz_x_imm(5, 0))  // 28: neg = 0
+            s = sbAppend(s, arm64_cmp_imm(3, 0))     // 29
+            s = sbAppend(s, arm64_b_cond(0xa, 3))    // 30: b.ge -> POS (33-30)
+            s = sbAppend(s, arm64_movz_x_imm(5, 1))  // 31: neg = 1
+            s = sbAppend(s, arm64_neg(3, 3))         // 32: n = -n
+            // POS @ idx 33:
+            s = sbAppend(s, arm64_cbnz(3, 5))    // 33: -> INT_LOOP (38-33)
+            s = sbAppend(s, arm64_sub_imm(4, 4, 1))  // 34: p -= 1
+            s = sbAppend(s, arm64_movz_w_imm(6, 0x30))  // 35: '0'
+            s = sbAppend(s, arm64_strb_imm(6, 4, 0)) // 36: store '0'
+            s = sbAppend(s, arm64_b(10))             // 37: -> INT_SIGN (47-37)
+            // INT_LOOP @ idx 38:
+            s = sbAppend(s, arm64_cbz(3, 9))     // 38: -> INT_SIGN (47-38)
+            s = sbAppend(s, arm64_movz_x_imm(7, 10)) // 39
+            s = sbAppend(s, arm64_udiv_xxx(8, 3, 7)) // 40: q = n / 10
+            s = sbAppend(s, arm64_msub_xxxx(9, 8, 7, 3)) // 41: r = n - q*10
+            s = sbAppend(s, arm64_add_imm(9, 9, 0x30))  // 42: r += '0'
+            s = sbAppend(s, arm64_sub_imm(4, 4, 1))  // 43
+            s = sbAppend(s, arm64_strb_imm(9, 4, 0)) // 44
+            s = sbAppend(s, arm64_mov_xx(3, 8))      // 45: n = q
+            s = sbAppend(s, arm64_b(0 - 8))          // 46: -> INT_LOOP (38-46)
+            // INT_SIGN @ idx 47:
+            s = sbAppend(s, arm64_cbz(5, 4))     // 47: -> DONE (51-47)
+            s = sbAppend(s, arm64_sub_imm(4, 4, 1))  // 48
+            s = sbAppend(s, arm64_movz_w_imm(6, 0x2D))  // 49: '-'
+            s = sbAppend(s, arm64_strb_imm(6, 4, 0)) // 50: store '-'
+            // DONE @ idx 51:
+            s = sbAppend(s, arm64_push(4))         // 51: push x4 = string ptr
+            s = sbAppend(s, arm64_b(2))            // 52: skip PTR_PATH (54-52)
+            // PTR_PATH @ idx 53:
+            s = sbAppend(s, arm64_push(3))         // 53: pass pointer through
+            instrIdx = instrIdx + 28               // 26..53 — total branch = 54
         } else if opTok == "BUILTIN_READLINE" {
             // readLine(prompt): write prompt stdout, read stdin, strip \n. 46 instrs.
             s = sbAppend(s, arm64_pop(10))  // 0: prompt
@@ -6836,9 +6888,13 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                 s = sbAppend(s, arm64_add_sp(frame))
                 instrIdx = instrIdx + 1
             }
-            s = sbAppend(s, arm64_movz_w0_zero())
-            s = sbAppend(s, arm64_ldp_fp_lr_post16())
-            s = sbAppend(s, arm64_ret())
+            // Terminate directly with exit(0) instead of returning into the
+            // dyld exit trampoline: on current macOS dyld faults at exit for
+            // native arm64 images that exercised the bump allocator (heap is
+            // mmap'd either way), so skip the trampoline entirely. 3 instrs.
+            s = sbAppend(s, arm64_movz_x_imm(0, 0))
+            s = sbAppend(s, arm64_movz_x_imm(16, 1))   // SYS_exit
+            s = sbAppend(s, arm64_svc(0x80))
             instrIdx = instrIdx + 3
         }
         oi += 1
