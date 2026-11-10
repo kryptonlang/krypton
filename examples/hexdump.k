@@ -61,7 +61,7 @@ just run {
         line = sbAppend(line, " |")
         line = sbAppend(line, ascii)
         line = sbAppend(line, "|")
-        kp(sbToString(line))
+        print(sbToString(line))
         off += 16
     }
 }

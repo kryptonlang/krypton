@@ -38,8 +38,8 @@ func ledgerId(runtime, self) { emit okKGet(runtime, self, "id") }
 func ledgerAmount(runtime, self, x) { emit x * 10 + okKGet(runtime, self, "bonus") }
 
 func check(name, expected, actual) {
-    if expected != actual { kp("[FAIL] " + name); exit("1") }
-    kp("[PASS] " + name)
+    if expected != actual { print("[FAIL] " + name); exit("1") }
+    print("[PASS] " + name)
 }
 
 just run {

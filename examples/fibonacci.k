@@ -17,8 +17,8 @@ func fib(n) {
 
 just run {
     let n = 20
-    kp(`First {n} Fibonacci numbers:`)
+    print(`First {n} Fibonacci numbers:`)
     for i in range(0, n) {
-        kp(`  fib({i}) = ` + fib(toInt(i)))
+        print(`  fib({i}) = ` + fib(toInt(i)))
     }
 }

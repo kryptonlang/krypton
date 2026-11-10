@@ -51,14 +51,14 @@ func logFormat(level, msg) { emit "[" + _tagColor(level) + "] " + msg }
 func logFormatPlain(level, msg) { emit "[" + _tagPlain(level) + "] " + msg }
 
 // Always-on emitters (print immediately).
-func logDebug(msg) { kp(logFormat(0, msg)) }
-func logInfo(msg)  { kp(logFormat(1, msg)) }
-func logWarn(msg)  { kp(logFormat(2, msg)) }
-func logError(msg) { kp(logFormat(3, msg)) }
+func logDebug(msg) { print(logFormat(0, msg)) }
+func logInfo(msg)  { print(logFormat(1, msg)) }
+func logWarn(msg)  { print(logFormat(2, msg)) }
+func logError(msg) { print(logFormat(3, msg)) }
 
 // logIf(activeLevel, msgLevel, msg): print only if msgLevel >= activeLevel.
 // Lets the caller hold one threshold and gate everything through it.
 func logIf(activeLevel, msgLevel, msg) {
-    if msgLevel >= activeLevel { kp(logFormat(msgLevel, msg)) }
+    if msgLevel >= activeLevel { print(logFormat(msgLevel, msg)) }
     emit ""
 }

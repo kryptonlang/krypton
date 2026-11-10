@@ -26,11 +26,11 @@ func shift(s, k) {
 
 just run {
     let cipher = "Khoor, Nubswrq!"
-    kp("Brute-forcing: " + cipher)
-    kp("")
+    print("Brute-forcing: " + cipher)
+    print("")
     let k = 1
     while k <= 25 {
-        kp("shift " + k + ": " + shift(cipher, k))
+        print("shift " + k + ": " + shift(cipher, k))
         k += 1
     }
 }

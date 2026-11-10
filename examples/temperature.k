@@ -26,20 +26,20 @@ func kelvinToFahrenheit(k) {
 }
 
 just run {
-    kp("Temperature Converter")
-    kp("=====================")
-    kp("")
+    print("Temperature Converter")
+    print("=====================")
+    print("")
 
     // Common temperatures
-    kp("Common temperatures:")
-    kp("  Water freezing: 0C = " + celsiusToFahrenheit(0) + "F = " + celsiusToKelvin(0) + "K")
-    kp("  Room temp:      20C = " + celsiusToFahrenheit(20) + "F = " + celsiusToKelvin(20) + "K")
-    kp("  Body temp:      37C = " + celsiusToFahrenheit(37) + "F = " + celsiusToKelvin(37) + "K")
-    kp("  Water boiling:  100C = " + celsiusToFahrenheit(100) + "F = " + celsiusToKelvin(100) + "K")
-    kp("")
+    print("Common temperatures:")
+    print("  Water freezing: 0C = " + celsiusToFahrenheit(0) + "F = " + celsiusToKelvin(0) + "K")
+    print("  Room temp:      20C = " + celsiusToFahrenheit(20) + "F = " + celsiusToKelvin(20) + "K")
+    print("  Body temp:      37C = " + celsiusToFahrenheit(37) + "F = " + celsiusToKelvin(37) + "K")
+    print("  Water boiling:  100C = " + celsiusToFahrenheit(100) + "F = " + celsiusToKelvin(100) + "K")
+    print("")
 
     // Conversion table
-    kp("Celsius to Fahrenheit table:")
+    print("Celsius to Fahrenheit table:")
     let c = 0 - 40
     while c <= 100 {
         let f = celsiusToFahrenheit(c)
@@ -47,7 +47,7 @@ just run {
         while len(label) < 6 {
             label = " " + label
         }
-        kp("  " + label + " C = " + f + " F")
+        print("  " + label + " C = " + f + " F")
         c = c + 10
     }
     emit "ok"

@@ -3,9 +3,9 @@ import "k:url"
 
 func expect(label, got, want) {
     if got != want {
-        kp("FAIL " + label)
-        kp("  want: [" + want + "]")
-        kp("  got:  [" + got + "]")
+        print("FAIL " + label)
+        print("  want: [" + want + "]")
+        print("  got:  [" + got + "]")
         exit("1")
     }
 }
@@ -41,5 +41,5 @@ just run {
     expect("build one",       urlBuild("/api", "q=hi mom"), "/api?q=hi+mom")
     expect("build two",       urlBuild("/api", "k=a,v=b c"), "/api?k=a&v=b+c")
 
-    kp("ok")
+    print("ok")
 }

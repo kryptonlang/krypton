@@ -1,6 +1,6 @@
 just run {
     let a = exec("echo first")
-    kp(a)
+    print(a)
     let b = exec("echo second")
-    kp(b)
+    print(b)
 }

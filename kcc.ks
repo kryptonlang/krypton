@@ -123,7 +123,7 @@ func tmpPath(prefix, suffix) {
 }
 
 // Krypton's arg parser on Windows ALSO splits on spaces inside a
-// quoted string ("kp(\"hi there\")" → ["kp(\"hi, there\")"]). For
+// quoted string ("print(\"hi there\")" → ["print(\"hi, there\")"]). For
 // kcc -e, everything after the flag is one code expression, so re-
 // glue arg(idx)..arg(argCount-1) with spaces to undo the split.
 func _winJoinFrom(idx) {
@@ -138,7 +138,7 @@ func _winJoinFrom(idx) {
 }
 
 // Krypton's arg parser on Windows preserves MSVC-CRT-style escapes
-// verbatim. `kcc -e 'kp("hi")'` reaches us as `arg(1) == "\"kp(\\\"hi\\\")\""`
+// verbatim. `kcc -e 'print("hi")'` reaches us as `arg(1) == "\"print(\\\"hi\\\")\""`
 // (the literal text including outer quotes and backslash-escapes). Undo it:
 // strip a leading + trailing `"` and turn `\"` into `"`, `\\` into `\`.
 func _winUnquote(s) {
@@ -220,10 +220,10 @@ func ensureHost(root) {
     let boot = seed
     if exists(boot) == "0" { boot = host }
     if exists(boot) == "0" {
-        kp("kcc: no macho_host seed to self-host from")
+        print("kcc: no macho_host seed to self-host from")
         emit "0"
     }
-    kp("kcc: rebuilding macho_host natively (self-host, no C)...")
+    print("kcc: rebuilding macho_host natively (self-host, no C)...")
     let tmpir = tmpPath("_kcchost", ".kir")
     let tmpout = tmpPath("_kcchostbin", "")
     exec("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir " + q(src) + " > " + q(tmpir))
@@ -233,7 +233,7 @@ func ensureHost(root) {
         exec("mv " + q(tmpout) + " " + q(host))
         exec("chmod +x " + q(host))
     }
-    if exists(host) == "0" { kp("kcc: macho_host build failed")  emit "0" }
+    if exists(host) == "0" { print("kcc: macho_host build failed")  emit "0" }
     emit "1"
 }
 
@@ -255,7 +255,7 @@ func streamFrontendIR(root, fe, src) {
     rm(tmperr)
     if err != "" { printErr(err) }
     if rc == "0" && startsWith(ir, "; Krypton IR") {
-        kp(ir)
+        print(ir)
         emit "1"
     }
     if err == "" { printErr("kcc: IR emission failed for " + src + "\n") }
@@ -273,15 +273,15 @@ func streamFrontendIRTarget(root, fe, src, target) {
     rm(tmpir)
     rm(tmperr)
     if err != "" {
-        kp(_chompWS(err))
+        print(_chompWS(err))
         emit "0"
     }
     if startsWith(ir, "; Krypton IR") {
-        kp(ir)
+        print(ir)
         emit "1"
     }
-    if ir != "" { kp(_chompWS(ir)) }
-    else { kp("kcc: iOS IR emission failed for " + src) }
+    if ir != "" { print(_chompWS(ir)) }
+    else { print("kcc: iOS IR emission failed for " + src) }
     emit "0"
 }
 
@@ -358,14 +358,14 @@ func compileIos(root, src, out, target) {
     exec("KRYPTON_TARGET=" + q(target) + " KRYPTON_ROOT=" + q(root) + " " +
         q(fe) + " --target " + q(target) + " --ir" + _kbi() + " " + q(src) + " > " + q(tmpir))
     if size(tmpir) == 0 {
-        kp("kcc: iOS IR emission failed for " + src)
+        print("kcc: iOS IR emission failed for " + src)
         rm(tmpir)
         emit "0"
     }
     exec(q(host) + " --target " + q(target) + " --ir " + q(tmpir) + " " + q(out))
     rm(tmpir)
     if exists(out) == "0" {
-        kp("kcc: iOS codegen failed")
+        print("kcc: iOS codegen failed")
         emit "0"
     }
     exec("chmod +x " + q(out))
@@ -401,16 +401,16 @@ func ensureElfHost(root) {
     let boot = seed
     if exists(boot) == "0" { boot = host }
     if exists(boot) == "0" {
-        kp("kcc: no elf_host seed to self-host from; cannot rebuild backend")
+        print("kcc: no elf_host seed to self-host from; cannot rebuild backend")
         emit "0"
     }
-    kp("kcc: rebuilding elf_host natively (self-host, no C — slow on elf.k)...")
+    print("kcc: rebuilding elf_host natively (self-host, no C — slow on elf.k)...")
     let tmpir = tmpPath("_kccelf", ".kir")
     exec("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir " + q(src) + " > " + q(tmpir))
     exec(q(boot) + " " + q(tmpir) + " " + q(host))
     rm(tmpir)
     exec("chmod +x " + q(host))
-    if exists(host) == "0" { kp("kcc: elf_host self-host failed")  emit "0" }
+    if exists(host) == "0" { print("kcc: elf_host self-host failed")  emit "0" }
     emit "1"
 }
 
@@ -478,7 +478,7 @@ func ensureArm64Host(root) {
     // it compiles linux_arm64/elf.k's IR into the arm64-emitter host.
     if ensureElfHost(root) == "0" { emit "0" }
     let elf = root + "/compiler/linux_x86/elf_host"
-    kp("kcc: building arm64 backend host natively (self-host, no C)...")
+    print("kcc: building arm64 backend host natively (self-host, no C)...")
     let tmpir = tmpPath("_kccarm", ".kir")
     exec("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir " + q(bsrc) + " > " + q(tmpir))
     exec(q(elf) + " " + q(tmpir) + " " + q(host))
@@ -497,14 +497,14 @@ func compileArm64(root, src, out) {
     let tmpir = tmpPath("_kcka", ".kir")
     exec("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir " + q(src) + " > " + q(tmpir))
     if size(tmpir) == 0 {
-        kp("kcc: IR emission failed for " + src)
+        print("kcc: IR emission failed for " + src)
         rm(tmpir)
         emit "0"
     }
     exec(q(host) + " " + q(tmpir) + " " + q(out))
     rm(tmpir)
     if exists(out) == "0" {
-        kp("kcc: arm64 codegen failed")
+        print("kcc: arm64 codegen failed")
         emit "0"
     }
     exec("chmod +x " + q(out))
@@ -547,11 +547,11 @@ func compileWindowsTarget(root, src, out, subsystem) {
     let tmpIR = winTemp + "/tmp_kcc_build_" + safe + ".ir"
     let tmpOpt = winTemp + "/tmp_kcc_build_" + safe + "_opt.ir"
     exec("set KRYPTON_ROOT=" + root + "&& " + kccExe + " " + src + " --ir > " + tmpIR)
-    if _winExists(tmpIR) == "0" { kp("kcc: IR emission failed for " + src)  emit "0" }
+    if _winExists(tmpIR) == "0" { print("kcc: IR emission failed for " + src)  emit "0" }
     exec(optExe + " " + tmpIR + " > " + tmpOpt)
     if _winExists(tmpOpt) == "0" {
         exec("del /q " + replace(tmpIR, "/", "\\"))
-        kp("kcc: optimize failed")
+        print("kcc: optimize failed")
         emit "0"
     }
     exec(x64Exe + " " + tmpOpt + " " + out + " " + subsystem)
@@ -564,7 +564,7 @@ func compileWindowsTarget(root, src, out, subsystem) {
     }
     exec("del /q " + replace(tmpIR, "/", "\\"))
     exec("del /q " + replace(tmpOpt, "/", "\\"))
-    if _winExists(out) == "0" { kp("kcc: native codegen failed")  emit "0" }
+    if _winExists(out) == "0" { print("kcc: native codegen failed")  emit "0" }
     emit "1"
 }
 func compileWindows(root, src, out) {
@@ -578,7 +578,7 @@ func compileLinux(root, src, out) {
     let tmpir = tmpPath("_kcck", ".kir")
     exec("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir " + q(src) + " > " + q(tmpir))
     if size(tmpir) == 0 {
-        kp("kcc: IR emission failed for " + src)
+        print("kcc: IR emission failed for " + src)
         rm(tmpir)
         emit "0"
     }
@@ -592,7 +592,7 @@ func compileLinux(root, src, out) {
     exec(q(host) + " " + q(tmpir) + " " + q(out))
     rm(tmpir)
     if exists(out) == "0" {
-        kp("kcc: native codegen failed")
+        print("kcc: native codegen failed")
         emit "0"
     }
     exec("chmod +x " + q(out))
@@ -623,16 +623,16 @@ func ensureFreebsdHost(root) {
     let boot = seed
     if exists(boot) == "0" { boot = host }
     if exists(boot) == "0" {
-        kp("kcc: no FreeBSD elf_host seed to self-host from")
+        print("kcc: no FreeBSD elf_host seed to self-host from")
         emit "0"
     }
-    kp("kcc: rebuilding FreeBSD elf_host natively (self-host, no C)...")
+    print("kcc: rebuilding FreeBSD elf_host natively (self-host, no C)...")
     let tmpir = tmpPath("_kccfbsd", ".kir")
     exec("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir " + q(src) + " > " + q(tmpir))
     exec(q(boot) + " " + q(tmpir) + " " + q(host))
     rm(tmpir)
     exec("chmod +x " + q(host))
-    if exists(host) == "0" { kp("kcc: FreeBSD elf_host self-host failed")  emit "0" }
+    if exists(host) == "0" { print("kcc: FreeBSD elf_host self-host failed")  emit "0" }
     emit "1"
 }
 
@@ -677,7 +677,7 @@ func compileFreebsd(root, src, out) {
     let tmpir = tmpPath("_kccfb", ".kir")
     exec("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir " + q(src) + " > " + q(tmpir))
     if size(tmpir) == 0 {
-        kp("kcc: IR emission failed for " + src)
+        print("kcc: IR emission failed for " + src)
         rm(tmpir)
         emit "0"
     }
@@ -690,7 +690,7 @@ func compileFreebsd(root, src, out) {
     exec(q(host) + " " + q(tmpir) + " " + q(out))
     rm(tmpir)
     if exists(out) == "0" {
-        kp("kcc: FreeBSD codegen failed")
+        print("kcc: FreeBSD codegen failed")
         emit "0"
     }
     exec("chmod +x " + q(out))
@@ -699,33 +699,33 @@ func compileFreebsd(root, src, out) {
 
 just run {
     if argCount() < 1 {
-        kp(VERSION())
-        kp("usage: kcc-native <src> [-o OUT] | -r <src> [args] | --ir <src> | --version")
+        print(VERSION())
+        print("usage: kcc-native <src> [-o OUT] | -r <src> [args] | --ir <src> | --version")
         exit("1")
     }
 
     let first = arg(0)
-    if first == "--version" || first == "-v" { kp(VERSION())  exit("0") }
+    if first == "--version" || first == "-v" { print(VERSION())  exit("0") }
     if first == "--help" || first == "-h" {
-        kp("kcc — Krypton compiler driver (2.4.9)")
-        kp("")
-        kp("Usage: kcc <source.k|source.ks> [flags]")
-        kp("  --native    (default) emit native binary at ./<basename>")
-        kp("  --fast      use the on-disk stage-0 toolchain (skip 10-min self-host rebuild)")
-        kp("  --bootstrap alias for --fast")
-        kp("  --ir        emit Krypton IR to stdout")
-        kp("  --kbi       opt in to the KBI fast ABI (macOS arm64 only)")
-        kp("  --arm64     cross-compile to a static aarch64 ELF")
-        kp("  --target T  ios-sim-arm64|ios-device-arm64 (macOS), windows-x86_64 (Windows)")
-        kp("  --subsystem console|windows (Windows)")
-        kp("  -o FILE     output path")
-        kp("  -r FILE     compile, run, delete (like python file.py)")
-        kp("  -e CODE     compile + run an inline snippet (like python -c)")
-        kp("  --fast      skip the stage-0 self-hosting rebuild and use the")
-        kp("              toolchain already on disk (same as KCC_FAST=1)")
-        kp("  --bootstrap alias for --fast")
-        kp("  --version   print version")
-        kp("  --help      this help")
+        print("kcc — Krypton compiler driver (2.4.9)")
+        print("")
+        print("Usage: kcc <source.k|source.ks> [flags]")
+        print("  --native    (default) emit native binary at ./<basename>")
+        print("  --fast      use the on-disk stage-0 toolchain (skip 10-min self-host rebuild)")
+        print("  --bootstrap alias for --fast")
+        print("  --ir        emit Krypton IR to stdout")
+        print("  --kbi       opt in to the KBI fast ABI (macOS arm64 only)")
+        print("  --arm64     cross-compile to a static aarch64 ELF")
+        print("  --target T  ios-sim-arm64|ios-device-arm64 (macOS), windows-x86_64 (Windows)")
+        print("  --subsystem console|windows (Windows)")
+        print("  -o FILE     output path")
+        print("  -r FILE     compile, run, delete (like python file.py)")
+        print("  -e CODE     compile + run an inline snippet (like python -c)")
+        print("  --fast      skip the stage-0 self-hosting rebuild and use the")
+        print("              toolchain already on disk (same as KCC_FAST=1)")
+        print("  --bootstrap alias for --fast")
+        print("  --version   print version")
+        print("  --help      this help")
         exit("0")
     }
 
@@ -733,22 +733,22 @@ just run {
     // scripts and PKGBUILDs branch on host arch without hardcoding `uname -m`
     // (which doesn't capture cleanly under Krypton's shellRun on Linux).
     //   x86_64 | arm64 | x86 | armv7 | unknown
-    if first == "--print-arch" { kp(arch())  exit("0") }
+    if first == "--print-arch" { print(arch())  exit("0") }
 
     let root = findRoot()
     if root == "" {
-        kp("kcc: cannot find install root (set KRYPTON_ROOT)")
+        print("kcc: cannot find install root (set KRYPTON_ROOT)")
         exit("1")
     }
 
     let os = sh("uname -s")
     // --kbi is macOS arm64 only (v0); fail fast elsewhere rather than silently
     // shipping KBI-flagged binaries on x86_64 / Windows / FreeBSD.
-    if hasFlag("--kbi") == "1" && os != "Darwin" { kp("kcc: --kbi is macOS arm64 only")  exit("1") }
+    if hasFlag("--kbi") == "1" && os != "Darwin" { print("kcc: --kbi is macOS arm64 only")  exit("1") }
     let requestedTarget = optValue("--target", "")
     if requestedTarget != "" && os != "Darwin" && environ("OS") != "Windows_NT" &&
         startsWith(os, "MINGW") != "1" && startsWith(os, "MSYS") != "1" && startsWith(os, "CYGWIN") != "1" {
-        kp("kcc: target " + requestedTarget + " requires a macOS or Windows build host")
+        print("kcc: target " + requestedTarget + " requires a macOS or Windows build host")
         exit("1")
     }
 
@@ -769,7 +769,7 @@ just run {
         // --ir: stream IR (arch-agnostic).
         if hasFlag("--ir") {
             let s = linuxSrc()
-            if s == "" { kp("kcc: --ir needs a source file")  exit("1") }
+            if s == "" { print("kcc: --ir needs a source file")  exit("1") }
             if streamFrontendIR(root, fe, s) == "0" { exit("1") }
             exit("0")
         }
@@ -777,34 +777,34 @@ just run {
         // the native pipeline is the only path. Hard error so user scripts
         // surface the change immediately instead of silently producing
         // different output.
-        if hasFlag("--c")    { kp("kcc: --c was removed (Krypton is C-free; native pipeline only).")    exit("1") }
-        if hasFlag("--gcc")  { kp("kcc: --gcc was removed (Krypton is C-free; native pipeline only).")  exit("1") }
-        if hasFlag("--llvm") { kp("kcc: --llvm was removed (Krypton is C-free; native pipeline only).") exit("1") }
-        if hasFlag("--wasm") { kp("kcc: --wasm is not wired into the Krypton-native driver yet.")        exit("1") }
+        if hasFlag("--c")    { print("kcc: --c was removed (Krypton is C-free; native pipeline only).")    exit("1") }
+        if hasFlag("--gcc")  { print("kcc: --gcc was removed (Krypton is C-free; native pipeline only).")  exit("1") }
+        if hasFlag("--llvm") { print("kcc: --llvm was removed (Krypton is C-free; native pipeline only).") exit("1") }
+        if hasFlag("--wasm") { print("kcc: --wasm is not wired into the Krypton-native driver yet.")        exit("1") }
 
         // -e CODE: wrap in `just run { ... }`, compile (x86 or arm64), run, delete.
         if first == "-e" {
-            if argCount() < 2 { kp("kcc: -e needs code")  exit("1") }
+            if argCount() < 2 { print("kcc: -e needs code")  exit("1") }
             let ek = tmpPath("_kcceval", ".ks")
             writeText(ek, "just run {\n" + arg(1) + "\n}\n")
             let ebin = sh("mktemp " + q(tmpRoot() + "/_kcceval_XXXXXX"))
             let oke = "0"
             if toArm == "1" { oke = compileArm64(root, ek, ebin) } else { oke = compileLinux(root, ek, ebin) }
             if oke == "0" { rm(ek)  exit("1") }
-            kp(sh(q(ebin)))                      // arm64 runs via qemu binfmt
+            print(sh(q(ebin)))                      // arm64 runs via qemu binfmt
             rm(ek)  rm(ebin)
             exit("0")
         }
 
         // -r (compile+run) or default (compile to -o). --arm64 selects the backend.
         let s = linuxSrc()
-        if s == "" { kp("kcc: no source file")  exit("1") }
+        if s == "" { print("kcc: no source file")  exit("1") }
         if hasFlag("-r") {
             let tmpbin = sh("mktemp " + q(tmpRoot() + "/_kcckrun_XXXXXX"))
             let okr = "0"
             if toArm == "1" { okr = compileArm64(root, s, tmpbin) } else { okr = compileLinux(root, s, tmpbin) }
             if okr == "0" { exit("1") }
-            kp(sh(q(tmpbin)))                    // arm64 runs via qemu binfmt
+            print(sh(q(tmpbin)))                    // arm64 runs via qemu binfmt
             rm(tmpbin)
             exit("0")
         }
@@ -821,33 +821,33 @@ just run {
 
         if hasFlag("--ir") {
             let s = linuxSrc()
-            if s == "" { kp("kcc: --ir needs a source file")  exit("1") }
+            if s == "" { print("kcc: --ir needs a source file")  exit("1") }
             if streamFrontendIR(root, fe, s) == "0" { exit("1") }
             exit("0")
         }
-        if hasFlag("--c")    { kp("kcc: --c was removed (Krypton is C-free; native pipeline only).")    exit("1") }
-        if hasFlag("--gcc")  { kp("kcc: --gcc was removed (Krypton is C-free; native pipeline only).")  exit("1") }
-        if hasFlag("--llvm") { kp("kcc: --llvm was removed (Krypton is C-free; native pipeline only).") exit("1") }
-        if hasFlag("--wasm") { kp("kcc: --wasm is not wired into the Krypton-native driver yet.")        exit("1") }
-        if hasFlag("--arm64") { kp("kcc: --arm64 is Linux-only right now.") exit("1") }
+        if hasFlag("--c")    { print("kcc: --c was removed (Krypton is C-free; native pipeline only).")    exit("1") }
+        if hasFlag("--gcc")  { print("kcc: --gcc was removed (Krypton is C-free; native pipeline only).")  exit("1") }
+        if hasFlag("--llvm") { print("kcc: --llvm was removed (Krypton is C-free; native pipeline only).") exit("1") }
+        if hasFlag("--wasm") { print("kcc: --wasm is not wired into the Krypton-native driver yet.")        exit("1") }
+        if hasFlag("--arm64") { print("kcc: --arm64 is Linux-only right now.") exit("1") }
 
         if first == "-e" {
-            if argCount() < 2 { kp("kcc: -e needs code")  exit("1") }
+            if argCount() < 2 { print("kcc: -e needs code")  exit("1") }
             let ek = tmpPath("_kcceval", ".ks")
             writeText(ek, "just run {\n" + arg(1) + "\n}\n")
             let ebin = sh("mktemp " + q(tmpRoot() + "/_kcceval_XXXXXX"))
             if compileFreebsd(root, ek, ebin) == "0" { rm(ek)  exit("1") }
-            kp(sh(q(ebin)))
+            print(sh(q(ebin)))
             rm(ek)  rm(ebin)
             exit("0")
         }
 
         let s = linuxSrc()
-        if s == "" { kp("kcc: no source file")  exit("1") }
+        if s == "" { print("kcc: no source file")  exit("1") }
         if hasFlag("-r") {
             let tmpbin = sh("mktemp " + q(tmpRoot() + "/_kcckrun_XXXXXX"))
             if compileFreebsd(root, s, tmpbin) == "0" { exit("1") }
-            kp(sh(q(tmpbin)))
+            print(sh(q(tmpbin)))
             rm(tmpbin)
             exit("0")
         }
@@ -869,20 +869,20 @@ just run {
     // the dev repo under %USERPROFILE%\Documents have none). Wrap-in-
     // cmd-/c when that changes.
     if environ("OS") == "Windows_NT" || startsWith(os, "MINGW") == "1" || startsWith(os, "MSYS") == "1" || startsWith(os, "CYGWIN") == "1" {
-        if hasFlag("--c")    { kp("kcc: --c was removed (Krypton is C-free; native pipeline only).")    exit("1") }
-        if hasFlag("--gcc")  { kp("kcc: --gcc was removed (Krypton is C-free; native pipeline only).")  exit("1") }
-        if hasFlag("--llvm") { kp("kcc: --llvm was removed (Krypton is C-free; native pipeline only).") exit("1") }
-        if hasFlag("--wasm") { kp("kcc: --wasm is not wired into the Krypton-native driver yet.")        exit("1") }
+        if hasFlag("--c")    { print("kcc: --c was removed (Krypton is C-free; native pipeline only).")    exit("1") }
+        if hasFlag("--gcc")  { print("kcc: --gcc was removed (Krypton is C-free; native pipeline only).")  exit("1") }
+        if hasFlag("--llvm") { print("kcc: --llvm was removed (Krypton is C-free; native pipeline only).") exit("1") }
+        if hasFlag("--wasm") { print("kcc: --wasm is not wired into the Krypton-native driver yet.")        exit("1") }
 
         let target = optValue("--target", "windows-x86_64")
         if target != "windows-x86_64" && target != "windows-x64" {
-            kp("kcc: unsupported Windows target " + target)
+            print("kcc: unsupported Windows target " + target)
             exit("1")
         }
         let subsystem = toLower(optValue("--subsystem", "console"))
         if subsystem == "gui" { subsystem = "windows" }
         if subsystem != "console" && subsystem != "windows" {
-            kp("kcc: --subsystem must be console or windows")
+            print("kcc: --subsystem must be console or windows")
             exit("1")
         }
 
@@ -892,15 +892,15 @@ just run {
         let kccExe = root + "/kcc-bin.exe"
         if _winExists(kccExe) == "0" { kccExe = "C:/krypton/kcc-bin.exe" }
         if _winExists(kccExe) == "0" {
-            kp("kcc-native: cannot find kcc-bin.exe (looked in $KRYPTON_ROOT and C:/krypton).")
+            print("kcc-native: cannot find kcc-bin.exe (looked in $KRYPTON_ROOT and C:/krypton).")
             exit("1")
         }
 
         // --ir: front-end only, IR to stdout.
         if hasFlag("--ir") {
             let s = linuxSrc()
-            if s == "" { kp("kcc: --ir needs a source file")  exit("1") }
-            kp(_chompWS(exec("set KRYPTON_ROOT=" + root + "&& " + kccExe + " " + s + " --ir")))
+            if s == "" { print("kcc: --ir needs a source file")  exit("1") }
+            print(_chompWS(exec("set KRYPTON_ROOT=" + root + "&& " + kccExe + " " + s + " --ir")))
             exit("0")
         }
         // Windows temp-file helpers. POSIX mktemp doesn't ship with cmd.exe,
@@ -914,7 +914,7 @@ just run {
 
         // -e CODE: wrap, compile, run, delete.
         if first == "-e" {
-            if argCount() < 2 { kp("kcc: -e needs code")  exit("1") }
+            if argCount() < 2 { print("kcc: -e needs code")  exit("1") }
             let tick = _chompWS(exec("echo %TIME%"))
             // Strip ':' '.' AND ' ' — %TIME% returns " H:MM:SS.MS" with a
             // leading space for single-digit hours, which would otherwise
@@ -927,21 +927,21 @@ just run {
                 exec("del /q " + replace(ek, "/", "\\"))
                 exit("1")
             }
-            kp(_chompWS(exec(ebin)))
+            print(_chompWS(exec(ebin)))
             exec("del /q " + replace(ek, "/", "\\"))
             exec("del /q " + replace(ebin, "/", "\\"))
             exit("0")
         }
         // -r SRC [args]: compile, run, delete.
         if first == "-r" {
-            if argCount() < 2 { kp("kcc: -r needs a source file")  exit("1") }
+            if argCount() < 2 { print("kcc: -r needs a source file")  exit("1") }
             let src = arg(1)
             let tick = _chompWS(exec("echo %TIME%"))
             let safe = replace(replace(replace(tick, ":", ""), ".", ""), " ", "")
             let tmpbin = winTemp + "/_kcckrun_" + safe + ".exe"
             if compileWindowsTarget(root, src, tmpbin, subsystem) == "0" { exit("1") }
             let passed = restFrom(2)
-            kp(_chompWS(exec(tmpbin + " " + passed)))
+            print(_chompWS(exec(tmpbin + " " + passed)))
             exec("del /q " + replace(tmpbin, "/", "\\"))
             exit("0")
         }
@@ -951,32 +951,32 @@ just run {
         // `--native <src> -o <out>`; positional(0) returned "--native"
         // and produced "no source file". Same bug as macOS hit (M2W 6626).
         let src = linuxSrc()
-        if src == "" { kp("kcc: no source file")  exit("1") }
+        if src == "" { print("kcc: no source file")  exit("1") }
         let out = optValue("-o", baseName(src) + ".exe")
         if compileWindowsTarget(root, src, out, subsystem) == "0" { exit("1") }
         exit("0")
     }
 
     if os != "Darwin" {
-        kp("kcc-native: unsupported host " + os + " (macOS + Linux + FreeBSD + Windows wired)")
+        print("kcc-native: unsupported host " + os + " (macOS + Linux + FreeBSD + Windows wired)")
         exit("1")
     }
 
     let target = requestedTarget
     if target != "" {
         if target != "ios-sim-arm64" && target != "ios-device-arm64" {
-            kp("kcc: unsupported target " + target)
+            print("kcc: unsupported target " + target)
             exit("1")
         }
         let src = linuxSrc()
-        if src == "" { kp("kcc: --target needs a source file")  exit("1") }
+        if src == "" { print("kcc: --target needs a source file")  exit("1") }
         let fe = root + "/compiler/macos_arm64/kcc-arm64"
         if hasFlag("--ir") {
             if streamFrontendIRTarget(root, fe, src, target) == "0" { exit("1") }
             exit("0")
         }
         if hasFlag("-r") {
-            kp("kcc: iOS targets cannot run directly on macOS; use scripts/build-ios-app.ks")
+            print("kcc: iOS targets cannot run directly on macOS; use scripts/build-ios-app.ks")
             exit("1")
         }
         let out = optValue("-o", baseName(src))
@@ -986,7 +986,7 @@ just run {
 
     // --ir <src>: just stream IR from the frontend.
     if first == "--ir" {
-        if argCount() < 2 { kp("kcc: --ir needs a source file")  exit("1") }
+        if argCount() < 2 { print("kcc: --ir needs a source file")  exit("1") }
         let src = arg(1)
         let fe = root + "/compiler/macos_arm64/kcc-arm64"
         if streamFrontendIR(root, fe, src) == "0" { exit("1") }
@@ -995,7 +995,7 @@ just run {
 
     // -e CODE: wrap in `just run { ... }`, compile, run, delete.
     if first == "-e" {
-        if argCount() < 2 { kp("kcc: -e needs code")  exit("1") }
+        if argCount() < 2 { print("kcc: -e needs code")  exit("1") }
         let ek = tmpPath("_kcceval", ".ks")
         writeText(ek, "just run {\n" + arg(1) + "\n}\n")
         let ebin = sh("mktemp " + q(tmpRoot() + "/_kcceval_XXXXXX"))
@@ -1007,7 +1007,7 @@ just run {
 
     // -r <src> [args...]: compile to temp, run, delete.
     if first == "-r" {
-        if argCount() < 2 { kp("kcc: -r needs a source file")  exit("1") }
+        if argCount() < 2 { print("kcc: -r needs a source file")  exit("1") }
         let src = arg(1)
         let tmpbin = sh("mktemp " + q(tmpRoot() + "/_kcckrun_XXXXXX"))
         if compileMacos(root, src, tmpbin) == "0" { exit("1") }
@@ -1028,7 +1028,7 @@ just run {
     // documented default, emitted by build.sh) is skipped rather than mistaken
     // for the source.
     let src = linuxSrc()
-    if src == "" { kp("kcc: no source file")  exit("1") }
+    if src == "" { print("kcc: no source file")  exit("1") }
     let out = optValue("-o", baseName(src))
     // macho_host prints "wrote <out> (...signed)" itself; don't double-report.
     if compileMacos(root, src, out) == "0" { exit("1") }

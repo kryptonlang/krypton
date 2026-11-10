@@ -55,15 +55,15 @@ just run {
         msg_1(incrementButton, "performClick:", 0)
         msg_1(incrementButton, "performClick:", 0)
         if okKSend(bindRuntime, bindModel, "value") != 2 {
-            kp("[FAIL] okBind binding did not propagate")
+            print("[FAIL] okBind binding did not propagate")
             exit("1")
         }
         if text(boundLabel) != "2" {
-            kp("[FAIL] bound label did not update")
+            print("[FAIL] bound label did not update")
             exit("1")
         }
         doKRelease(bindRuntime, bindModel)
-        kp("[PASS] okBind binding smoke")
+        print("[PASS] okBind binding smoke")
         exit("0")
     }
 

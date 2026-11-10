@@ -95,9 +95,9 @@ func fromRoman(s) {
 }
 
 just run {
-    kp("Roman Numeral Converter")
-    kp("=======================")
-    kp("")
+    print("Roman Numeral Converter")
+    print("=======================")
+    print("")
 
     let nums = "1,4,9,14,42,99,100,399,500,1000,1999,2024,3999"
     let total = count(nums)
@@ -110,7 +110,7 @@ just run {
         while len(label) < 6 {
             label = " " + label
         }
-        kp("  " + label + " = " + roman + " (back to: " + back + ")")
+        print("  " + label + " = " + roman + " (back to: " + back + ")")
         i += 1
     }
     emit "ok"

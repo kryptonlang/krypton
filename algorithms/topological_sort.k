@@ -129,8 +129,8 @@ func topoSort(graph, nodes) {
 }
 
 just run {
-    kp("Topological Sort (Kahn's)")
-    kp("=========================")
+    print("Topological Sort (Kahn's)")
+    print("=========================")
     // Example: courses with prerequisites.
     //   intro -> data, intro -> math
     //   data  -> algo
@@ -150,5 +150,5 @@ just run {
     nodes = _ts_addNode(nodes, "algo")
     nodes = _ts_addNode(nodes, "capstone")
 
-    kp("  order: " + topoSort(g, nodes))
+    print("  order: " + topoSort(g, nodes))
 }

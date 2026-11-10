@@ -1759,7 +1759,7 @@ func irPrimary(tokens, pos, ntoks, lc, types) {
         emit irInterpToIR(tv, pos, lc, types) + "," + (pos + 1)
     }
 
-    // Boolean literals — store as the strings "true"/"false" so kp(true)
+    // Boolean literals — store as the strings "true"/"false" so print(true)
     // prints "true" instead of "1". The truthiness rule already treats
     // "false" as falsy and any non-empty/non-"0"/non-"false" string as
     // truthy, so `if true` / `if false` still work as expected.

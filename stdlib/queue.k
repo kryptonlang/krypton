@@ -60,13 +60,13 @@ func queueEmpty(q) {
 // Print queue elements front to back
 func queuePrint(q) {
     let size = count(q)
-    kp("--- Queue (front to back) ---")
+    print("--- Queue (front to back) ---")
     let i = 0
     while i < size {
-        kp("  " + split(q, i))
+        print("  " + split(q, i))
         i += 1
     }
-    kp("-----------------------------")
+    print("-----------------------------")
 }
 
 // Get back of queue

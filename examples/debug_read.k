@@ -2,18 +2,18 @@ just run {
     let a = arg(0)
     let src = readFile(a)
     let slen = len(src)
-    kp(slen)
+    print(slen)
     let i = 0
     while i < slen {
         let c = src[i]
         if c == "\n" {
-            kp("NL at " + i)
+            print("NL at " + i)
         }
         if c == "\r" {
-            kp("CR at " + i)
+            print("CR at " + i)
         }
         i += 1
     }
-    kp("done")
+    print("done")
     emit "ok"
 }

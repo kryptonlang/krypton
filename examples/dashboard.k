@@ -29,10 +29,10 @@ import "head:process"
 
 // ── ANSI helpers ──────────────────────────────────────────────────
 
-func ansiClear() { kp("\x1b[2J\x1b[H") }
-func ansiHome()  { kp("\x1b[H") }
-func ansiHide()  { kp("\x1b[?25l") }
-func ansiShow()  { kp("\x1b[?25h") }
+func ansiClear() { print("\x1b[2J\x1b[H") }
+func ansiHome()  { print("\x1b[H") }
+func ansiHide()  { print("\x1b[?25l") }
+func ansiShow()  { print("\x1b[?25h") }
 
 func paint(code, s) { emit "\x1b[" + code + "m" + s + "\x1b[0m" }
 func cyan(s)        { emit paint("38;5;87", s) }
@@ -155,18 +155,18 @@ func part(s, idx) {
 
 // ── Layout primitives (60-column boxed panels) ────────────────────
 
-func line(s)  { kp("  " + dim("│ ") + s + dim(" │")) }
-func sep()    { kp("  " + dim("├" + srepeat("─", 60) + "┤")) }
+func line(s)  { print("  " + dim("│ ") + s + dim(" │")) }
+func sep()    { print("  " + dim("├" + srepeat("─", 60) + "┤")) }
 
 func boxTop(title) {
     let lhs = "─── " + accent(title) + " "
     let visible = 4 + len(title) + 1            // "─── " + title + " "
     let rhs = srepeat("─", 60 - visible)
-    kp("  " + dim("┌") + dim(lhs) + dim(rhs) + dim("┐"))
+    print("  " + dim("┌") + dim(lhs) + dim(rhs) + dim("┐"))
 }
 
 func boxBot() {
-    kp("  " + dim("└" + srepeat("─", 60) + "┘"))
+    print("  " + dim("└" + srepeat("─", 60) + "┘"))
 }
 
 // ── Frame ─────────────────────────────────────────────────────────
@@ -193,15 +193,15 @@ func renderFrame(elapsedSec, cpus) {
     ansiHome()
 
     // Header
-    kp("")
-    kp("  " + accent("KRYPTON") + dim("  ╱  ") + text("live dashboard") + dim("  ╱  ") + dim("auto-refresh 1s"))
-    kp("")
+    print("")
+    print("  " + accent("KRYPTON") + dim("  ╱  ") + text("live dashboard") + dim("  ╱  ") + dim("auto-refresh 1s"))
+    print("")
 
     // System box
     boxTop("System")
     line(text("CPU cores ") + cyan(padL(cpus, 3)) + dim("  ·  ") + text("uptime  ") + cyan(formatElapsed(elapsedSec)))
     boxBot()
-    kp("")
+    print("")
 
     // Resources box
     boxTop("Resources")
@@ -209,11 +209,11 @@ func renderFrame(elapsedSec, cpus) {
     line("")
     renderStat("Disk C:", diskPct, diskUsed, diskTotal, "GB")
     boxBot()
-    kp("")
+    print("")
 
     // Footer hint
-    kp("  " + dim("Krypton 1.5.1  ·  refresh 1s  ·  press Ctrl+C to exit            "))
-    kp("")
+    print("  " + dim("Krypton 1.5.1  ·  refresh 1s  ·  press Ctrl+C to exit            "))
+    print("")
 }
 
 just run {

@@ -2,9 +2,9 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
@@ -31,8 +31,8 @@ func chain(a, b, c) {
 }
 
 just run {
-    kp("Function Call Tests")
-    kp("===================")
+    print("Function Call Tests")
+    print("===================")
 
     check("add", "5", "" + add(2, 3))
     check("mul", "12", "" + mul(3, 4))

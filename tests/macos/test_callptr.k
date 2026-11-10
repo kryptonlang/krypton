@@ -12,8 +12,8 @@ func text(s) { emit s + "!" }
 func nested(fp, a) { emit callPtr(fp, a) + callPtr(funcptr(zero)) }
 
 func check(name, expected, actual) {
-    if expected != actual { kp("[FAIL] " + name); exit("1") }
-    kp("[PASS] " + name)
+    if expected != actual { print("[FAIL] " + name); exit("1") }
+    print("[PASS] " + name)
 }
 
 just run {
@@ -33,8 +33,8 @@ just run {
     check("stored pointer", 91, callPtr(bufGetQwordAt(storage, 0), 9, 1))
     let i = 0
     while i < 50 {
-        if callPtr(funcptr(one), i) != i + 1 { kp("[FAIL] loop labels"); exit("1") }
+        if callPtr(funcptr(one), i) != i + 1 { print("[FAIL] loop labels"); exit("1") }
         i += 1
     }
-    kp("[PASS] loop labels")
+    print("[PASS] loop labels")
 }

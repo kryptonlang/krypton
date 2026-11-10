@@ -28,7 +28,7 @@ func solveQueens(queens, row, n, maxSolutions) {
             i += 1
         }
         sb = sbAppend(sb, "]")
-        kp(sbToString(sb))
+        print(sbToString(sb))
         emit 1
     }
 
@@ -52,7 +52,7 @@ func solveQueens(queens, row, n, maxSolutions) {
 
 just run {
     let n = 6
-    kp(n + "-Queens Solutions (first 4):")
+    print(n + "-Queens Solutions (first 4):")
     let total = solveQueens("", 0, n, 4)
-    kp("Found " + total + " solutions")
+    print("Found " + total + " solutions")
 }

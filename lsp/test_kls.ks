@@ -4,9 +4,9 @@
 import "k:proc"
 import "k:fs"
 
-let BAD_CODE = "func main() {\n    let x = \"unterminated\n    if (x > 5  {\n        kp(x)\n    }\n"
+let BAD_CODE = "func main() {\n    let x = \"unterminated\n    if (x > 5  {\n        print(x)\n    }\n"
 
-let GOOD_CODE = "module sample\n\nfunc add(a, b) {\n    emit a + b\n}\n\nfunc greet(name) {\n    kp(\"hello \" + name)\n}\n\nfunc main() {\n    let x = add(2, 3)\n    greet(\"world\")\n}\n"
+let GOOD_CODE = "module sample\n\nfunc add(a, b) {\n    emit a + b\n}\n\nfunc greet(name) {\n    print(\"hello \" + name)\n}\n\nfunc main() {\n    let x = add(2, 3)\n    greet(\"world\")\n}\n"
 
 let DUP_CODE = "func foo() { emit 1 }\nfunc bar() { emit 2 }\nfunc foo() { emit 3 }\n"
 
@@ -107,12 +107,12 @@ func dumpResponses(buf) {
         let bodyLen = _contentLength(headers)
         let body = substring(tail, bodyOff, bodyOff + bodyLen)
         n += 1
-        kp("\n--- frame " + n + " (" + bodyLen + " bytes) ---")
+        print("\n--- frame " + n + " (" + bodyLen + " bytes) ---")
         if bodyLen <= 400 {
-            kp(body)
+            print(body)
         } else {
-            kp(substring(body, 0, 400))
-            kp("... (" + (bodyLen - 400) + " bytes truncated)")
+            print(substring(body, 0, 400))
+            print("... (" + (bodyLen - 400) + " bytes truncated)")
         }
         pos = pos + bodyOff + bodyLen
     }
@@ -130,7 +130,7 @@ just run {
 
     let p = procSpawn(klsPath, "")
     if p == "0" {
-        kp("FAIL: procSpawn failed (kls.exe not found or unable to launch)")
+        print("FAIL: procSpawn failed (kls.exe not found or unable to launch)")
         exit("1")
     }
 
@@ -148,11 +148,11 @@ just run {
     procSleep(500)
     let buf = procRead(p, 65536)
 
-    kp("============================================================")
-    kp("RESPONSES")
-    kp("============================================================")
+    print("============================================================")
+    print("RESPONSES")
+    print("============================================================")
     let frames = dumpResponses(buf)
-    kp("\n" + frames + " framed messages received")
+    print("\n" + frames + " framed messages received")
 
     procClose(p)
 }

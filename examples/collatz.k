@@ -32,13 +32,13 @@ func collatzMax(n) {
 }
 
 just run {
-    kp("Collatz Conjecture (3n+1)")
-    kp("=========================")
-    kp("")
+    print("Collatz Conjecture (3n+1)")
+    print("=========================")
+    print("")
 
     // Show sequence for a specific number
     let start = 27
-    kp("Sequence for " + start + ":")
+    print("Sequence for " + start + ":")
     let sb = sbNew()
     let current = start
     let steps = 0
@@ -48,12 +48,12 @@ just run {
         steps = steps + 1
     }
     sb = sbAppend(sb, "1")
-    kp(sbToString(sb))
-    kp("Steps: " + steps)
-    kp("")
+    print(sbToString(sb))
+    print("Steps: " + steps)
+    print("")
 
     // Find number with longest sequence in range
-    kp("Collatz lengths for 1-30:")
+    print("Collatz lengths for 1-30:")
     let longestN = 1
     let longestLen = 0
     let n = 1
@@ -64,14 +64,14 @@ just run {
         while len(label) < 4 {
             label = " " + label
         }
-        kp("  n=" + label + "  steps=" + cLen + "  max=" + maxReached)
+        print("  n=" + label + "  steps=" + cLen + "  max=" + maxReached)
         if cLen > longestLen {
             longestLen = cLen
             longestN = n
         }
         n += 1
     }
-    kp("")
-    kp("Longest sequence: n=" + longestN + " with " + longestLen + " steps")
+    print("")
+    print("Longest sequence: n=" + longestN + " with " + longestLen + " steps")
     emit "ok"
 }

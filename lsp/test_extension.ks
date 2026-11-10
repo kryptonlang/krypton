@@ -52,7 +52,7 @@ func _jstr(s) {
     emit sbToString(out)
 }
 
-let GOOD = "module sample\n\nfunc add(a, b) {\n    emit a + b\n}\n\nfunc greet(name) {\n    kp(\"hi \" + name)\n}\n\nfunc main() {\n    let x = add(2, 3)\n}\n"
+let GOOD = "module sample\n\nfunc add(a, b) {\n    emit a + b\n}\n\nfunc greet(name) {\n    print(\"hi \" + name)\n}\n\nfunc main() {\n    let x = add(2, 3)\n}\n"
 
 let BAD = "func broken() {\n    let x = \"unterminated\n"
 
@@ -62,10 +62,10 @@ just run {
 
     let p = procSpawn(klsPath, "")
     if p == "0" {
-        kp("FAIL: kls.exe not found")
+        print("FAIL: kls.exe not found")
         exit("1")
     }
-    kp("launching: " + klsPath)
+    print("launching: " + klsPath)
 
     let goodUri = "file:///x/sample.k"
     let badUri  = "file:///x/bad.k"
@@ -82,9 +82,9 @@ just run {
     procSleep(800)
     let buf = procRead(p, 65536)
 
-    kp("============================================================")
-    kp("FRAMED MESSAGES")
-    kp("============================================================")
+    print("============================================================")
+    print("FRAMED MESSAGES")
+    print("============================================================")
     let pos = 0
     let nf = 0
     while pos < len(buf) {
@@ -102,16 +102,16 @@ just run {
             else if contains(body, "\"id\":2") { tag = "id=2 documentSymbol" }
             else if contains(body, "\"id\":3") { tag = "id=3 completion" }
             else if contains(body, "\"id\":99") { tag = "id=99 shutdown" }
-            kp("\n--- frame " + nf + " " + tag + " (" + bodyLen + " bytes) ---")
+            print("\n--- frame " + nf + " " + tag + " (" + bodyLen + " bytes) ---")
             if bodyLen <= 500 {
-                kp(body)
+                print(body)
             } else {
-                kp(substring(body, 0, 500))
-                kp("... (" + (bodyLen - 500) + " truncated)")
+                print(substring(body, 0, 500))
+                print("... (" + (bodyLen - 500) + " truncated)")
             }
             pos = pos + off + bodyLen
         }
     }
-    kp("\n" + nf + " framed messages received")
+    print("\n" + nf + " framed messages received")
     procClose(p)
 }

@@ -20,7 +20,7 @@ just run {
             row = row + cell(r * c)
             c += 1
         }
-        kp(row)
+        print(row)
         r += 1
     }
 }

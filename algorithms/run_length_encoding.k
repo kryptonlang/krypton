@@ -51,11 +51,11 @@ just run {
         let s = split(tests, i)
         let enc = encode(s)
         let dec = decode(enc)
-        kp("'" + s + "' -> '" + enc + "' -> '" + dec + "'")
+        print("'" + s + "' -> '" + enc + "' -> '" + dec + "'")
         if s == dec {
-            kp("  [OK] Round-trip matches")
+            print("  [OK] Round-trip matches")
         } else {
-            kp("  [FAIL] Mismatch!")
+            print("  [FAIL] Mismatch!")
         }
         i += 1
     }

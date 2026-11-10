@@ -3889,7 +3889,7 @@ func emitBootstrapHelpers(textRva, iatK32Rva, gcGlobalsRva) {
 
     // ── kr_print(RCX=s) → RAX=str("") ────────────────────────────
     // 114 bytes. push RBX,RSI + sub rsp,56 (0x38 for 16-byte alignment).
-    // Now writes a trailing '\n' via a second WriteFile so kp() matches
+    // Now writes a trailing '\n' via a second WriteFile so print() matches
     // the spec (and the C-emit + Linux ELF backends which always added
     // newlines). Cache stdout handle on the stack between the two writes.
     let pr_sl    = 0 - (pos + 9 + 5)                                                  // CALL strlen (offset 9, ret 14)

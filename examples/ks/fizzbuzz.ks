@@ -11,13 +11,13 @@ if argCount() > 0 { n = toInt(arg(0)) }
 let i = 1
 while i <= n {
     if i % 15 == 0 {
-        kp("FizzBuzz")
+        print("FizzBuzz")
     } else if i % 3 == 0 {
-        kp("Fizz")
+        print("Fizz")
     } else if i % 5 == 0 {
-        kp("Buzz")
+        print("Buzz")
     } else {
-        kp(toStr(i))
+        print(toStr(i))
     }
     i = i + 1
 }

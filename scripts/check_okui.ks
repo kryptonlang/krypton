@@ -8,13 +8,13 @@ func bs() { emit fromCharCode(92) }
 func q(s) { emit dq() + replace(s, dq(), bs() + dq()) + dq() }
 
 func runCheck(name, cmd) {
-    kp("check " + name)
+    print("check " + name)
     let rc = shellRun(cmd)
     if rc != "0" {
-        kp("FAIL " + name + " rc=" + rc)
+        print("FAIL " + name + " rc=" + rc)
         exit("1")
     }
-    kp("OK " + name)
+    print("OK " + name)
 }
 
 just run {

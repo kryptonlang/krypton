@@ -1,7 +1,7 @@
 #!/usr/bin/env kr
 
 func fail(message) {
-    kp("build_macos_app_store: " + message)
+    print("build_macos_app_store: " + message)
     exit("1")
 }
 
@@ -53,15 +53,15 @@ just run {
         fail("signature verification failed")
     }
 
-    kp("built " + app)
+    print("built " + app)
     if identity == "-" {
-        kp("ad-hoc sandbox build; set KRYPTON_APP_STORE_IDENTITY and KRYPTON_APP_STORE_PROFILE for submission signing")
+        print("ad-hoc sandbox build; set KRYPTON_APP_STORE_IDENTITY and KRYPTON_APP_STORE_PROFILE for submission signing")
         emit "0"
     }
 
     let installer = environ("KRYPTON_APP_STORE_INSTALLER_IDENTITY")
     if installer == "" {
-        kp("signed app ready; set KRYPTON_APP_STORE_INSTALLER_IDENTITY to build upload package")
+        print("signed app ready; set KRYPTON_APP_STORE_INSTALLER_IDENTITY to build upload package")
         emit "0"
     }
 
@@ -70,5 +70,5 @@ just run {
     if shellRun("productbuild --component " + q(app) + " /Applications --sign " + q(installer) + " " + q(pkg)) != "0" {
         fail("package build failed")
     }
-    kp("built " + pkg)
+    print("built " + pkg)
 }

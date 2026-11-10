@@ -52,9 +52,9 @@ func checkBrackets(s) {
 }
 
 just run {
-    kp("Bracket Balance Checker")
-    kp("=======================")
-    kp("")
+    print("Bracket Balance Checker")
+    print("=======================")
+    print("")
 
     let tests = "(),([]),{[()]},((()),([)],((,)(,{[}],func test() { if (x) { emit y } },let a = (1 + (2 * 3))"
     let total = count(tests)
@@ -66,7 +66,7 @@ just run {
         while len(label) < 40 {
             label = label + " "
         }
-        kp("  " + label + " => " + result)
+        print("  " + label + " => " + result)
         i += 1
     }
     emit "ok"

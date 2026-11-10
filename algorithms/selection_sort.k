@@ -36,6 +36,6 @@ func selectionSort(list) {
 
 just run {
     let data = "29,10,14,37,13,5,45"
-    kp("Before: " + data)
-    kp("After:  " + selectionSort(data))
+    print("Before: " + data)
+    print("After:  " + selectionSort(data))
 }

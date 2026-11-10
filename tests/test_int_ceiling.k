@@ -10,15 +10,15 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
 just run {
-    kp("Large Integer Tests")
-    kp("===================")
+    print("Large Integer Tests")
+    print("===================")
 
     // Values that used to crash at the old 2^30 boundary.
     check("old 2^30 boundary",   "1073741824", "" + 1073741824)

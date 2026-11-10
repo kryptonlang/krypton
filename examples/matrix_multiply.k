@@ -31,7 +31,7 @@ func matrixMultiply(a, b, aRows, aCols, bCols) {
 }
 
 func printMatrix(label, matrix, rows) {
-    kp(label + ":")
+    print(label + ":")
     let i = 0
     while i < rows {
         let line = getLine(matrix, i)
@@ -48,15 +48,15 @@ func printMatrix(label, matrix, rows) {
             j += 1
         }
         sb = sbAppend(sb, " ]")
-        kp(sbToString(sb))
+        print(sbToString(sb))
         i += 1
     }
 }
 
 just run {
-    kp("Matrix Multiplication")
-    kp("=====================")
-    kp("")
+    print("Matrix Multiplication")
+    print("=====================")
+    print("")
 
     // Define 2x3 matrix A
     let a = "1,2,3\n4,5,6\n"
@@ -64,19 +64,19 @@ just run {
     let b = "7,8\n9,10\n11,12\n"
 
     printMatrix("Matrix A (2x3)", a, 2)
-    kp("")
+    print("")
     printMatrix("Matrix B (3x2)", b, 3)
-    kp("")
+    print("")
 
     let result = matrixMultiply(a, b, 2, 3, 2)
     printMatrix("A x B (2x2)", result, 2)
-    kp("")
+    print("")
 
     // Identity matrix test
     let identity = "1,0\n0,1\n"
     let c = "5,6\n7,8\n"
     printMatrix("Matrix C", c, 2)
-    kp("")
+    print("")
     let identResult = matrixMultiply(c, identity, 2, 2, 2)
     printMatrix("C x I (should equal C)", identResult, 2)
     emit "ok"

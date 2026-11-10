@@ -11,6 +11,6 @@ just run {
       i += 1
     }
   }
-  kp("src length: " + srcLen)
+  print("src length: " + srcLen)
   emit "ok"
 }

@@ -37,7 +37,7 @@ func countLines(text) {
 
 just run {
     if argCount() < 1 {
-        kp("Usage: kcc word_count.k <filename>")
+        print("Usage: kcc word_count.k <filename>")
         emit "error"
     }
     let filename = arg(0)
@@ -47,9 +47,9 @@ just run {
     let words = countWords(content)
     let lines = countLines(content)
 
-    kp("File: " + filename)
-    kp("  Lines:      " + lines)
-    kp("  Words:      " + words)
-    kp("  Characters: " + chars)
+    print("File: " + filename)
+    print("  Lines:      " + lines)
+    print("  Words:      " + words)
+    print("  Characters: " + chars)
     emit "ok"
 }

@@ -52,7 +52,7 @@ func charFrequency(text) {
             j += 1
         }
         if len(maxCh) > 0 {
-            kp("  '" + maxCh + "': " + maxFreq)
+            print("  '" + maxCh + "': " + maxFreq)
             printed = printed + maxCh
         }
         p = p + 1
@@ -61,7 +61,7 @@ func charFrequency(text) {
 
 just run {
     let text = "this is an example for huffman encoding"
-    kp("Text: '" + text + "'")
-    kp("Character frequencies (descending):")
+    print("Text: '" + text + "'")
+    print("Character frequencies (descending):")
     charFrequency(text)
 }

@@ -63,17 +63,17 @@ func kthSmallest(lst, k) {
 }
 
 just run {
-    kp("Quickselect (k-th smallest, 0-indexed)")
-    kp("======================================")
+    print("Quickselect (k-th smallest, 0-indexed)")
+    print("======================================")
     let a = "7,4,1,9,2,6,3,8,5"
-    kp("  in: " + a)
+    print("  in: " + a)
     let i = 0
     while i < count(a) {
-        kp("  k=" + i + " -> " + kthSmallest(a, i))
+        print("  k=" + i + " -> " + kthSmallest(a, i))
         i += 1
     }
 
     let dup = "3,1,4,1,5,9,2,6,5,3,5"
-    kp("  in: " + dup)
-    kp("  median (k=" + (count(dup)/2) + ") -> " + kthSmallest(dup, count(dup)/2))
+    print("  in: " + dup)
+    print("  median (k=" + (count(dup)/2) + ") -> " + kthSmallest(dup, count(dup)/2))
 }

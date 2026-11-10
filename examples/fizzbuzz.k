@@ -4,13 +4,13 @@ just run {
     let i = 1
     while i <= 100 {
         if i % 15 == 0 {
-            kp("FizzBuzz")
+            print("FizzBuzz")
         } else if i % 3 == 0 {
-            kp("Fizz")
+            print("Fizz")
         } else if i % 5 == 0 {
-            kp("Buzz")
+            print("Buzz")
         } else {
-            kp(i)
+            print(i)
         }
         i += 1
     }

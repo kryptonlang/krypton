@@ -1,6 +1,6 @@
 just run {
-    kp(10)
-    kp(42)
-    kp(100)
+    print(10)
+    print(42)
+    print(100)
     emit "ok"
 }

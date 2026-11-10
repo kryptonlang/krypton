@@ -42,29 +42,29 @@ func powerMod(base, exp, mod) {
 }
 
 just run {
-    kp("Power Function Examples")
-    kp("=======================")
-    kp("")
+    print("Power Function Examples")
+    print("=======================")
+    print("")
 
     // Basic powers
-    kp("Powers of 2:")
+    print("Powers of 2:")
     let i = 0
     while i <= 15 {
-        kp("  2^" + i + " = " + powerFast(2, i))
+        print("  2^" + i + " = " + powerFast(2, i))
         i += 1
     }
-    kp("")
+    print("")
 
-    kp("Powers of 3:")
+    print("Powers of 3:")
     i = 0
     while i <= 10 {
-        kp("  3^" + i + " = " + powerFast(3, i))
+        print("  3^" + i + " = " + powerFast(3, i))
         i += 1
     }
-    kp("")
+    print("")
 
     // Verify both methods give same results
-    kp("Verification (simple vs fast):")
+    print("Verification (simple vs fast):")
     let base = 5
     let exp = 0
     while exp <= 8 {
@@ -74,15 +74,15 @@ just run {
         if s != f {
             matched = "MISMATCH"
         }
-        kp("  " + base + "^" + exp + " = " + s + " / " + f + " [" + matched + "]")
+        print("  " + base + "^" + exp + " = " + s + " / " + f + " [" + matched + "]")
         exp = exp + 1
     }
-    kp("")
+    print("")
 
     // Modular exponentiation
-    kp("Modular exponentiation (base^exp mod 97):")
-    kp("  2^10 mod 97 = " + powerMod(2, 10, 97))
-    kp("  3^20 mod 97 = " + powerMod(3, 20, 97))
-    kp("  5^15 mod 97 = " + powerMod(5, 15, 97))
+    print("Modular exponentiation (base^exp mod 97):")
+    print("  2^10 mod 97 = " + powerMod(2, 10, 97))
+    print("  3^20 mod 97 = " + powerMod(3, 20, 97))
+    print("  5^15 mod 97 = " + powerMod(5, 15, 97))
     emit "ok"
 }

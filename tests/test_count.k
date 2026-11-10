@@ -2,15 +2,15 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
 just run {
-    kp("Count Function Tests")
-    kp("====================")
+    print("Count Function Tests")
+    print("====================")
 
     check("three items", "3", "" + count("a,b,c"))
     check("five items", "5", "" + count("1,2,3,4,5"))

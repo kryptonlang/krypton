@@ -22,9 +22,9 @@ func formatTime(seconds) {
 
 just run {
     const title = "Rocket Launch Countdown"
-    kp(title)
-    kp(repeat("=", len(title)))
-    kp("")
+    print(title)
+    print(repeat("=", len(title)))
+    print("")
 
     let t = 10
     do {
@@ -33,20 +33,20 @@ just run {
         const display = "T-" + padLeft(t, 2, " ") + " [" + timeStr + "]"
 
         if phase != "" {
-            kp(display + "  << " + phase)
+            print(display + "  << " + phase)
         } else {
-            kp(display)
+            print(display)
         }
 
         t -= 1
     } while t >= 0
 
-    kp("")
-    kp("Mission status: GO")
+    print("")
+    print("Mission status: GO")
 
     // Also demonstrate do-while with continue
-    kp("")
-    kp("Even numbers via do-while + continue:")
+    print("")
+    print("Even numbers via do-while + continue:")
     let sb = sbNew()
     let i = 0
     let first = 1
@@ -59,7 +59,7 @@ just run {
         sb = sbAppend(sb, i)
         first = 0
     } while i < 20
-    kp("  " + sbToString(sb))
+    print("  " + sbToString(sb))
 
     emit "ok"
 }

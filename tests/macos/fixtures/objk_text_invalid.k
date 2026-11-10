@@ -16,6 +16,6 @@ just run {
     if mode == "released" { okKTextValue(runtime, value) }
     if mode == "double-release" { doKReleaseText(runtime, value) }
     if mode == "retain-dead" { okKRetainText(runtime, value) }
-    kp("[FAIL] expected text rejection")
+    print("[FAIL] expected text rejection")
     exit("0")
 }

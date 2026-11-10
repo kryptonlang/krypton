@@ -37,8 +37,8 @@ func minCoins(coins, amount) {
 
 just run {
     let coins = "1,5,10,25"
-    kp("Coins: " + coins)
-    kp("=====================")
+    print("Coins: " + coins)
+    print("=====================")
 
     let amounts = "1,5,11,15,30,41,63,99"
     let i = 0
@@ -46,9 +46,9 @@ just run {
         let amt = toInt(split(amounts, i))
         let result = minCoins(coins, amt)
         if result >= 0 {
-            kp("  " + amt + " cents: " + result + " coins")
+            print("  " + amt + " cents: " + result + " coins")
         } else {
-            kp("  " + amt + " cents: impossible")
+            print("  " + amt + " cents: impossible")
         }
         i += 1
     }

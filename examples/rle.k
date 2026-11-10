@@ -22,6 +22,6 @@ func encode(s) {
 just run {
     let inputs = "aaabb,wwwwwggh,abcdef,zzz,a"
     for w in inputs {
-        kp(w + " → " + encode(w))
+        print(w + " → " + encode(w))
     }
 }

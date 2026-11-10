@@ -5,7 +5,7 @@ import "k:fs"
 
 just run {
     if argCount() < 1 {
-        kp("usage: kr scripts/sweep.k <dir> [run|ir]")
+        print("usage: kr scripts/sweep.k <dir> [run|ir]")
         exit("1")
     }
     let dir = arg("0")
@@ -15,7 +15,7 @@ just run {
     // fsListDir has a struct-iterator bug; shell out to dir /b.
     let list = exec("cmd /C dir /b " + dir + "\\*.k")
     if len(list) == 0 {
-        kp("FAIL: no .k files under " + dir)
+        print("FAIL: no .k files under " + dir)
         exit("1")
     }
 
@@ -60,9 +60,9 @@ just run {
         i += 1
     }
 
-    kp("PASS=" + pass + " FAIL=" + fail + " SKIP=" + skipped)
+    print("PASS=" + pass + " FAIL=" + fail + " SKIP=" + skipped)
     if fail > 0 {
-        kp("FAILED:" + failed)
+        print("FAILED:" + failed)
         exit("1")
     }
 }

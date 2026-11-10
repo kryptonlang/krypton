@@ -1,5 +1,5 @@
 just run {
     let x = 1 + 2
-    kp(x)
+    print(x)
     emit "ok"
 }

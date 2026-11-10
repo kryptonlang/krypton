@@ -72,6 +72,6 @@ just run {
     if mode == "released" { okKSend(runtime, object, "value") }
     if mode == "double-release" { doKRelease(runtime, object) }
     if mode == "retain-dead" { okKRetain(runtime, object) }
-    kp("[FAIL] expected rejection: " + mode)
+    print("[FAIL] expected rejection: " + mode)
     exit("0")
 }

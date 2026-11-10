@@ -44,15 +44,15 @@ func editDistance(a, b) {
 }
 
 just run {
-    kp("Edit Distance Calculator")
-    kp("========================")
+    print("Edit Distance Calculator")
+    print("========================")
 
     let pairs = "kitten,sitting,saturday,sunday,hello,hallo,abc,abc,intention,execution"
     let i = 0
     while i < 5 {
         let a = split(pairs, i * 2)
         let b = split(pairs, i * 2 + 1)
-        kp("  d('" + a + "', '" + b + "') = " + editDistance(a, b))
+        print("  d('" + a + "', '" + b + "') = " + editDistance(a, b))
         i += 1
     }
 }

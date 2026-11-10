@@ -60,21 +60,21 @@ func lisLength(arr) {
 }
 
 just run {
-    kp("Longest Increasing Subsequence (length)")
-    kp("=======================================")
+    print("Longest Increasing Subsequence (length)")
+    print("=======================================")
 
     let a1 = "10,9,2,5,3,7,101,18"
-    kp("  " + a1 + "  -> " + lisLength(a1))   // 4: 2,3,7,101 (or 2,3,7,18)
+    print("  " + a1 + "  -> " + lisLength(a1))   // 4: 2,3,7,101 (or 2,3,7,18)
 
     let a2 = "0,1,0,3,2,3"
-    kp("  " + a2 + "  -> " + lisLength(a2))   // 4
+    print("  " + a2 + "  -> " + lisLength(a2))   // 4
 
     let a3 = "7,7,7,7"
-    kp("  " + a3 + "  -> " + lisLength(a3))   // 1
+    print("  " + a3 + "  -> " + lisLength(a3))   // 1
 
     let a4 = "1,2,3,4,5"
-    kp("  " + a4 + "  -> " + lisLength(a4))   // 5
+    print("  " + a4 + "  -> " + lisLength(a4))   // 5
 
     let a5 = "5"
-    kp("  " + a5 + "  -> " + lisLength(a5))   // 1
+    print("  " + a5 + "  -> " + lisLength(a5))   // 1
 }

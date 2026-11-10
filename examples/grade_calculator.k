@@ -21,8 +21,8 @@ func passFail(score) {
 just run {
     const title = "Grade Calculator"
     const separator = repeat("=", len(title))
-    kp(title)
-    kp(separator)
+    print(title)
+    print(separator)
 
     const scores = "95,87,73,62,45,100,58,81,69,91"
     let passCount = 0
@@ -32,7 +32,7 @@ just run {
     for score in scores {
         const grade = letterGrade(score)
         const status = passFail(score)
-        kp("  Score " + padLeft(score, 3, " ") + " -> " + padRight(grade, 3, " ") + " [" + status + "]")
+        print("  Score " + padLeft(score, 3, " ") + " -> " + padRight(grade, 3, " ") + " [" + status + "]")
         totalScore += score
         if status == "PASS" {
             passCount += 1
@@ -41,13 +41,13 @@ just run {
         }
     }
 
-    kp(separator)
+    print(separator)
     const count = length(scores)
     const avg = totalScore / count
-    kp("Students:  " + count)
-    kp("Average:   " + avg)
-    kp("Passed:    " + passCount)
-    kp("Failed:    " + failCount)
-    kp("Pass rate: " + passCount * 100 / count + "%")
+    print("Students:  " + count)
+    print("Average:   " + avg)
+    print("Passed:    " + passCount)
+    print("Failed:    " + failCount)
+    print("Pass rate: " + passCount * 100 / count + "%")
     emit "ok"
 }

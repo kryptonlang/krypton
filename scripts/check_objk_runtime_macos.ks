@@ -14,13 +14,13 @@ func compileCheck(root, work, source, name) {
         q(root + "/bootstrap/kcc_driver_macos_aarch64") + " " + q(source) +
         " -o " + q(binary) + " >" + q(log) + " 2>&1"
     if shellRun(cmd) != "0" {
-        kp("FAIL compile " + name)
-        kp(readFile(log))
+        print("FAIL compile " + name)
+        print(readFile(log))
         exit("1")
     }
     let buildLog = readFile(log)
     if contains(buildLog, "objk: ") && !contains(buildLog, "dylib(s)\nmacho_arm64_self: wrote") {
-        kp("FAIL compiler diagnostic line boundary " + name)
+        print("FAIL compiler diagnostic line boundary " + name)
         exit("1")
     }
     emit binary
@@ -29,21 +29,21 @@ func compileCheck(root, work, source, name) {
 func runCheck(binary, name, log) {
     let rc = shellRun(q(binary) + " >" + q(log) + " 2>&1")
     if rc != "0" || contains(readFile(log), "[FAIL]") || !contains(readFile(log), "[PASS]") {
-        kp("FAIL " + name + " rc=" + rc)
-        kp(readFile(log))
+        print("FAIL " + name + " rc=" + rc)
+        print(readFile(log))
         exit("1")
     }
-    kp("OK " + name)
+    print("OK " + name)
 }
 
 func rejectCheck(binary, mode, expected, log) {
     let rc = shellRun(q(binary) + " " + q(mode) + " >" + q(log) + " 2>&1")
     if rc == "0" || !contains(readFile(log), "Objective-K: " + expected) {
-        kp("FAIL rejection " + mode + " rc=" + rc)
-        kp(readFile(log))
+        print("FAIL rejection " + mode + " rc=" + rc)
+        print(readFile(log))
         exit("1")
     }
-    kp("OK rejects " + mode)
+    print("OK rejects " + mode)
 }
 
 func compileReject(root, source, binary, log) {
@@ -52,11 +52,11 @@ func compileReject(root, source, binary, log) {
         " -o " + q(binary) + " >" + q(log) + " 2>&1"
     let rc = shellRun(cmd)
     if rc == "0" || !contains(readFile(log), "callPtr needs a pointer and 0..8 arguments") {
-        kp("FAIL invalid function-pointer arity")
-        kp(readFile(log))
+        print("FAIL invalid function-pointer arity")
+        print(readFile(log))
         exit("1")
     }
-    kp("OK rejects " + source)
+    print("OK rejects " + source)
 }
 
 func syntaxReject(root, source, expected, log) {
@@ -65,21 +65,21 @@ func syntaxReject(root, source, expected, log) {
         " -o " + q(log + ".bin") + " >" + q(log) + " 2>&1"
     let rc = shellRun(cmd)
     if rc == "0" || !contains(readFile(log), expected) {
-        kp("FAIL syntax rejection rc=" + rc)
-        kp(readFile(log))
+        print("FAIL syntax rejection rc=" + rc)
+        print(readFile(log))
         exit("1")
     }
-    kp("OK rejects " + source)
+    print("OK rejects " + source)
 }
 
 just run {
     if trim(exec("uname -s")) != "Darwin" {
-        kp("SKIP macOS Objective-K runtime")
+        print("SKIP macOS Objective-K runtime")
         exit("0")
     }
     let root = trim(exec("pwd"))
     let work = trim(exec("mktemp -d /tmp/check_objk_macos.XXXXXX"))
-    if work == "" { kp("FAIL temporary directory"); exit("1") }
+    if work == "" { print("FAIL temporary directory"); exit("1") }
     let log = work + "/run.log"
     syntaxReject(root, "tests/macos/fixtures/unknown_call.k",
         "unknown function 'definitelyNotAFunction'", log)
@@ -143,8 +143,8 @@ just run {
     compileReject(root, "tests/macos/fixtures/callptr_too_many.k", work + "/bad", log)
     let nullPointer = compileCheck(root, work, "tests/macos/fixtures/callptr_null.k", "null")
     let nullRc = shellRun(q(nullPointer) + " >" + q(log) + " 2>&1")
-    if nullRc != "133" { kp("FAIL null pointer guard rc=" + nullRc); exit("1") }
-    kp("OK null pointer traps before call")
+    if nullRc != "133" { print("FAIL null pointer guard rc=" + nullRc); exit("1") }
+    print("OK null pointer traps before call")
     let core = compileCheck(root, work, "tests/macos/test_objk_runtime.k", "core")
     runCheck(core, "K-owned object runtime", log)
     let syntax = compileCheck(root, work, "tests/macos/test_objk_syntax.k", "syntax")
@@ -162,16 +162,16 @@ just run {
     syntaxReject(root, "tests/macos/fixtures/objk_syntax_invalid.k",
         "Objective-K parameter needs type", log)
     if shellRun("otool -L " + q(core) + " >" + q(log) + " 2>&1") != "0" {
-        kp("FAIL inspect object-core dependencies")
+        print("FAIL inspect object-core dependencies")
         exit("1")
     }
     let dependencies = readFile(log)
     if contains(dependencies, "libobjc") || contains(dependencies, "Foundation.framework") ||
         contains(dependencies, "AppKit.framework") || contains(dependencies, "UIKit.framework") {
-        kp("FAIL object core imports Apple object frameworks")
+        print("FAIL object core imports Apple object frameworks")
         exit("1")
     }
-    kp("OK object core has no Apple object-runtime dependency")
+    print("OK object core has no Apple object-runtime dependency")
     let lifetime = compileCheck(root, work, "tests/macos/test_objk_lifetime.k", "lifetime")
     runCheck(lifetime, "owned fields and cleanup", log)
     let weak = compileCheck(root, work, "tests/macos/test_objk_weak.k", "weak")
@@ -270,19 +270,19 @@ just run {
         let gui = compileCheck(root, work, "examples/objk/k_owned_counter_macos.ks", "counter")
         let rc = shellRun(q(gui) + " --smoke >" + q(log) + " 2>&1")
         if rc != "0" || !contains(readFile(log), "[PASS] K model/native callback integration") {
-            kp("FAIL native window/callback integration rc=" + rc)
-            kp(readFile(log))
+            print("FAIL native window/callback integration rc=" + rc)
+            print(readFile(log))
             exit("1")
         }
-        kp("OK native window and K model callbacks")
+        print("OK native window and K model callbacks")
         let focus = compileCheck(root, work, "examples/objk/objective_k_focus.ks", "focus")
         let focusRc = shellRun(q(focus) + " --smoke >" + q(log) + " 2>&1")
         if focusRc != "0" || !contains(readFile(log), "[PASS] Objective-K Focus integration") {
-            kp("FAIL Objective-K Focus integration rc=" + focusRc)
-            kp(readFile(log))
+            print("FAIL Objective-K Focus integration rc=" + focusRc)
+            print(readFile(log))
             exit("1")
         }
-        kp("OK Objective-K Focus protocol/ownership app")
+        print("OK Objective-K Focus protocol/ownership app")
     }
-    kp("logs: " + work)
+    print("logs: " + work)
 }

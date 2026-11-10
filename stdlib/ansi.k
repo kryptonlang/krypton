@@ -3,10 +3,10 @@
 // Builds SGR escape sequences (ESC = charCode 27, safely < 128). Wrap text so
 // it auto-resets, or grab raw codes for manual control.
 //
-//   kp(red("error"))             // red text, auto-reset
-//   kp(bold(green("ok")))        // nest styles
-//   kp(color256(208, "orange"))  // 256-color palette
-//   kp(ansiClear())              // clear screen + home cursor
+//   print(red("error"))             // red text, auto-reset
+//   print(bold(green("ok")))        // nest styles
+//   print(color256(208, "orange"))  // 256-color palette
+//   print(ansiClear())              // clear screen + home cursor
 //
 // All wrappers append RESET, so nesting works left-to-right.
 

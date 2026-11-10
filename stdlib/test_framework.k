@@ -7,50 +7,50 @@ module test_framework
 // Run a single test case
 func runTest(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
         emit 1
     } else {
-        kp("[FAIL] " + name)
-        kp("       Expected: " + expected)
-        kp("       Actual:   " + actual)
+        print("[FAIL] " + name)
+        print("       Expected: " + expected)
+        print("       Actual:   " + actual)
         emit 0
     }
 }
 
 // Print test suite header
 func suiteHeader(suiteName) {
-    kp("")
-    kp("================================")
-    kp("  Test Suite: " + suiteName)
-    kp("================================")
+    print("")
+    print("================================")
+    print("  Test Suite: " + suiteName)
+    print("================================")
 }
 
 // Print test suite footer with summary
 func suiteFooter(suiteName, passed, total) {
-    kp("--------------------------------")
-    kp("  " + suiteName + ": " + passed + "/" + total + " passed")
+    print("--------------------------------")
+    print("  " + suiteName + ": " + passed + "/" + total + " passed")
     if passed == total {
-        kp("  Status: ALL PASSED")
+        print("  Status: ALL PASSED")
     } else {
-        kp("  Status: FAILURES DETECTED")
+        print("  Status: FAILURES DETECTED")
     }
-    kp("================================")
-    kp("")
+    print("================================")
+    print("")
 }
 
 // Print a test separator
 func separator() {
-    kp("--------------------------------")
+    print("--------------------------------")
 }
 
 // Assert not equal
 func assertNotEqual(name, a, b) {
     if a != b {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
         emit 1
     } else {
-        kp("[FAIL] " + name)
-        kp("       Values should differ: " + a)
+        print("[FAIL] " + name)
+        print("       Values should differ: " + a)
         emit 0
     }
 }
@@ -60,91 +60,91 @@ func assertInRange(name, val, lo, hi) {
     let v = toInt(val)
     if v >= lo {
         if v <= hi {
-            kp("[PASS] " + name)
+            print("[PASS] " + name)
             emit 1
         }
     }
-    kp("[FAIL] " + name)
-    kp("       " + val + " not in range [" + lo + ", " + hi + "]")
+    print("[FAIL] " + name)
+    print("       " + val + " not in range [" + lo + ", " + hi + "]")
     emit 0
 }
 
 // Print final report across all suites
 func finalReport(totalPassed, totalFailed) {
-    kp("")
-    kp("########################################")
-    kp("#         FINAL TEST REPORT            #")
-    kp("########################################")
-    kp("# Total Passed: " + totalPassed)
-    kp("# Total Failed: " + totalFailed)
-    kp("# Grand Total:  " + (totalPassed + totalFailed))
+    print("")
+    print("########################################")
+    print("#         FINAL TEST REPORT            #")
+    print("########################################")
+    print("# Total Passed: " + totalPassed)
+    print("# Total Failed: " + totalFailed)
+    print("# Grand Total:  " + (totalPassed + totalFailed))
     if totalFailed == 0 {
-        kp("# Result: SUCCESS")
+        print("# Result: SUCCESS")
     } else {
-        kp("# Result: FAILURE")
+        print("# Result: FAILURE")
     }
-    kp("########################################")
+    print("########################################")
 }
 
 // ── More assertion helpers ───────────────────────────────────────────
 
 func assertContains(name, haystack, needle) {
     if indexOf(haystack, needle) >= 0 {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
         emit 1
     }
-    kp("[FAIL] " + name)
-    kp("       haystack: " + haystack)
-    kp("       needle:   " + needle)
+    print("[FAIL] " + name)
+    print("       haystack: " + haystack)
+    print("       needle:   " + needle)
     emit 0
 }
 
 func assertGreater(name, a, b) {
     if toInt(a) > toInt(b) {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
         emit 1
     }
-    kp("[FAIL] " + name)
-    kp("       " + a + " not > " + b)
+    print("[FAIL] " + name)
+    print("       " + a + " not > " + b)
     emit 0
 }
 
 func assertLess(name, a, b) {
     if toInt(a) < toInt(b) {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
         emit 1
     }
-    kp("[FAIL] " + name)
-    kp("       " + a + " not < " + b)
+    print("[FAIL] " + name)
+    print("       " + a + " not < " + b)
     emit 0
 }
 
 func assertTruthy(name, val) {
     if isTruthy(val) {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
         emit 1
     }
-    kp("[FAIL] " + name + " — expected truthy, got: " + val)
+    print("[FAIL] " + name + " — expected truthy, got: " + val)
     emit 0
 }
 
 func assertFalsy(name, val) {
     if isTruthy(val) {
-        kp("[FAIL] " + name + " — expected falsy, got: " + val)
+        print("[FAIL] " + name + " — expected falsy, got: " + val)
         emit 0
     }
-    kp("[PASS] " + name)
+    print("[PASS] " + name)
     emit 1
 }
 
 // Skip a test (logged, not counted as fail).
 func skipTest(name, reason) {
-    kp("[SKIP] " + name + " — " + reason)
+    print("[SKIP] " + name + " — " + reason)
     emit 1
 }
 
 // Mark a test pending (visible in output).
 func todoTest(name) {
-    kp("[TODO] " + name)
+    print("[TODO] " + name)
     emit 1
 }

@@ -20,13 +20,13 @@ just run {
     if argCount() >= 1 { dir = arg(0) }
 
     if exists(dir) == "0" {
-        kp(red("no such path: ") + dir)
+        print(red("no such path: ") + dir)
         exit("1")
     }
 
-    kp(bold(cyan("dirstat")) + "  " + dir)
-    kp(gray("host: " + sh("uname -srm") + "   user: " + env("USER")))
-    kp("")
+    print(bold(cyan("dirstat")) + "  " + dir)
+    print(gray("host: " + sh("uname -srm") + "   user: " + env("USER")))
+    print("")
 
     // Count files vs dirs using the C-free listings.
     let files = listFiles(dir)
@@ -38,7 +38,7 @@ just run {
     if len(files) == 0 { nFiles = 0 }
     if len(dirs) == 0  { nDirs = 0 }
 
-    kp(green("files: ") + toStr(nFiles) + "    " + yellow("dirs: ") + toStr(nDirs))
+    print(green("files: ") + toStr(nFiles) + "    " + yellow("dirs: ") + toStr(nDirs))
 
     // Total bytes of the regular files (sum via the size() helper).
     let total = 0
@@ -48,9 +48,9 @@ just run {
         if len(f) > 0 { total = total + size(f) }
         i += 1
     }
-    kp(green("bytes: ") + toStr(total))
+    print(green("bytes: ") + toStr(total))
 
     // Biggest file, via a shell one-liner (du+sort) — still C-free, just exec.
     let big = sh("ls -1S " + q(dir) + " 2>/dev/null | head -1")
-    if big != "" { kp(green("largest: ") + big) }
+    if big != "" { print(green("largest: ") + big) }
 }

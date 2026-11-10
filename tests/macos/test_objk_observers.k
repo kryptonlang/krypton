@@ -68,8 +68,8 @@ func readPinnedChild(runtime, self, name, old, new) {
 }
 
 func check(name, expected, actual) {
-    if expected != actual { kp("[FAIL] " + name); exit("1") }
-    kp("[PASS] " + name)
+    if expected != actual { print("[FAIL] " + name); exit("1") }
+    print("[PASS] " + name)
 }
 
 just run {
@@ -165,5 +165,5 @@ just run {
     doKRelease(runtime, txt)
     doKRelease(runtime, child)
     doKRelease(runtime, parent)
-    kp("[PASS] observers (set/own/text/class/multi/re-entrant/alias)")
+    print("[PASS] observers (set/own/text/class/multi/re-entrant/alias)")
 }

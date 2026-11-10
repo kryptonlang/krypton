@@ -58,6 +58,6 @@ just run {
     let nums = "0,1,7,12,19,20,42,99,100,101,250,777,999"
     for s in nums {
         let n = toInt(s)
-        kp(s + " = " + words(n))
+        print(s + " = " + words(n))
     }
 }

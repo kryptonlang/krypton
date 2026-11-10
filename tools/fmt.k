@@ -23,7 +23,7 @@ func trimLine(line) {
 
 just run {
     if argCount() < 1 {
-        kp("Usage: fmt <file>")
+        print("Usage: fmt <file>")
     } else {
         let content = readFile(arg(0))
         let lc = lineCount(content)
@@ -33,11 +33,11 @@ just run {
             let line = trimLine(getLine(content, i))
             if len(line) == 0 {
                 if !prevBlank {
-                    kp("")
+                    print("")
                     prevBlank = 1
                 }
             } else {
-                kp(line)
+                print(line)
                 prevBlank = 0
             }
             i = i + 1

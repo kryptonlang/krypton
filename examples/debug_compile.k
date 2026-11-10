@@ -167,11 +167,11 @@ func tokenize(src) {
 
 just run {
     let file = arg(0)
-    kp("File: " + file)
+    print("File: " + file)
     let source = readFile(file)
-    kp("Source length: " + len(source))
+    print("Source length: " + len(source))
     let tokens = tokenize(source)
     let ntoks = lineCount(tokens)
-    kp("Token count: " + ntoks)
+    print("Token count: " + ntoks)
     emit "ok"
 }

@@ -63,13 +63,13 @@ func stackEmpty(stk) {
 // Print all stack elements (top to bottom)
 func stackPrint(stk) {
     let size = count(stk)
-    kp("--- Stack (top to bottom) ---")
+    print("--- Stack (top to bottom) ---")
     let i = size - 1
     while i >= 0 {
-        kp("  " + split(stk, i))
+        print("  " + split(stk, i))
         i -= 1
     }
-    kp("-----------------------------")
+    print("-----------------------------")
 }
 
 // Clear the stack

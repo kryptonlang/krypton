@@ -5,7 +5,7 @@ let ownerReadCount = 0
 
 func readOwnerCleanup(runtime, self) {
     let owner = okKGet(runtime, self, "owner")
-    if okKGet(runtime, owner, "tag") != 123 { kp("[FAIL] owner field list reclaimed early"); exit("1") }
+    if okKGet(runtime, owner, "tag") != 123 { print("[FAIL] owner field list reclaimed early"); exit("1") }
     ownerReadCount += 1
     emit 0
 }
@@ -14,17 +14,17 @@ func churnCleanup(runtime, self) {
     let temporary = okKNew(runtime, okKGet(runtime, self, "temporaryClass"))
     doKSet(runtime, temporary, "value", 99)
     doKRelease(runtime, temporary)
-    if okKGet(runtime, self, "value") != 7 { kp("[FAIL] cleanup storage reused early"); exit("1") }
+    if okKGet(runtime, self, "value") != 7 { print("[FAIL] cleanup storage reused early"); exit("1") }
     reuseCleanupCount += 1
     emit 0
 }
 
 func check(name, expected, actual) {
     if expected != actual {
-        kp("[FAIL] " + name)
+        print("[FAIL] " + name)
         exit("1")
     }
-    kp("[PASS] " + name)
+    print("[PASS] " + name)
 }
 
 just run {
@@ -40,10 +40,10 @@ just run {
     let i = 0
     while i < 2000 {
         let object = okKNew(runtime, klass)
-        if object == first { kp("[FAIL] reused ID"); exit("1") }
+        if object == first { print("[FAIL] reused ID"); exit("1") }
         doKSet(runtime, object, "value", i)
-        if okKGet(runtime, object, "value") != i { kp("[FAIL] reused field"); exit("1") }
-        if okKGet(runtime, observer, "target") != 0 { kp("[FAIL] revived weak target"); exit("1") }
+        if okKGet(runtime, object, "value") != i { print("[FAIL] reused field"); exit("1") }
+        if okKGet(runtime, observer, "target") != 0 { print("[FAIL] revived weak target"); exit("1") }
         doKRelease(runtime, object)
         i += 1
     }

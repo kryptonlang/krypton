@@ -57,22 +57,22 @@ func knapsack01(weights, values, capacity) {
 }
 
 just run {
-    kp("0/1 Knapsack")
-    kp("============")
+    print("0/1 Knapsack")
+    print("============")
 
     // Classic example: 3 items, capacity 50
     let w1 = "10,20,30"
     let v1 = "60,100,120"
-    kp("  weights: " + w1)
-    kp("  values:  " + v1)
-    kp("  cap=50  -> max value = " + knapsack01(w1, v1, 50))   // 220
+    print("  weights: " + w1)
+    print("  values:  " + v1)
+    print("  cap=50  -> max value = " + knapsack01(w1, v1, 50))   // 220
 
     // Capacity 0
-    kp("  cap=0   -> " + knapsack01(w1, v1, 0))                 // 0
+    print("  cap=0   -> " + knapsack01(w1, v1, 0))                 // 0
 
     // Capacity smaller than smallest item
-    kp("  cap=5   -> " + knapsack01(w1, v1, 5))                 // 0
+    print("  cap=5   -> " + knapsack01(w1, v1, 5))                 // 0
 
     // Single item that fits exactly
-    kp("  cap=10  -> " + knapsack01("10", "60", 10))            // 60
+    print("  cap=10  -> " + knapsack01("10", "60", 10))            // 60
 }

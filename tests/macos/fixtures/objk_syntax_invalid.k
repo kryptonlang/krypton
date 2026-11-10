@@ -2,4 +2,4 @@ objk protocol Broken {
     require value(amount) -> int
 }
 
-just run { kp("[FAIL] expected syntax rejection") }
+just run { print("[FAIL] expected syntax rejection") }

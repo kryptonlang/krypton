@@ -10,23 +10,23 @@ just run {
     let secPerDay  = secPerHour * hourPerDay
     let secPerYear = secPerDay * dayPerYear
 
-    kp("Time unit breakdown")
-    kp("===================")
-    kp("seconds per minute: " + secPerMin)
-    kp("seconds per hour:   " + secPerHour)
-    kp("seconds per day:    " + secPerDay)
-    kp("seconds per year:   " + secPerYear)
-    kp("")
+    print("Time unit breakdown")
+    print("===================")
+    print("seconds per minute: " + secPerMin)
+    print("seconds per hour:   " + secPerHour)
+    print("seconds per day:    " + secPerDay)
+    print("seconds per year:   " + secPerYear)
+    print("")
 
-    kp("Comparisons:")
-    kp("  1 day  = " + (secPerDay  / secPerMin) + " minutes")
-    kp("  1 year = " + (secPerYear / secPerHour) + " hours")
-    kp("  1 year = " + (secPerYear / secPerDay)  + " days")
-    kp("")
+    print("Comparisons:")
+    print("  1 day  = " + (secPerDay  / secPerMin) + " minutes")
+    print("  1 year = " + (secPerYear / secPerHour) + " hours")
+    print("  1 year = " + (secPerYear / secPerDay)  + " days")
+    print("")
 
     let yearsAlive = 30
     let totalSec = yearsAlive * secPerYear
-    kp("If you've been alive for " + yearsAlive + " years, you've experienced:")
-    kp("  " + totalSec + " seconds")
-    kp("  " + (totalSec / secPerHour) + " hours")
+    print("If you've been alive for " + yearsAlive + " years, you've experienced:")
+    print("  " + totalSec + " seconds")
+    print("  " + (totalSec / secPerHour) + " hours")
 }

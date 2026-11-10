@@ -25,15 +25,15 @@ func pairPos(p) {
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
 just run {
-    kp("Pair Operation Tests")
-    kp("====================")
+    print("Pair Operation Tests")
+    print("====================")
 
     // Basic pair
     let p1 = "hello,5"

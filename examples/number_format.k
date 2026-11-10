@@ -76,38 +76,38 @@ func formatBytes(bytes) {
 }
 
 just run {
-    kp("Number Formatting")
-    kp("=================")
-    kp("")
+    print("Number Formatting")
+    print("=================")
+    print("")
 
-    kp("Comma formatting:")
+    print("Comma formatting:")
     let nums = "1,12,123,1234,12345,123456,1234567"
     let total = count(nums)
     let i = 0
     while i < total {
         let n = toInt(split(nums, i))
-        kp("  " + n + " -> " + formatWithCommas(n))
+        print("  " + n + " -> " + formatWithCommas(n))
         i += 1
     }
-    kp("")
+    print("")
 
-    kp("Ordinal numbers:")
+    print("Ordinal numbers:")
     i = 1
     while i <= 25 {
-        kp("  " + toOrdinal(i))
+        print("  " + toOrdinal(i))
         i += 1
     }
-    kp("")
+    print("")
 
-    kp("Numbers to words:")
+    print("Numbers to words:")
     i = 0
     while i <= 20 {
-        kp("  " + i + " -> " + numberToWords(i))
+        print("  " + i + " -> " + numberToWords(i))
         i += 1
     }
-    kp("")
+    print("")
 
-    kp("Byte formatting:")
+    print("Byte formatting:")
     // Cap at < 0x40000000 (1 GiB): the native smart-int convention
     // reserves >= 0x40000000 for string pointers, so toInt of a value
     // there collides with the heap range.
@@ -116,7 +116,7 @@ just run {
     i = 0
     while i < total {
         let n = toInt(split(sizes, i))
-        kp("  " + n + " -> " + formatBytes(n))
+        print("  " + n + " -> " + formatBytes(n))
         i += 1
     }
     emit "ok"

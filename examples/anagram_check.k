@@ -96,18 +96,18 @@ func isAnagram(a, b) {
 }
 
 just run {
-    kp("Anagram Checker")
-    kp("===============")
-    kp("")
+    print("Anagram Checker")
+    print("===============")
+    print("")
 
     // Test pairs
-    kp("listen / silent: " + isAnagram("listen", "silent"))
-    kp("hello / world: " + isAnagram("hello", "world"))
-    kp("race / care: " + isAnagram("race", "care"))
-    kp("night / thing: " + isAnagram("night", "thing"))
-    kp("rat / tar: " + isAnagram("rat", "tar"))
-    kp("ab / abc: " + isAnagram("ab", "abc"))
-    kp("evil / vile: " + isAnagram("evil", "vile"))
-    kp("fluster / restful: " + isAnagram("fluster", "restful"))
+    print("listen / silent: " + isAnagram("listen", "silent"))
+    print("hello / world: " + isAnagram("hello", "world"))
+    print("race / care: " + isAnagram("race", "care"))
+    print("night / thing: " + isAnagram("night", "thing"))
+    print("rat / tar: " + isAnagram("rat", "tar"))
+    print("ab / abc: " + isAnagram("ab", "abc"))
+    print("evil / vile: " + isAnagram("evil", "vile"))
+    print("fluster / restful: " + isAnagram("fluster", "restful"))
     emit "ok"
 }

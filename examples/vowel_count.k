@@ -47,12 +47,12 @@ func analyzeText(text) {
         }
         i += 1
     }
-    kp("  Vowels:     " + vowels)
-    kp("  Consonants: " + consonants)
-    kp("  Digits:     " + digits)
-    kp("  Spaces:     " + spaces)
-    kp("  Other:      " + punct)
-    kp("  Total:      " + len(text))
+    print("  Vowels:     " + vowels)
+    print("  Consonants: " + consonants)
+    print("  Digits:     " + digits)
+    print("  Spaces:     " + spaces)
+    print("  Other:      " + punct)
+    print("  Total:      " + len(text))
 }
 
 func vowelPositions(text) {
@@ -68,19 +68,19 @@ func vowelPositions(text) {
 }
 
 just run {
-    kp("Text Analysis")
-    kp("=============")
-    kp("")
+    print("Text Analysis")
+    print("=============")
+    print("")
 
     let texts = "Hello World,The quick brown fox jumps over the lazy dog,Krypton Programming Language 2024"
     let total = count(texts)
     let i = 0
     while i < total {
         let text = split(texts, i)
-        kp("Text: \"" + text + "\"")
+        print("Text: \"" + text + "\"")
         analyzeText(text)
-        kp("  Vowel positions: " + vowelPositions(text))
-        kp("")
+        print("  Vowel positions: " + vowelPositions(text))
+        print("")
         i += 1
     }
     emit "ok"

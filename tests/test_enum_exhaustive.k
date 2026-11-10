@@ -15,7 +15,7 @@ just run {
         case State.Running:            r = "run"
         case State.Done, State.Error:  r = "end"
     }
-    if r != "run" { kp("[FAIL] full member coverage"); exit("1") }
+    if r != "run" { print("[FAIL] full member coverage"); exit("1") }
 
     // Full coverage through int literals.
     let r1 = ""
@@ -25,7 +25,7 @@ just run {
         case 2: r1 = "2"
         case 3: r1 = "3"
     }
-    if r1 != "1" { kp("[FAIL] int literal coverage"); exit("1") }
+    if r1 != "1" { print("[FAIL] int literal coverage"); exit("1") }
 
     // Direct enum scrutinee.
     let r2 = ""
@@ -35,7 +35,7 @@ just run {
         case State.Done:  r2 = "c"
         case State.Error: r2 = "d"
     }
-    if r2 != "d" { kp("[FAIL] direct enum scrutinee"); exit("1") }
+    if r2 != "d" { print("[FAIL] direct enum scrutinee"); exit("1") }
 
     // default: arm makes any subset legal.
     let r3 = ""
@@ -43,14 +43,14 @@ just run {
         case Color.Red: r3 = "red"
         default:        r3 = "other"
     }
-    if r3 != "other" { kp("[FAIL] default arm"); exit("1") }
+    if r3 != "other" { print("[FAIL] default arm"); exit("1") }
 
     // match statement with else is accepted.
     match Color.Green {
         Color.Red { r3 = "red" }
         else { r3 = "match-other" }
     }
-    if r3 != "match-other" { kp("[FAIL] match else arm"); exit("1") }
+    if r3 != "match-other" { print("[FAIL] match else arm"); exit("1") }
 
     // match statement with full coverage.
     match State.Idle {
@@ -59,7 +59,7 @@ just run {
         State.Done { r3 = "was-done" }
         State.Error { r3 = "was-error" }
     }
-    if r3 != "was-idle" { kp("[FAIL] match full coverage"); exit("1") }
+    if r3 != "was-idle" { print("[FAIL] match full coverage"); exit("1") }
 
     // A var assigned two different enums is not statically checkable; the
     // switch compiles as before.
@@ -69,7 +69,7 @@ just run {
     switch u {
         case State.Idle: r4 = "changed"
     }
-    if r4 != "kept" { kp("[FAIL] ambiguous var should compile and run"); exit("1") }
+    if r4 != "kept" { print("[FAIL] ambiguous var should compile and run"); exit("1") }
 
     // Hex literal coverage.
     let r5 = ""
@@ -79,7 +79,7 @@ just run {
         case 0x2: r5 = "done"
         case 0x3: r5 = "error"
     }
-    if r5 != "run" { kp("[FAIL] hex literal coverage"); exit("1") }
+    if r5 != "run" { print("[FAIL] hex literal coverage"); exit("1") }
 
-    kp("[PASS] enum exhaustiveness (member, int, direct, default, match, ambiguous, hex)")
+    print("[PASS] enum exhaustiveness (member, int, direct, default, match, ambiguous, hex)")
 }

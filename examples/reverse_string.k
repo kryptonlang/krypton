@@ -74,20 +74,20 @@ func reverseEachWord(sentence) {
 }
 
 just run {
-    kp("String Reversal Examples")
-    kp("========================")
+    print("String Reversal Examples")
+    print("========================")
 
     let text = "Hello World"
-    kp("Original:       " + text)
-    kp("Reversed:       " + reverseSimple(text))
-    kp("Words reversed: " + reverseWords(text))
-    kp("Each word rev:  " + reverseEachWord(text))
-    kp("")
+    print("Original:       " + text)
+    print("Reversed:       " + reverseSimple(text))
+    print("Words reversed: " + reverseWords(text))
+    print("Each word rev:  " + reverseEachWord(text))
+    print("")
 
     let text2 = "Krypton is a programming language"
-    kp("Original:       " + text2)
-    kp("Reversed:       " + reverseSimple(text2))
-    kp("Words reversed: " + reverseWords(text2))
-    kp("Each word rev:  " + reverseEachWord(text2))
+    print("Original:       " + text2)
+    print("Reversed:       " + reverseSimple(text2))
+    print("Words reversed: " + reverseWords(text2))
+    print("Each word rev:  " + reverseEachWord(text2))
     emit "ok"
 }

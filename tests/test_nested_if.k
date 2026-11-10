@@ -3,9 +3,9 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
@@ -42,8 +42,8 @@ func grade(score) {
 }
 
 just run {
-    kp("Nested If Tests")
-    kp("===============")
+    print("Nested If Tests")
+    print("===============")
 
     // Classify numbers
     check("positive even", "positive even", classify(4))

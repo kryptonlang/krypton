@@ -88,20 +88,20 @@ func kmpSearch(text, pattern) {
 }
 
 just run {
-    kp("KMP String Matching")
-    kp("===================")
+    print("KMP String Matching")
+    print("===================")
     let text = "AABAACAADAABAABA"
     let pat  = "AABA"
-    kp("  text: " + text)
-    kp("  pat:  " + pat)
+    print("  text: " + text)
+    print("  pat:  " + pat)
     let pos = kmpSearch(text, pat)
-    kp("  positions: " + pos)
+    print("  positions: " + pos)
 
     let text2 = "abcxabcdabxabcdabcdabcy"
     let pat2  = "abcdabcy"
-    kp("  text: " + text2)
-    kp("  pat:  " + pat2)
-    kp("  positions: " + kmpSearch(text2, pat2))
+    print("  text: " + text2)
+    print("  pat:  " + pat2)
+    print("  positions: " + kmpSearch(text2, pat2))
 
-    kp("  no match: '" + kmpSearch("hello world", "xyz") + "'")
+    print("  no match: '" + kmpSearch("hello world", "xyz") + "'")
 }

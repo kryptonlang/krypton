@@ -40,28 +40,28 @@ func extendedGcd(a, b) {
 }
 
 just run {
-    kp("GCD and LCM Calculator")
-    kp("======================")
-    kp("")
+    print("GCD and LCM Calculator")
+    print("======================")
+    print("")
 
     // Test pairs
-    kp("GCD examples:")
-    kp("  gcd(12, 8) = " + gcd(12, 8))
-    kp("  gcd(54, 24) = " + gcd(54, 24))
-    kp("  gcd(100, 75) = " + gcd(100, 75))
-    kp("  gcd(17, 13) = " + gcd(17, 13))
-    kp("  gcd(0, 5) = " + gcd(0, 5))
-    kp("")
+    print("GCD examples:")
+    print("  gcd(12, 8) = " + gcd(12, 8))
+    print("  gcd(54, 24) = " + gcd(54, 24))
+    print("  gcd(100, 75) = " + gcd(100, 75))
+    print("  gcd(17, 13) = " + gcd(17, 13))
+    print("  gcd(0, 5) = " + gcd(0, 5))
+    print("")
 
-    kp("LCM examples:")
-    kp("  lcm(4, 6) = " + lcm(4, 6))
-    kp("  lcm(12, 18) = " + lcm(12, 18))
-    kp("  lcm(7, 5) = " + lcm(7, 5))
-    kp("  lcm(15, 20) = " + lcm(15, 20))
-    kp("")
+    print("LCM examples:")
+    print("  lcm(4, 6) = " + lcm(4, 6))
+    print("  lcm(12, 18) = " + lcm(12, 18))
+    print("  lcm(7, 5) = " + lcm(7, 5))
+    print("  lcm(15, 20) = " + lcm(15, 20))
+    print("")
 
     // GCD table
-    kp("GCD table (rows and columns 1-8):")
+    print("GCD table (rows and columns 1-8):")
     let sb = sbNew()
     sb = sbAppend(sb, "     ")
     let c = 1
@@ -73,7 +73,7 @@ just run {
         sb = sbAppend(sb, label)
         c = c + 1
     }
-    kp(sbToString(sb))
+    print(sbToString(sb))
 
     let r = 1
     while r <= 8 {
@@ -93,7 +93,7 @@ just run {
             sb = sbAppend(sb, gLabel)
             c = c + 1
         }
-        kp(sbToString(sb))
+        print(sbToString(sb))
         r = r + 1
     }
     emit "ok"

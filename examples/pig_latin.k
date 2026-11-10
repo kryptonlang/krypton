@@ -70,30 +70,30 @@ func translateSentence(sentence) {
 }
 
 just run {
-    kp("Pig Latin Translator")
-    kp("====================")
-    kp("")
+    print("Pig Latin Translator")
+    print("====================")
+    print("")
 
     // Single words
-    kp("Word translations:")
-    kp("  hello  -> " + toPigLatin("hello"))
-    kp("  apple  -> " + toPigLatin("apple"))
-    kp("  string -> " + toPigLatin("string"))
-    kp("  igloo  -> " + toPigLatin("igloo"))
-    kp("  charm  -> " + toPigLatin("charm"))
-    kp("  three  -> " + toPigLatin("three"))
-    kp("")
+    print("Word translations:")
+    print("  hello  -> " + toPigLatin("hello"))
+    print("  apple  -> " + toPigLatin("apple"))
+    print("  string -> " + toPigLatin("string"))
+    print("  igloo  -> " + toPigLatin("igloo"))
+    print("  charm  -> " + toPigLatin("charm"))
+    print("  three  -> " + toPigLatin("three"))
+    print("")
 
     // Sentences
-    kp("Sentence translations:")
+    print("Sentence translations:")
     let sentences = "hello world,the quick brown fox,krypton is awesome"
     let total = count(sentences)
     let i = 0
     while i < total {
         let s = split(sentences, i)
-        kp("  \"" + s + "\"")
-        kp("  -> \"" + translateSentence(s) + "\"")
-        kp("")
+        print("  \"" + s + "\"")
+        print("  -> \"" + translateSentence(s) + "\"")
+        print("")
         i += 1
     }
     emit "ok"

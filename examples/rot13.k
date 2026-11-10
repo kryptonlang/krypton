@@ -29,8 +29,8 @@ func rot13(text) {
 }
 
 just run {
-    kp("ROT13 Encoder/Decoder")
-    kp("=====================")
+    print("ROT13 Encoder/Decoder")
+    print("=====================")
 
     let messages = "Hello World,The Quick Brown Fox,Krypton Language,ROT13 is symmetric"
     let total = count(messages)
@@ -39,10 +39,10 @@ just run {
         let msg = split(messages, i)
         let encoded = rot13(msg)
         let decoded = rot13(encoded)
-        kp("  Original: " + msg)
-        kp("  ROT13:    " + encoded)
-        kp("  Decoded:  " + decoded)
-        kp("")
+        print("  Original: " + msg)
+        print("  ROT13:    " + encoded)
+        print("  Decoded:  " + decoded)
+        print("")
         i += 1
     }
 
@@ -50,9 +50,9 @@ just run {
     let test = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
     let roundtrip = rot13(rot13(test))
     if roundtrip == test {
-        kp("Roundtrip verification: PASSED")
+        print("Roundtrip verification: PASSED")
     } else {
-        kp("Roundtrip verification: FAILED")
+        print("Roundtrip verification: FAILED")
     }
     emit "ok"
 }

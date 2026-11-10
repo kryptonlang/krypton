@@ -16,17 +16,17 @@ func fibDP(n) {
 }
 
 just run {
-    kp("Fibonacci (DP)")
-    kp("==============")
+    print("Fibonacci (DP)")
+    print("==============")
     let i = 0
     while i <= 30 {
-        kp("  fib(" + i + ") = " + fibDP(i))
+        print("  fib(" + i + ") = " + fibDP(i))
         i = i + 5
     }
 
     // Compare performance: DP handles large n easily.
     // Capped at fib(40) — fib(45) = 1,134,903,170 crosses the native
     // smart-int / heap-pointer boundary at 0x40000000 (1 GiB).
-    kp("")
-    kp("fib(40) = " + fibDP(40))
+    print("")
+    print("fib(40) = " + fibDP(40))
 }

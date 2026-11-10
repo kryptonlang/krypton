@@ -15,7 +15,7 @@ just run {
     } catch e {
         caught = e
     }
-    if caught == "test error" { kp("PASS basic throw") } else { kp("FAIL basic throw") }
+    if caught == "test error" { print("PASS basic throw") } else { print("FAIL basic throw") }
 
     // No throw - catch skipped
     let ran = "no"
@@ -24,7 +24,7 @@ just run {
     } catch e {
         ran = "caught"
     }
-    if ran == "yes" { kp("PASS no throw") } else { kp("FAIL no throw") }
+    if ran == "yes" { print("PASS no throw") } else { print("FAIL no throw") }
 
     // Throw from function
     let result = ""
@@ -33,7 +33,7 @@ just run {
     } catch e {
         result = "caught: " + e
     }
-    if result == "caught: zero error" { kp("PASS throw from func") } else { kp("FAIL throw from func: " + result) }
+    if result == "caught: zero error" { print("PASS throw from func") } else { print("FAIL throw from func: " + result) }
 
     // Successful function call in try
     let r2 = ""
@@ -42,7 +42,7 @@ just run {
     } catch e {
         r2 = "error"
     }
-    if r2 == "ok" { kp("PASS success in try") } else { kp("FAIL success in try") }
+    if r2 == "ok" { print("PASS success in try") } else { print("FAIL success in try") }
 
     // Nested try/catch
     let outer = ""
@@ -55,7 +55,7 @@ just run {
     } catch e {
         outer = e
     }
-    if outer == "rethrown" { kp("PASS nested+rethrow") } else { kp("FAIL nested+rethrow") }
+    if outer == "rethrown" { print("PASS nested+rethrow") } else { print("FAIL nested+rethrow") }
 
     // throw as function
     let tf = ""
@@ -64,7 +64,7 @@ just run {
     } catch e {
         tf = e
     }
-    if tf == "func form" { kp("PASS throw func form") } else { kp("FAIL throw func form") }
+    if tf == "func form" { print("PASS throw func form") } else { print("FAIL throw func form") }
 
-    kp("try/catch tests done")
+    print("try/catch tests done")
 }

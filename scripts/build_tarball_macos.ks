@@ -9,7 +9,7 @@
 func isExec(p) { emit trim(exec("test -x \"" + p + "\" && echo yes || echo no")) }
 func isFile(p) { emit trim(exec("test -f \"" + p + "\" && echo yes || echo no")) }
 func isDir(p)  { emit trim(exec("test -d \"" + p + "\" && echo yes || echo no")) }
-func die(m)    { kp(m)  exit("1") }
+func die(m)    { print(m)  exit("1") }
 func envValue(name) { emit trim(exec("printenv " + name + " 2>/dev/null || true")) }
 
 func signPayload(rootd, identity) {
@@ -62,7 +62,7 @@ just run {
     let rootd = stage + "/" + name
     exec("mkdir -p \"" + rootd + "\"")
 
-    kp("staging payload for " + name + " ...")
+    print("staging payload for " + name + " ...")
     exec("mkdir -p \"" + rootd + "/bootstrap\" \"" + rootd + "/compiler/macos_arm64\"")
     // Driver + frontend seed
     exec("install -m 0755 " + driver + " \"" + rootd + "/" + driver + "\"")
@@ -138,6 +138,6 @@ just run {
     let out = "releases/" + name + ".tar.gz"
     exec("tar -czf \"" + out + "\" -C \"" + stage + "\" \"" + name + "\"")
     exec("rm -rf \"" + stage + "\"")
-    kp("wrote " + out + " (" + trim(exec("du -h \"" + out + "\" | cut -f1")) + ")")
-    kp(trim(exec("shasum -a 256 \"" + out + "\"")))
+    print("wrote " + out + " (" + trim(exec("du -h \"" + out + "\" | cut -f1")) + ")")
+    print(trim(exec("shasum -a 256 \"" + out + "\"")))
 }

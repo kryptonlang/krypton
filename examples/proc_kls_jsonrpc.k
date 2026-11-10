@@ -18,28 +18,28 @@ just run {
     let body = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"processId\":null,\"rootUri\":null,\"capabilities\":{}}}"
     let frame = makeFrame(body)
 
-    kp("spawning kls.exe")
+    print("spawning kls.exe")
     let p = procSpawn("kls.exe", "")
     if p == "0" {
-        kp("FAIL: procSpawn returned 0 (kls.exe not found on PATH?)")
+        print("FAIL: procSpawn returned 0 (kls.exe not found on PATH?)")
         exit(1)
     }
-    kp("spawned, handle=" + p)
+    print("spawned, handle=" + p)
 
-    kp("alive=" + procAlive(p))
+    print("alive=" + procAlive(p))
 
-    kp("writing initialize request (" + len(frame) + " bytes)")
+    print("writing initialize request (" + len(frame) + " bytes)")
     let w = procWrite(p, frame)
-    kp("write result=" + w)
+    print("write result=" + w)
 
-    kp("reading response...")
+    print("reading response...")
     let reply = procRead(p, 4096)
-    kp("got " + len(reply) + " bytes")
-    kp("---reply---")
-    kp(reply)
-    kp("---end reply---")
+    print("got " + len(reply) + " bytes")
+    print("---reply---")
+    print(reply)
+    print("---end reply---")
 
-    kp("closing")
+    print("closing")
     procClose(p)
-    kp("done")
+    print("done")
 }

@@ -157,12 +157,12 @@ just run {
             okKConforms(focusRuntime, workModel(), scoreableProtocol) != 1 ||
             okKGet(focusRuntime, workModel(), "peer") != restModel() ||
             text(workLabel) != "Deep work  3" || text(restLabel) != "Recovery  1" {
-            kp("[FAIL] Objective-K Focus integration")
+            print("[FAIL] Objective-K Focus integration")
             exit("1")
         }
         doKRelease(focusRuntime, focusState)
-        if focusCleanupRuns != 2 { kp("[FAIL] Objective-K Focus cleanup"); exit("1") }
-        kp("[PASS] Objective-K Focus integration")
+        if focusCleanupRuns != 2 { print("[FAIL] Objective-K Focus cleanup"); exit("1") }
+        print("[PASS] Objective-K Focus integration")
         exit("0")
     }
 

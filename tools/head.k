@@ -2,7 +2,7 @@
 
 just run {
     if argCount() < 1 {
-        kp("Usage: head <file> [n]")
+        print("Usage: head <file> [n]")
     } else {
         let filename = arg(0)
         let n = 10
@@ -14,7 +14,7 @@ just run {
         if n > lc { n = lc }
         let i = 0
         while i < n {
-            kp(getLine(content, i))
+            print(getLine(content, i))
             i = i + 1
         }
     }

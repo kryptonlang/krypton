@@ -22,10 +22,10 @@ just run {
     let data = "3,7,2,9,5,12,1,8,4,6"
     let m = max(data)
     let scale = 30
-    kp("Histogram (max " + m + "):")
+    print("Histogram (max " + m + "):")
     for v in data {
         let n = toInt(v)
         let width = (n * scale) / m
-        kp(`  {v} | ` + bar("" + width))
+        print(`  {v} | ` + bar("" + width))
     }
 }

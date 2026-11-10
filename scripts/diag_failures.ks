@@ -16,9 +16,9 @@ just run {
         let name = split(FAILED, i + "")
         let f = "examples/" + name + ".k"
         if fsFileExists(f) != "1" {
-            kp(name + ": missing")
+            print(name + ": missing")
         } else if contains(HANG, "," + name + ",") {
-            kp(name + ": SKIP (hangs kcc.exe -o; needs shellRun timeout)")
+            print(name + ": SKIP (hangs kcc.exe -o; needs shellRun timeout)")
         } else {
             let irPath = fsTempDir() + "_krdiag_ir.txt"
             shellRun("kcc.exe --ir \"" + f + "\" >" + irPath + " 2>nul")
@@ -27,17 +27,17 @@ just run {
             fsDelete(irPath)
 
             if irSz == 0 {
-                kp(name + ": IR=0 (compile.k silent failure)")
+                print(name + ": IR=0 (compile.k silent failure)")
             } else {
                 let outExe = fsTempDir() + "_krdiag.exe"
                 let rcBuild = shellRun("kcc.exe -o \"" + outExe + "\" \"" + f + "\" >nul")
                 if rcBuild != "0" {
-                    kp(name + ": IR=" + irSz + ", native compile failed RC=" + rcBuild)
+                    print(name + ": IR=" + irSz + ", native compile failed RC=" + rcBuild)
                 } else if fsFileExists(outExe) != "1" {
-                    kp(name + ": IR=" + irSz + ", no binary produced")
+                    print(name + ": IR=" + irSz + ", no binary produced")
                 } else {
                     let rcRun = shellRun("\"" + outExe + "\" >nul")
-                    kp(name + ": IR=" + irSz + ", runtime RC=" + rcRun)
+                    print(name + ": IR=" + irSz + ", runtime RC=" + rcRun)
                 }
                 fsDelete(outExe)
             }

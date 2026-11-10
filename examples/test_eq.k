@@ -1,8 +1,8 @@
 just run {
     let val = 42
-    kp("val=" + val)
-    kp("eq42=" + (val == 42))
-    kp("eq0=" + (val == 0))
-    kp("eq_str=" + (val == "42"))
+    print("val=" + val)
+    print("eq42=" + (val == 42))
+    print("eq0=" + (val == 0))
+    print("eq_str=" + (val == "42"))
     emit "ok"
 }

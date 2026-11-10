@@ -2,9 +2,9 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
@@ -15,8 +15,8 @@ func negate(n) { emit 0 - n }
 func stringify(n) { emit "val=" + n }
 
 just run {
-    kp("Chained Call Tests")
-    kp("==================")
+    print("Chained Call Tests")
+    print("==================")
 
     // Simple chains
     check("add-double", "10", "" + double(add(2, 3)))

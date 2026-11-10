@@ -13,17 +13,17 @@ func repeat(ch, n) {
 func box(text) {
     let w = len(text) + 4
     let bar = "+" + repeat("-", "" + (w - 2)) + "+"
-    kp(bar)
-    kp("| " + text + " |")
-    kp(bar)
+    print(bar)
+    print("| " + text + " |")
+    print(bar)
 }
 
 just run {
     box("Hello, Krypton!")
-    kp("")
+    print("")
     box("Native compilation works")
-    kp("")
+    print("")
     box("a")
-    kp("")
+    print("")
     box("123456789012345678901234567890")
 }

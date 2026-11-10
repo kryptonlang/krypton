@@ -2,15 +2,15 @@
 
 func check(name, expected, actual) {
     if expected == actual {
-        kp("[PASS] " + name)
+        print("[PASS] " + name)
     } else {
-        kp("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
+        print("[FAIL] " + name + " expected=" + expected + " actual=" + actual)
     }
 }
 
 just run {
-    kp("Modulo Tests")
-    kp("============")
+    print("Modulo Tests")
+    print("============")
 
     check("10 % 3", "1", "" + (10 % 3))
     check("10 % 2", "0", "" + (10 % 2))

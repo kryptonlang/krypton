@@ -5,7 +5,7 @@ import "k:datetime"
 
 func expect(label, cond) {
     if cond != "1" {
-        kp("FAIL " + label)
+        print("FAIL " + label)
         exit("1")
     }
 }
@@ -36,5 +36,5 @@ just run {
     expect("addNeg",    (dtAddSeconds("100", "-10") == "90") + "")
     expect("diff",      (dtDiffSeconds("100", "200") == "100") + "")
 
-    kp("ok")
+    print("ok")
 }

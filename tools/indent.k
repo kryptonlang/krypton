@@ -2,8 +2,8 @@
 
 just run {
     if argCount() < 2 {
-        kp("Usage: indent <spaces> <file>")
-        kp("  Use positive number to indent, negative to dedent")
+        print("Usage: indent <spaces> <file>")
+        print("  Use positive number to indent, negative to dedent")
     } else {
         let spaces = toInt(arg(0))
         let content = readFile(arg(1))
@@ -19,7 +19,7 @@ just run {
                     pad = pad + " "
                     j = j + 1
                 }
-                kp(pad + line)
+                print(pad + line)
             } else if spaces < 0 {
                 // Remove indent
                 let remove = 0 - spaces
@@ -35,15 +35,15 @@ just run {
                         j = j + 1
                     }
                     if allSpaces {
-                        kp(substring(line, remove, len(line)))
+                        print(substring(line, remove, len(line)))
                     } else {
-                        kp(line)
+                        print(line)
                     }
                 } else {
-                    kp(line)
+                    print(line)
                 }
             } else {
-                kp(line)
+                print(line)
             }
             i = i + 1
         }
