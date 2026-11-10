@@ -4419,7 +4419,11 @@ just run {
     // When -o is given, force IR mode internally (pipeline handles the rest)
     if len(outFile) > 0 { irMode = 1 }
 
+    printErr("[trace] before readFile
+")
     let source = readFile(file)
+    printErr("[trace] after readFile len=" + len(source) + "
+")
 
     if len(source) == 0 {
         printErr("kcc: cannot read file: " + file)
@@ -4427,6 +4431,8 @@ just run {
     }
     let tokens = tokenize(source)
     let ntoks = lineCount(tokens)
+    printErr("[trace] after tokenize ntoks=" + ntoks + "
+")
     validateTokens(tokens, ntoks, file)
     let objkScan = 0
     let hasObjK = 0
