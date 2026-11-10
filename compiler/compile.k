@@ -3229,6 +3229,61 @@ func irEnumHasPayload(types, ename) {
 
 // Runs the exhaustiveness diagnostic for one switch/match when the scrutinee
 // is statically known to be an A3 enum and there is no default/else arm.
+// Shared payload-enum pattern-arm parser for switch/match (Match and Switch
+// Logic Convergence). Returns "" when the tokens at p do not start an
+// enum pattern (`Enum.Member(b1, b2, ...)` where Enum is a known payload enum),
+// otherwise "name\nmember\nmeta\nposition-after-)\nbinding-list".
+// Hard-errors on malformed binding lists. Keeps the two arm parsers in
+// irSwitchIR and irMatchIR identical apart from their emission.
+func irEnumPatternArm(tokens, p, types) {
+    let out = ""
+    if tokType(tokAt(tokens, p)) == "ID" && tokAt(tokens, p + 1) == "DOT" &&
+        tokType(tokAt(tokens, p + 2)) == "ID" && tokAt(tokens, p + 3) == "LPAREN" {
+        let peName0 = tokVal(tokAt(tokens, p))
+        let pmember0 = tokVal(tokAt(tokens, p + 2))
+        if irTypeOf(types, "__payload__." + peName0 + "." + pmember0) != "" {
+            let meta = irTypeOf(types, "__payload__." + peName0 + "." + pmember0)
+            let q = p + 4
+            let bindings = ""
+            let bn = 0
+            let bad = 0
+            while tokAt(tokens, q) != "RPAREN" {
+                let bt = tokAt(tokens, q)
+                if tokType(bt) == "ID" {
+                    if bn > 0 { bindings = bindings + "," }
+                    bindings = bindings + tokVal(bt)
+                    bn += 1
+                } else if tokAt(tokens, q) == "COMMA" {
+                } else { bad = 1 }
+                q += 1
+            }
+            q += 1
+            if bad == 1 { printErr("kcc: enum pattern " + pmember0 + " bindings must be bare identifiers\n"); exit(1) }
+            out = peName0 + "\n" + pmember0 + "\n" + meta + "\n" + q + "\n" + bindings
+        }
+    }
+    emit out
+}
+
+// Declared arity of a payload-enum constructor from its __payload__ metadata
+// ("a;b" -> 2, "-" / "" -> 0).
+func irPatternDeclaredArity(meta) {
+    if meta == "-" || meta == "" { emit 0 }
+    let n = 1
+    let i = 0
+    while i < len(meta) { if meta[i] == ";" { n += 1 } i += 1 }
+    emit n
+}
+
+// Actual arity of a comma-joined binding list ("a,b,c" -> 3, "" -> 0).
+func irPatternArity(bindings) {
+    if bindings == "" { emit 0 }
+    let n = 1
+    let i = 0
+    while i < len(bindings) { if bindings[i] == "," { n += 1 } i += 1 }
+    emit n
+}
+
 func irEnumExhaustiveCheck(scrutEnum, hasDefaultOrElse, bail, covered, members) {
     if scrutEnum == "" { emit 0 }
     if hasDefaultOrElse == "1" { emit 0 }
@@ -3269,42 +3324,20 @@ func irSwitchIR(tokens, pos, ntoks, lc, inFunc, types) {
             let more = "1"
             while more == "1" {
                 // Payload-enum pattern arm: case Enum.Member(b1, b2, ...):
-                let isPattern = 0
-                if tokType(tokAt(tokens, p)) == "ID" && tokAt(tokens, p + 1) == "DOT" &&
-                    tokType(tokAt(tokens, p + 2)) == "ID" && tokAt(tokens, p + 3) == "LPAREN" {
-                    if irTypeOf(types, "__payload__." + tokVal(tokAt(tokens, p)) + "." + tokVal(tokAt(tokens, p + 2))) != "" { isPattern = 1 }
-                }
-                if isPattern == 1 {
-                    let peName = tokVal(tokAt(tokens, p))
-                    let pmember = tokVal(tokAt(tokens, p + 2))
-                    let meta = irTypeOf(types, "__payload__." + peName + "." + pmember)
+                let arm = irEnumPatternArm(tokens, p, types)
+                if arm != "" {
+                    let peName = split(arm, 0)
+                    let pmember = split(arm, 1)
+                    let meta = split(arm, 2)
+                    let q = toInt(split(arm, 3))
+                    let bindings = split(arm, 4)
                     if scrutEnum != "" && peName != scrutEnum {
                         printErr("kcc: enum pattern " + pmember + " does not match switch on " + scrutEnum + "\n"); exit(1)
                     }
                     if peName == scrutEnum { swCovered = swCovered + irTypeOf(types, peName + "." + pmember) + ";" }
                     if scrutEnum == "" { swBail = 1 }
-                    let declCount = 0
-                    if meta != "-" {
-                        declCount = 1
-                        let qi = 0
-                        while qi < len(meta) { if meta[qi] == ";" { declCount += 1 } qi += 1 }
-                    }
-                    let q = p + 4
-                    let bindings = ""
-                    let bn = 0
-                    let bad = 0
-                    while tokAt(tokens, q) != "RPAREN" {
-                        let bt = tokAt(tokens, q)
-                        if tokType(bt) == "ID" {
-                            if bn > 0 { bindings = bindings + "," }
-                            bindings = bindings + tokVal(bt)
-                            bn += 1
-                        } else if tokAt(tokens, q) == "COMMA" {
-                        } else { bad = 1 }
-                        q += 1
-                    }
-                    q += 1
-                    if bad == 1 { printErr("kcc: enum pattern " + pmember + " bindings must be bare identifiers\n"); exit(1) }
+                    let declCount = irPatternDeclaredArity(meta)
+                    let bn = irPatternArity(bindings)
                     if bn != declCount {
                         printErr("kcc: enum pattern " + pmember + " expects " + declCount + " binding(s), got " + bn + "\n"); exit(1)
                     }
@@ -3496,42 +3529,20 @@ func irMatchIR(tokens, pos, ntoks, lc, inFunc, types) {
             p = pairPos(bp)
         } else {
             // Payload-enum pattern arm: Enum.Member(b1, b2, ...) block
-            let isPattern = 0
-            if tokType(tokAt(tokens, p)) == "ID" && tokAt(tokens, p + 1) == "DOT" &&
-                tokType(tokAt(tokens, p + 2)) == "ID" && tokAt(tokens, p + 3) == "LPAREN" {
-                if irTypeOf(types, "__payload__." + tokVal(tokAt(tokens, p)) + "." + tokVal(tokAt(tokens, p + 2))) != "" { isPattern = 1 }
-            }
-            if isPattern == 1 {
-                let peName = tokVal(tokAt(tokens, p))
-                let pmember = tokVal(tokAt(tokens, p + 2))
-                let meta = irTypeOf(types, "__payload__." + peName + "." + pmember)
+            let arm = irEnumPatternArm(tokens, p, types)
+            if arm != "" {
+                let peName = split(arm, 0)
+                let pmember = split(arm, 1)
+                let meta = split(arm, 2)
+                let q = toInt(split(arm, 3))
+                let bindings = split(arm, 4)
                 if mScrutEnum != "" && peName != mScrutEnum {
                     printErr("kcc: enum pattern " + pmember + " does not match match on " + mScrutEnum + "\n"); exit(1)
                 }
                 if peName == mScrutEnum { mCovered = mCovered + irTypeOf(types, peName + "." + pmember) + ";" }
                 if mScrutEnum == "" { mBail = 1 }
-                let declCount = 0
-                if meta != "-" {
-                    declCount = 1
-                    let qi = 0
-                    while qi < len(meta) { if meta[qi] == ";" { declCount += 1 } qi += 1 }
-                }
-                let q = p + 4
-                let bindings = ""
-                let bn = 0
-                let bad = 0
-                while tokAt(tokens, q) != "RPAREN" {
-                    let bt = tokAt(tokens, q)
-                    if tokType(bt) == "ID" {
-                        if bn > 0 { bindings = bindings + "," }
-                        bindings = bindings + tokVal(bt)
-                        bn += 1
-                    } else if tokAt(tokens, q) == "COMMA" {
-                    } else { bad = 1 }
-                    q += 1
-                }
-                q += 1
-                if bad == 1 { printErr("kcc: enum pattern " + pmember + " bindings must be bare identifiers\n"); exit(1) }
+                let declCount = irPatternDeclaredArity(meta)
+                let bn = irPatternArity(bindings)
                 if bn != declCount {
                     printErr("kcc: enum pattern " + pmember + " expects " + declCount + " binding(s), got " + bn + "\n"); exit(1)
                 }
