@@ -108,7 +108,7 @@ func pageHome() {
             "}" + fromCharCode(10) +
             fromCharCode(10) +
             "just run {" + fromCharCode(10) +
-            "    kp(fib(10))  // 55" + fromCharCode(10) +
+            "    print(fib(10))  // 55" + fromCharCode(10) +
             "}"
         )) +
         "</div></section>"
@@ -184,11 +184,11 @@ func pageFeatures() {
     let lang = htH2("Language Features") +
         "<div class=\"grid\">" +
         "<div class=\"card\">" + htH3("Functions") + htPre(htCode("func add(a, b) {" + fromCharCode(10) + "    emit a + b" + fromCharCode(10) + "}")) + "</div>" +
-        "<div class=\"card\">" + htH3("Pattern Matching") + htPre(htCode("match color {" + fromCharCode(10) + "    " + fromCharCode(34) + "red" + fromCharCode(34) + "  { kp(" + fromCharCode(34) + "warm" + fromCharCode(34) + ") }" + fromCharCode(10) + "    else { kp(" + fromCharCode(34) + "other" + fromCharCode(34) + ") }" + fromCharCode(10) + "}")) + "</div>" +
-        "<div class=\"card\">" + htH3("Lambdas") + htPre(htCode("let dbl = func(x) { emit x * 2 }" + fromCharCode(10) + "kp(dbl(5))  // 10")) + "</div>" +
+        "<div class=\"card\">" + htH3("Pattern Matching") + htPre(htCode("match color {" + fromCharCode(10) + "    " + fromCharCode(34) + "red" + fromCharCode(34) + "  { print(" + fromCharCode(34) + "warm" + fromCharCode(34) + ") }" + fromCharCode(10) + "    else { print(" + fromCharCode(34) + "other" + fromCharCode(34) + ") }" + fromCharCode(10) + "}")) + "</div>" +
+        "<div class=\"card\">" + htH3("Lambdas") + htPre(htCode("let dbl = func(x) { emit x * 2 }" + fromCharCode(10) + "print(dbl(5))  // 10")) + "</div>" +
         "<div class=\"card\">" + htH3("Structs") + htPre(htCode("struct Point { let x; let y }" + fromCharCode(10) + "let p = Point { x: 10, y: 20 }")) + "</div>" +
-        "<div class=\"card\">" + htH3("Try/Catch") + htPre(htCode("try {" + fromCharCode(10) + "    throw " + fromCharCode(34) + "oops" + fromCharCode(34) + fromCharCode(10) + "} catch e {" + fromCharCode(10) + "    kp(e)" + fromCharCode(10) + "}")) + "</div>" +
-        "<div class=\"card\">" + htH3("String Interpolation") + htPre(htCode("kp(`Hello, {name}!`)" + fromCharCode(10) + "kp(`1 + 1 = {1 + 1}`)")) + "</div>" +
+        "<div class=\"card\">" + htH3("Try/Catch") + htPre(htCode("try {" + fromCharCode(10) + "    throw " + fromCharCode(34) + "oops" + fromCharCode(34) + fromCharCode(10) + "} catch e {" + fromCharCode(10) + "    print(e)" + fromCharCode(10) + "}")) + "</div>" +
+        "<div class=\"card\">" + htH3("String Interpolation") + htPre(htCode("print(`Hello, {name}!`)" + fromCharCode(10) + "print(`1 + 1 = {1 + 1}`)")) + "</div>" +
         "</div>"
 
     let stdlib = htH2("Standard Library") +
@@ -322,7 +322,7 @@ func pageKryptScript() {
     let sampleHello =
         "#!/usr/bin/env kr" + fromCharCode(10) +
         "just run {" + fromCharCode(10) +
-        "    kp(\"hello from a kryptscript\")" + fromCharCode(10) +
+        "    print(\"hello from a kryptscript\")" + fromCharCode(10) +
         "}"
 
     let hero = "<div class=\"hero\">" +
@@ -382,7 +382,7 @@ func pageKryptScript() {
         htH2("Get started") +
         htP("KryptScript ships with Krypton 2.2 " + fromCharCode(8212) + " no separate install. If you already have Krypton, you already have it. Try:") +
         htPre(htCode("echo '#!/usr/bin/env kr" + fromCharCode(10) +
-            "just run { kp(\"hi from a kryptscript\") }' > hello.ks" + fromCharCode(10) +
+            "just run { print(\"hi from a kryptscript\") }' > hello.ks" + fromCharCode(10) +
             "kcc -r hello.ks")) +
         htP("Or check the " + htA("/downloads", "Downloads page") + " for installers.") +
 
