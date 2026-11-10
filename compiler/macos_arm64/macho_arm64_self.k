@@ -4430,9 +4430,9 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_strb_reg(31, 20, 21))  // strb wzr, [buf, bytes_read]  (NUL)
             s = sbAppend(s, arm64_mov_xx(0, 20))  // return buf
             s = sbAppend(s, arm64_push_x0())
-            s = sbAppend(s, arm64_b(25))  // b .exit (68 = 43 + 25)
-            instrIdx = instrIdx + 13
-            s = sbAppend(s, arm64_movz_x_imm(4, 1))  // .fail: x4 = 1 (empty string)
+            s = sbAppend(s, arm64_b(25))  // 43: b .exit (68 = 43 + 25)
+            instrIdx = instrIdx + 14        // 30..43 (instructions before .fail)
+            s = sbAppend(s, arm64_movz_x_imm(4, 1))  // 44: .fail x4 = 1 (empty string)
             instrIdx = instrIdx + 1
             s = sbAppend(s, emitAllocVar(instrIdx, textVaddr, textOff))
             instrIdx = instrIdx + 21
