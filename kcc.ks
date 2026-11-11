@@ -27,7 +27,7 @@ import "k:env"
 import "k:sh"
 import "k:arch"
 
-func VERSION() { emit "kcc version 2.4.9" }
+func VERSION() { emit "kcc version 2.5.0-alpha" }
 
 // _fast(): fast-path switch for the stage-0 driver binary.
 // When set, the self-hosting rebuild pass in ensureHost / ensureElfHost /
