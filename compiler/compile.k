@@ -3326,11 +3326,11 @@ func irSwitchIR(tokens, pos, ntoks, lc, inFunc, types) {
                 // Payload-enum pattern arm: case Enum.Member(b1, b2, ...):
                 let arm = irEnumPatternArm(tokens, p, types)
                 if arm != "" {
-                    let peName = split(arm, 0)
-                    let pmember = split(arm, 1)
-                    let meta = split(arm, 2)
-                    let q = toInt(split(arm, 3))
-                    let bindings = split(arm, 4)
+                    let peName = getLine(arm, 0)
+                    let pmember = getLine(arm, 1)
+                    let meta = getLine(arm, 2)
+                    let q = toInt(getLine(arm, 3))
+                    let bindings = getLine(arm, 4)
                     if scrutEnum != "" && peName != scrutEnum {
                         printErr("kcc: enum pattern " + pmember + " does not match switch on " + scrutEnum + "\n"); exit(1)
                     }
@@ -3531,11 +3531,11 @@ func irMatchIR(tokens, pos, ntoks, lc, inFunc, types) {
             // Payload-enum pattern arm: Enum.Member(b1, b2, ...) block
             let arm = irEnumPatternArm(tokens, p, types)
             if arm != "" {
-                let peName = split(arm, 0)
-                let pmember = split(arm, 1)
-                let meta = split(arm, 2)
-                let q = toInt(split(arm, 3))
-                let bindings = split(arm, 4)
+                let peName = getLine(arm, 0)
+                let pmember = getLine(arm, 1)
+                let meta = getLine(arm, 2)
+                let q = toInt(getLine(arm, 3))
+                let bindings = getLine(arm, 4)
                 if mScrutEnum != "" && peName != mScrutEnum {
                     printErr("kcc: enum pattern " + pmember + " does not match match on " + mScrutEnum + "\n"); exit(1)
                 }
@@ -4424,11 +4424,7 @@ just run {
     // When -o is given, force IR mode internally (pipeline handles the rest)
     if len(outFile) > 0 { irMode = 1 }
 
-    printErr("[trace] before readFile
-")
     let source = readFile(file)
-    printErr("[trace] after readFile len=" + len(source) + "
-")
 
     if len(source) == 0 {
         printErr("kcc: cannot read file: " + file)
@@ -4436,8 +4432,6 @@ just run {
     }
     let tokens = tokenize(source)
     let ntoks = lineCount(tokens)
-    printErr("[trace] after tokenize ntoks=" + ntoks + "
-")
     validateTokens(tokens, ntoks, file)
     let objkScan = 0
     let hasObjK = 0
