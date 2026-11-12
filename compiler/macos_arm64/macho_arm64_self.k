@@ -341,7 +341,19 @@ func foreignLibFor(name) {
     if name == "CCCryptorUpdate"     { emit "/usr/lib/libSystem.B.dylib" }
     if name == "CCCryptorFinal"      { emit "/usr/lib/libSystem.B.dylib" }
     if name == "CCCryptorRelease"    { emit "/usr/lib/libSystem.B.dylib" }
+    // Vulkan loader (Homebrew: /opt/homebrew/lib/libvulkan.1.dylib). The loader
+    // is a shim; the ICD (e.g. MoltenVK) registers itself at runtime. All
+    // Vulkan entry points take pointers, so the generic foreign-call frame
+    // (args in x0..xN) is sufficient — structs are always passed by pointer.
+    if _isVulkan(name) == 1 { emit "/opt/homebrew/lib/libvulkan.1.dylib" }
     emit ""
+}
+// Prefix match: every vk* symbol goes to the Vulkan loader. Deliberately
+// broad — any caller typo lands here as an import of libvulkan instead of a
+// confusing unknown-function error, and unused symbols are never imported.
+func _isVulkan(name) {
+    if len(name) >= 2 { if substring(name, 0, 2) == "vk" { emit 1 } }
+    emit 0
 }
 // Krypton call name → the C import symbol. The objc_msgSend_N/fpret wrappers all
 // collapse to the single libobjc symbol _objc_msgSend (arm64 has no separate fpret).
