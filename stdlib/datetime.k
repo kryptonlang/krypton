@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // Minimal date/time helpers. Closes the Python `datetime` /
 // `time.time()` gap for the common cases (now-as-epoch, ISO 8601
 // formatting, day arithmetic). Not a tz library — UTC only.

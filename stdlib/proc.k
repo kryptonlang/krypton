@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/proc.k — bidirectional process pipes for Krypton.
 //
 // 2.1: pure Krypton via direct Win32 IAT. No cfunc body, no

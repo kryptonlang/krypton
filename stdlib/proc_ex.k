@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/proc_ex.k -- process introspection wrappers around psapi.dll.
 //
 // Wired through the IAT in compiler/windows_x86/x64.k 2026-06-13.

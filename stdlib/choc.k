@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/choc.k -- Choc native UI kit for Krypton (Windows backend slice).
 //
 // Choc is the shared native UI kit concept. This file is the current Windows

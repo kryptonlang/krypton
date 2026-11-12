@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // Stack data structure for Krypton
 // Stack is represented as a comma-separated string with count
 

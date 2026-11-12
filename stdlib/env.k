@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/env.k — environment variables for KryptScript. PURE KRYPTON, no clang.
 //
 // The native getenv builtin doesn't work on the C-free backend, so this reads

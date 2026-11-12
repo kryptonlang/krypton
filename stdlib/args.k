@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/args.k — command-line argument parsing in PURE KRYPTON. No C.
 //
 // Built on the native arg(i) / argCount() builtins. arg(0) is the FIRST user

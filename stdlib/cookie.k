@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/cookie.k — HTTP cookie parse + build in pure Krypton.
 //
 // Parses a single Cookie: request header value (`a=1; b=2`) into a

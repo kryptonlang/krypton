@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/x11.k — X11 wire-protocol client in PURE KRYPTON.
 //
 // Speaks the X Window System core protocol (X11 Release 11.0) directly

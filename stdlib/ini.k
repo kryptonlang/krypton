@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/ini.k — INI / .conf parser in PURE KRYPTON. No C.
 //
 // Stateless & text-threaded (like k:server_native): you hold the raw file

@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/semver.k — semantic version parse & compare in PURE KRYPTON. No C.
 //
 // Handles MAJOR.MINOR.PATCH with an optional "-prerelease" and "+build". Build

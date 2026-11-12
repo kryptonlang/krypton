@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/crc32.k — CRC-32 (IEEE 802.3) checksum in PURE KRYPTON. No C.
 //
 // Native ints wrap at 2^32 (unsigned), which is exactly what CRC-32 wants.

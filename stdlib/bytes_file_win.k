@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/bytes_file_win.k -- binary-safe Windows file I/O.
 
 module bytes_file_win
@@ -68,4 +71,4 @@ func bytesWriteFileWin(path, data) {
     emit 1
 }
 
-func bytesDeleteFileWin(path) { emit DeleteFileA(path) }
+func bytesDeleteFileWin(path) { emit DeleteFileA(path) }

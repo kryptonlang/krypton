@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/mmap.k — memory-mapped files for Krypton.
 //
 // Reads happen on page-fault — no `readFile` copy of the entire file

@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/ksml.k — KSML: KryptScript Media Language.
 //
 // Hypermedia attribute DSL for the Krypton web framework. Lets any htmk

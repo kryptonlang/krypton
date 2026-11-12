@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // lsp/json_emit.k — Compose JSON for LSP responses.
 //
 // stdlib/json.k is too flat for nested LSP shapes (its jsonObject only

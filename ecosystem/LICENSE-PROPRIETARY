@@ -1,0 +1,21 @@
+Karpl Proprietary License (Karpl PL v1)
+
+Copyright 2026 Karpl. All rights reserved.
+
+This directory and every file beneath it is proprietary software of Karpl,
+made available only to licensees under a separately executed written
+agreement with Karpl. No file here may be copied, modified, distributed,
+sublicensed, published or used to create derivative works, in whole or in
+part, except as expressly permitted by that written agreement.
+
+Except as expressly required by that written agreement, this software is
+provided "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+Unlike the Apache License, Version 2.0, which governs the Krypton core
+(compiler/, stdlib/, headers/), this license grants no public rights, no
+redistribution rights and no patent rights.
+
+Questions and licensing inquiries: licensing@karpl.ai (or contract
+counterparty identified in your written agreement with Karpl).

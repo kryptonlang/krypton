@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/dict.k -- Krypton dict functions shaped to match the
 // semantics the upcoming Python frontend will lower method-call
 // syntax to.  Dicts are interleaved kv comma-lists:

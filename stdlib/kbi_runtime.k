@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // kbi_runtime — Krypton Binary Interface bump-allocator runtime.
 //
 // Stand-alone arena module backed by a single `bufNew` allocation. The

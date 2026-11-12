@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/krouter.k — a tiny path router for the Krypton web framework.
 //
 // Turns the manual `if path == "/x" else if startsWith(path, "/y/") ...`

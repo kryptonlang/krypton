@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // wayland.k — native Wayland client over the raw wire protocol, pure Krypton.
 // Companion to stdlib/x11.k. No libwayland. Talks the wl wire format directly
 // over the $WAYLAND_DISPLAY unix socket (unixConnect, same as X11).

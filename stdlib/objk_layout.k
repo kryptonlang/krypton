@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/objk_layout.k -- shared Objective-K rect/layout helpers.
 //
 // Imported by both k:objk (macOS) and k:objkwin (Windows).
