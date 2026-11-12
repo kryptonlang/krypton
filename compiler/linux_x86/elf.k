@@ -1112,7 +1112,7 @@ func krSubstringSize() { emit 74 }
 // On open() failure: fd is negative; we branch over the success path and
 // return a 1-byte heap allocation containing only the NUL terminator.
 //
-// Layout (135 bytes):
+// Layout (134 bytes):
 //   [0]      53                PUSH RBX                                 (1)
 //   [1-2]    41 54             PUSH R12                                 (2)
 //   [3-4]    41 55             PUSH R13                                 (2)
@@ -1124,44 +1124,44 @@ func krSubstringSize() { emit 74 }
 //   [25-26]  31 D2             XOR EDX, EDX       (mode = 0)            (2)
 //   [27-28]  0F 05             SYSCALL                                  (2)
 //   [29-31]  49 89 C4          MOV R12, RAX       (fd)                  (3)
-//   [32-35]  49 85 E4          TEST R12, R12                            (4)
-//   [36-37]  79 1A             JNS +26 → [64] (success path)            (2)
-//   [38-42]  BF 01 00 00 00    MOV EDI, 1                               (5)
-//   [43-47]  E8 dw             CALL kr_alloc                            (5)
-//   [48-50]  C6 00 00          MOV byte [RAX], 0  (NUL-terminator)      (3)
-//   [51-57]  48 81 C4 90 00 00 00   ADD RSP, 144                        (7)
-//   [58-59]  41 5D             POP R13                                  (2)
-//   [60-61]  41 5C             POP R12                                  (2)
-//   [62]     5B                POP RBX                                  (1)
-//   [63]     C3                RET                                      (1)
-//   [64-68]  B8 05 00 00 00    MOV EAX, 5         (SYS_fstat)           (5)   ← JNS target
-//   [69-71]  4C 89 E7          MOV RDI, R12                             (3)
-//   [72-74]  48 89 E6          MOV RSI, RSP       (statbuf @ RSP)       (3)
-//   [75-76]  0F 05             SYSCALL                                  (2)
-//   [77-81]  4C 8B 6C 24 30    MOV R13, [RSP + 48]   (st_size)          (5)
-//   [82-84]  4C 89 EF          MOV RDI, R13                             (3)
-//   [85-87]  48 FF C7          INC RDI            (size + 1 for NUL)    (3)
-//   [88-92]  E8 dw             CALL kr_alloc                            (5)
-//   [93-95]  48 89 C3          MOV RBX, RAX       (buf)                 (3)
-//   [96-97]  31 C0             XOR EAX, EAX       (SYS_read)            (2)
-//   [98-100] 4C 89 E7          MOV RDI, R12       (fd)                  (3)
-//   [101-103] 48 89 DE         MOV RSI, RBX       (buf)                 (3)
-//   [104-106] 4C 89 EA         MOV RDX, R13       (size)                (3)
-//   [107-108] 0F 05            SYSCALL                                  (2)
-//   [109-113] B8 03 00 00 00   MOV EAX, 3         (SYS_close)           (5)
-//   [114-116] 4C 89 E7         MOV RDI, R12                             (3)
-//   [117-118] 0F 05            SYSCALL                                  (2)
-//   [119-121] 48 89 D8         MOV RAX, RBX       (return buf)          (3)
-//   [122-128] 48 81 C4 90 00 00 00   ADD RSP, 144                       (7)
-//   [129-130] 41 5D            POP R13                                  (2)
-//   [131-132] 41 5C            POP R12                                  (2)
-//   [133]     5B               POP RBX                                  (1)
-//   [134]     C3               RET                                      (1)
+//   [32-34]  49 85 E4          TEST R12, R12                            (3)
+//   [35-36]  79 1A             JNS +26 → [63] (success path)            (2)
+//   [37-41]  BF 01 00 00 00    MOV EDI, 1                               (5)
+//   [42-46]  E8 dw             CALL kr_alloc                            (5)
+//   [47-49]  C6 00 00          MOV byte [RAX], 0  (NUL-terminator)      (3)
+//   [50-56]  48 81 C4 90 00 00 00   ADD RSP, 144                        (7)
+//   [57-58]  41 5D             POP R13                                  (2)
+//   [59-60]  41 5C             POP R12                                  (2)
+//   [61]     5B                POP RBX                                  (1)
+//   [62]     C3                RET                                      (1)
+//   [63-67]  B8 05 00 00 00    MOV EAX, 5         (SYS_fstat)           (5)   ← JNS target
+//   [68-70]  4C 89 E7          MOV RDI, R12                             (3)
+//   [71-73]  48 89 E6          MOV RSI, RSP       (statbuf @ RSP)       (3)
+//   [74-75]  0F 05             SYSCALL                                  (2)
+//   [76-80]  4C 8B 6C 24 30    MOV R13, [RSP + 48]   (st_size)          (5)
+//   [81-83]  4C 89 EF          MOV RDI, R13                             (3)
+//   [84-86]  48 FF C7          INC RDI            (size + 1 for NUL)    (3)
+//   [87-91]  E8 dw             CALL kr_alloc                            (5)
+//   [92-94]  48 89 C3          MOV RBX, RAX       (buf)                 (3)
+//   [95-96]  31 C0             XOR EAX, EAX       (SYS_read)            (2)
+//   [97-99]  4C 89 E7          MOV RDI, R12       (fd)                  (3)
+//   [100-102] 48 89 DE         MOV RSI, RBX       (buf)                 (3)
+//   [103-105] 4C 89 EA         MOV RDX, R13       (size)                (3)
+//   [106-107] 0F 05            SYSCALL                                  (2)
+//   [108-112] B8 03 00 00 00   MOV EAX, 3         (SYS_close)           (5)
+//   [113-115] 4C 89 E7         MOV RDI, R12                             (3)
+//   [116-117] 0F 05            SYSCALL                                  (2)
+//   [118-120] 48 89 D8         MOV RAX, RBX       (return buf)          (3)
+//   [121-127] 48 81 C4 90 00 00 00   ADD RSP, 144                       (7)
+//   [128-129] 41 5D            POP R13                                  (2)
+//   [130-131] 41 5C            POP R12                                  (2)
+//   [132]     5B               POP RBX                                  (1)
+//   [133]     C3               RET                                      (1)
 func emitKrReadfileCode(thisVAddr, allocVAddr) {
-    // CALL kr_alloc (fail path) spans bytes 43..47; next instr at 48.
-    // CALL kr_alloc (success path) spans bytes 88..92; next instr at 93.
-    let dAllocFail = allocVAddr - (thisVAddr + 48)
-    let dAlloc = allocVAddr - (thisVAddr + 93)
+    // CALL kr_alloc (fail path) spans bytes 42..46; next instr at 47.
+    // CALL kr_alloc (success path) spans bytes 87..91; next instr at 92.
+    let dAllocFail = allocVAddr - (thisVAddr + 47)
+    let dAlloc = allocVAddr - (thisVAddr + 92)
     let c = ""
     c = c + hexByte(0x53)
     c = c + hexByte(0x41) + hexByte(0x54)
@@ -1211,7 +1211,7 @@ func emitKrReadfileCode(thisVAddr, allocVAddr) {
     c = c + hexByte(0xC3)
     emit c
 }
-func krReadfileSize() { emit 135 }
+func krReadfileSize() { emit 134 }
 
 // kr_writefile: write content to path (truncating). Returns 0.
 //   In:  RDI = path ptr, RSI = content ptr (NUL-terminated)
