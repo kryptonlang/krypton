@@ -12,6 +12,7 @@ func check(name, cond) {
         print("[FAIL] " + name)
         exit("1")
     }
+    emit 0
 }
 
 just run {

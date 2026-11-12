@@ -1,0 +1,53 @@
+// vulkan.krh — Vulkan loader FFI for Krypton (macOS arm64, Homebrew loader).
+// import "head:vulkan"
+//
+// Every Vulkan entry point takes POINTERS (structs by address), which is all
+// Krypton's foreign-call ABI needs. Structs are materialized in bufNew()
+// arenas by the caller; see stdlib/smack/vulkan.k for the VkApplicationInfo /
+// VkInstanceCreateInfo byte layout and probe usage.
+//
+// The binary imports only symbols the program actually calls (detectForeign
+// scans the IR), so declaring a broad surface here does not force dyld to
+// resolve every entry point at load time.
+//
+// MoltenVK note: the loader hands out function pointers for extensions only
+// when an ICD registers them. Without MoltenVK (or another ICD) installed,
+// vkCreateInstance() returns VK_ERROR_INCOMPATIBLE_DRIVER (-9) — that is a
+// clean, observable outcome, not a crash. vkEnumerateInstanceVersion() works
+// with no ICD and is the minimal link-time proof.
+jxt {
+    // ── Instance ───────────────────────────────────────────────
+    func vkEnumerateInstanceVersion(pApiVersion)
+    func vkCreateInstance(pCreateInfo, pAllocator, pInstance)
+    func vkDestroyInstance(instance, pAllocator)
+    func vkEnumerateInstanceExtensionProperties(pLayerName, pPropertyCount, pProperties)
+
+    // ── Physical device / capabilities ─────────────────────────
+    func vkEnumeratePhysicalDevices(instance, pPhysicalDeviceCount, pPhysicalDevices)
+    func vkGetPhysicalDeviceProperties(physicalDevice, pProperties)
+    func vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties)
+    func vkGetPhysicalDeviceMemoryProperties(physicalDevice, pMemoryProperties)
+    func vkGetPhysicalDeviceFeatures(physicalDevice, pFeatures)
+
+    // ── Device / queues ────────────────────────────────────────
+    func vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice)
+    func vkDestroyDevice(device, pAllocator)
+    func vkGetDeviceQueue(device, queueFamilyIndex, queueIndex, pQueue)
+    func vkGetDeviceProcAddr(device, pName)
+
+    // ── Surface + swapchain (Metal via MoltenVK on macOS) ─────
+    func vkCreateMetalSurfaceEXT(instance, pCreateInfo, pAllocator, pSurface)
+    func vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamilyIndex, surface, pSupported)
+    func vkEnumerateDeviceExtensionProperties(physicalDevice, pLayerName, pPropertyCount, pProperties)
+    func vkCreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain)
+    func vkDestroySwapchainKHR(device, swapchain, pAllocator)
+    func vkGetSwapchainImagesKHR(device, swapchain, pSwapchainImageCount, pSwapchainImages)
+    func vkAcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex)
+    func vkQueuePresentKHR(queue, pPresentInfo)
+    func vkQueueWaitIdle(queue)
+
+    // ── Debug / error strings ──────────────────────────────────
+    func vkGetPhysicalDeviceDisplayPropertiesKHR(physicalDevice, pPropertyCount, pProperties)
+    func vkCreateDebugUtilsMessengerEXT(instance, pCreateInfo, pAllocator, pMessenger)
+    func vkDestroyDebugUtilsMessengerEXT(instance, messenger, pAllocator)
+}
