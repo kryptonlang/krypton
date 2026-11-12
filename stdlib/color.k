@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/color.k — Color conversion + manipulation in pure Krypton.
 //
 // Round-trip between #RRGGBB hex and (r,g,b) integer triples; HSL ↔

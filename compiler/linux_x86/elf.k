@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // elf.k — minimal Krypton native ELF backend for x86-64 Linux
 //
 // Reads .kir from stdin or argv, emits a static ELF executable.

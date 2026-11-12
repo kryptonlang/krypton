@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // HTTP client via curl (Win10 1803+ ships System32\curl.exe).
 // No native WinHTTP binding — adding one would mean ws2_32 / winhttp DLL
 // IAT additions and is real work; deliberate not-yet decision, not laziness.

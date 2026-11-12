@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/hexenc.k — hex string encode/decode in PURE KRYPTON. No C.
 //
 // The native `hex()` builtin returns a DECIMAL string (e.g. hex(255) -> "255"),

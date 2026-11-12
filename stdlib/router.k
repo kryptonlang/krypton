@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // router.k — Express-style routing for Krypton .htk web apps.
 //
 // Self-contained: no imports. Calls into k:server (serverInit/serverNext/

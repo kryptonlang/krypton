@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // RFC 4648 base64 encode/decode. Standard alphabet only (no
 // URL-safe -_ variant — drop those in a 1-line callsite if needed).
 // Pure Krypton, no syscalls.

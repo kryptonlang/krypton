@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // macho_arm64_self.k — self-hosted arm64 Mach-O hello-world emitter.
 //
 // Goal: produce a runnable arm64 Mach-O for macOS Tahoe with NO external

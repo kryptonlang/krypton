@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/qr.k — QR Code encoder in PURE KRYPTON. No C, no syscalls, no libs.
 //
 // Supports byte-mode encoding, error correction level L (~7%), versions

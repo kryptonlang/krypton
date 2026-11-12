@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/os.k -- Python `os` module surface on existing Krypton
 // builtins.  Named with the `*k` suffix convention (matches builtins.k
 // + string.k + list.k + dict.k + sys.k).

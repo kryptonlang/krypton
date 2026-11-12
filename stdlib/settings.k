@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // Persistent app settings under %APPDATA%\<app>\settings.json,
 // compatible with json.dumps(d, indent=2). Public API:
 //   settingsDir, settingsPath, settingsLoad, settingsSave,

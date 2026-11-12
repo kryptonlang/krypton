@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // URL encoding / decoding — RFC 3986 percent-encoding plus the
 // query-string helpers callers actually reach for. Closes the
 // Python `urllib.parse.quote` / `unquote` / `urlencode` gap.

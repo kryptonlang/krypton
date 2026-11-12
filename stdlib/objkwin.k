@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/objkwin.k -- Objective-K facade for native Windows apps.
 //
 // This is the Windows sibling of stdlib/objk.k. It keeps app code on the

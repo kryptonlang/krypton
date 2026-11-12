@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/jsonk.k -- Python `json` module surface (json.dumps / json.loads /
 // json.dump / json.load) layered on top of the existing stdlib/json.k +
 // stdlib/json_parse.k + stdlib/json_emit.k machinery.

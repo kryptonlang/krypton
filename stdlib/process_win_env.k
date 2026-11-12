@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/process_win_env.k -- inherited/overridden UTF-16 environment blocks.
 //
 // Entries use one KEY=VALUE per line until Krypton gains a first-class map.

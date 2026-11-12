@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // compiler/linux_arm64/elf.k — native aarch64 Linux ELF backend (WIP).
 //
 // Cross backend: built by the x86 kcc, runs on x86, emits aarch64. Reads Krypton

@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // x64.k — Krypton IR to Windows PE64 native binary emitter
 // Usage: kcc compiler/windows_x86/x64.k <file.kir> -o <output.exe>
 //   or:  kcc compiler/windows_x86/x64.k <file.kir> > output_hex.txt

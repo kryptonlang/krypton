@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // stdlib/logging.k — leveled console logging in PURE KRYPTON. No C.
 //
 // Colored, leveled log lines to stdout. Levels are integers so callers can

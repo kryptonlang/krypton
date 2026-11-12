@@ -1,3 +1,6 @@
+// Copyright 2026 The Krypton Authors.
+// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// http://www.apache.org/licenses/LICENSE-2.0).
 // Character classification utilities for Krypton.
 // Builtins to use directly (don't reimplement; the dispatcher routes calls
 // of these names to native machine code regardless of any user definition):
