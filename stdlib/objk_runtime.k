@@ -910,3 +910,121 @@ func okKFireFieldObservers(runtime, object, field, oldValue, newValue) {
     }
     emit 0
 }
+
+// ── Shared implicit runtime (milestone 1/2) ──────────────────────────────────
+// The objective-k bracket syntax `[obj sel:args]` has no explicit runtime
+// argument, so the lowering dispatches through ONE lazily-initialized shared
+// arena. Explicit `okKRuntime(...)` arenas remain available for tests and
+// isolated runtimes; the two paths share the same object/class layout.
+let objkSharedRuntime = okKRuntime(1048576)
+
+func objkRuntime() { emit objkSharedRuntime }
+
+// Selector identity IS the interned selector text for now: the arena text
+// table (okKText) interns the string once and dispatch compares text handles,
+// so a separate integer ObjkSel table would add an indirection without a
+// lookup win. (Deferred: integer-id selectors + flat method tables.)
+
+// ── Shared-runtime send family ───────────────────────────────────────────────
+// Arity-capped parallels of okKSend*/objkMethod so brackets work everywhere.
+func okKInvoke3(runtime, object, klass, name, arity, a, b, c) {
+    okKAlive(runtime, object)
+    let method = okKFindMethod(runtime, klass, name)
+    if method == 0 { okKFail("unknown method: " + name) }
+    if arity != 3 { okKFail("method argument count: " + name) }
+    let fnPtr = okKRead(runtime, method, 32)
+    emit callPtr(fnPtr, runtime, object, a, b, c)
+}
+func okKInvoke4(runtime, object, klass, name, arity, a, b, c, d) {
+    okKAlive(runtime, object)
+    let method = okKFindMethod(runtime, klass, name)
+    if method == 0 { okKFail("unknown method: " + name) }
+    if arity != 4 { okKFail("method argument count: " + name) }
+    let fnPtr = okKRead(runtime, method, 32)
+    emit callPtr(fnPtr, runtime, object, a, b, c, d)
+}
+func okKInvoke5(runtime, object, klass, name, arity, a, b, c, d, e) {
+    okKAlive(runtime, object)
+    let method = okKFindMethod(runtime, klass, name)
+    if method == 0 { okKFail("unknown method: " + name) }
+    if arity != 5 { okKFail("method argument count: " + name) }
+    let fnPtr = okKRead(runtime, method, 32)
+    emit callPtr(fnPtr, runtime, object, a, b, c, d, e)
+}
+func okKInvoke6(runtime, object, klass, name, arity, a, b, c, d, e, f) {
+    okKAlive(runtime, object)
+    let method = okKFindMethod(runtime, klass, name)
+    if method == 0 { okKFail("unknown method: " + name) }
+    if arity != 6 { okKFail("method argument count: " + name) }
+    let fnPtr = okKRead(runtime, method, 32)
+    emit callPtr(fnPtr, runtime, object, a, b, c, d, e, f)
+}
+func okKSend3(runtime, object, name, a, b, c) {
+    emit okKInvoke3(runtime, object, okKObjectClass(runtime, object), name, 3, a, b, c)
+}
+func okKSend4(runtime, object, name, a, b, c, d) {
+    emit okKInvoke4(runtime, object, okKObjectClass(runtime, object), name, 4, a, b, c, d)
+}
+func okKSend5(runtime, object, name, a, b, c, d, e) {
+    emit okKInvoke5(runtime, object, okKObjectClass(runtime, object), name, 5, a, b, c, d, e)
+}
+func okKSend6(runtime, object, name, a, b, c, d, e, f) {
+    emit okKInvoke6(runtime, object, okKObjectClass(runtime, object), name, 6, a, b, c, d, e, f)
+}
+
+// Methods with arity 3..6 (okKMethod caps at 2 for backwards compatibility).
+func objkMethod(runtime, klass, name, arity, fnPtr) {
+    okKRequire(runtime, klass, 1)
+    if okKRead(runtime, klass, 32) != 0 { okKFail("class already registered") }
+    if name == "" || fnPtr == 0 { okKFail("invalid method") }
+    if arity < 0 || arity > 6 { okKFail("method arity out of range") }
+    if okKOwnMethod(runtime, klass, name) != 0 { okKFail("duplicate method") }
+    let storedName = okKText(runtime, name)
+    let method = okKAllocate(runtime, 64)
+    okKWrite(runtime, method, 0, 2)
+    okKWrite(runtime, method, 8, okKRead(runtime, klass, 24))
+    okKWrite(runtime, method, 16, storedName)
+    okKWrite(runtime, method, 24, arity)
+    okKWrite(runtime, method, 32, fnPtr)
+    okKWrite(runtime, method, 40, 0)
+    okKWrite(runtime, method, 48, 0)
+    okKWrite(runtime, method, 56, 0)
+    okKWrite(runtime, klass, 24, method)
+    emit method
+}
+
+// Shared-runtime bracket entry points used by the compiler lowering:
+//   [obj sel:a b]  →  CALL objkMsgSend2 4
+func objkMsgSend(object, name)                      { emit okKSend(objkSharedRuntime, object, name) }
+func objkMsgSend1(object, name, a)                  { emit okKSend1(objkSharedRuntime, object, name, a) }
+func objkMsgSend2(object, name, a, b)               { emit okKSend2(objkSharedRuntime, object, name, a, b) }
+func objkMsgSend3(object, name, a, b, c)            { emit okKSend3(objkSharedRuntime, object, name, a, b, c) }
+func objkMsgSend4(object, name, a, b, c, d)         { emit okKSend4(objkSharedRuntime, object, name, a, b, c, d) }
+func objkMsgSend5(object, name, a, b, c, d, e)      { emit okKSend5(objkSharedRuntime, object, name, a, b, c, d, e) }
+func objkMsgSend6(object, name, a, b, c, d, e, f)   { emit okKSend6(objkSharedRuntime, object, name, a, b, c, d, e, f) }
+
+// Class-side allocation: [Foo alloc] → runtime lookup of the class handle,
+// then instance allocation (objkRuntime registers classes at startup).
+func objkAllocClass(name) {
+    let klass = objkClassNamed(objkSharedRuntime, name)
+    if klass == 0 { okKFail("unknown objective-k class: " + name) }
+    emit okKNew(objkSharedRuntime, klass)
+}
+
+// Find a registered/pending class by name by walking arena block headers.
+// Handles are virtual (not memory offsets); read them from the block headers.
+func objkClassNamed(runtime, name) {
+    let used = bufGetQwordAt(runtime, 8)
+    let cursor = 32
+    while cursor < used {
+        let size = bufGetQwordAt(runtime, cursor)
+        let kind = bufGetQwordAt(runtime, cursor + 16)
+        if kind == 1 {
+            let handle = bufGetQwordAt(runtime, cursor + 8)
+            if okKTextEquals(runtime, okKRead(runtime, handle, 16), name) { emit handle }
+        }
+        if size == 0 { emit 0 }
+        cursor += size
+    }
+    emit 0
+}

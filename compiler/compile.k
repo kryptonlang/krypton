@@ -1874,7 +1874,14 @@ func irPrimary(tokens, pos, ntoks, lc, types) {
     if tok == "LBRACK" {
         if bracketClass(tokens, pos, ntoks) == "objk" {
             // Objective-K message send: [receiver kw1:arg kw2:arg ...]
-            // Lowers to k:objc msgN-family calls with a compile-time selector.
+            // Lowers to the shared-runtime objkMsgSend* family. Class-side
+            // [Foo alloc] (bare identifier class + bare "alloc" selector) is
+            // resolved at runtime by name against the arena's class table.
+            if tokType(tokAt(tokens, pos + 1)) == "ID" && tokVal(tokAt(tokens, pos + 2)) == "alloc" && tokAt(tokens, pos + 3) == "RBRACK" {
+                emit "CALL objkRuntime 0\n" +
+                     "PUSH \"" + tokVal(tokAt(tokens, pos + 1)) + "\"\n" +
+                     "CALL objkAllocClass 1\n," + (pos + 4)
+            }
             let rpair = irExpr(tokens, pos + 1, ntoks, lc, types)
             let rcode = pairVal(rpair)
             let rp = pairPos(rpair)
@@ -4610,36 +4617,54 @@ just run {
     }
     let tokens = tokenize(source)
     let ntoks = lineCount(tokens)
-    validateTokens(tokens, ntoks, file)
 
-    // Milestone 1/2: objective-k message sends `[recv sel:args]` lower to the
-    // shared-runtime pure-Krypton dispatch family (objkMsgSend*) — no libobjc,
-    // no platform gate. @implementation/@interface classes register through the
-    // same arena at startup (milestone 3).
+    // Milestone 1/2: pre-import scan — bracket sends and objk blocks dispatch
+    // through the shared-runtime pure-Krypton family; auto-prepend the import
+    // BEFORE any token-level passes so source/tokens stay consistent.
     let sendScan = 0
     let hasBracketSend = 0
+    let objkScanPre = 0
+    let hasObjKPre = 0
     while sendScan < ntoks {
-        if tokAt(tokens, sendScan) == "LBRACK" && bracketClass(tokens, sendScan, ntoks) == "objk" { hasBracketSend = 1; break }
+        let st = tokAt(tokens, sendScan)
+        if st == "KW:objk" || st == "AT_INTERFACE" || st == "AT_IMPLEMENTATION" { hasObjKPre = 1 }
+        if st == "LBRACK" && bracketClass(tokens, sendScan, ntoks) == "objk" { hasBracketSend = 1 }
         sendScan += 1
     }
-    if hasBracketSend == 1 {
+    if hasBracketSend == 1 || hasObjKPre == 1 {
         source = "import \"k:objk_runtime\"\n" + source
         tokens = tokenize(source)
         ntoks = lineCount(tokens)
     }
 
-    let objkScan = 0
-    let hasObjK = 0
-    while objkScan < ntoks {
-        let st = tokAt(tokens, objkScan)
-        if st == "KW:objk" || st == "AT_INTERFACE" || st == "AT_IMPLEMENTATION" { hasObjK = 1; break }
-        objkScan += 1
+    // Milestone 3: only rewrite when at-directives are present, so ordinary
+    // .k files pass through untouched (comments and formatting preserved).
+    let hasAtTokens = 0
+    let atScan = 0
+    while atScan < ntoks {
+        let atTok = tokAt(tokens, atScan)
+        if atTok == "AT_INTERFACE" || atTok == "AT_IMPLEMENTATION" || atTok == "AT_END" || atTok == "AT_SELECTOR" || substring(atTok, 0, 9) == "AT_OTHER:" { hasAtTokens = 1; break }
+        atScan += 1
     }
-    if hasObjK == 1 {
-        source = "import \"k:objk_runtime\"\n" + source
-        tokens = tokenize(source)
+    let objkReg = ""
+    if hasAtTokens == 1 {
+        if environ("KCC_DEBUG_TRACE") == "1" { print("trace: pre-registry\n") }
+        objkReg = objkClassRegistry(tokens, ntoks)
+        if environ("KCC_DEBUG_REG") == "1" { print(objkReg) ; print("trace: endreg\n") }
+        if environ("KCC_DEBUG_TRACE") == "1" { print("trace: pre-rewrite\n") }
+        tokens = objkRewriteAt(tokens, ntoks)
+        if environ("KCC_DEBUG_TRACE") == "1" { print("trace: post-rewrite\n") }
         ntoks = lineCount(tokens)
+        source = tokens   // diagnostics only
     }
+    let hasObjkClasses = "0"
+    if len(objkReg) > 0 { hasObjkClasses = "1" }
+
+    if environ("KCC_DEBUG_TRACE") == "1" { print("trace: pre-validate\n") }
+    validateTokens(tokens, ntoks, file)
+    if environ("KCC_DEBUG_TRACE") == "1" { print("trace: post-validate\n") }
+
+    // Milestone 1/2 (unified above with the pre-import scan).
 
     // 2.0-alpha-3: --port-1to2 diagnostic mode. Scans source for
     // patterns that need attention before a 2.0 upgrade and exits.
@@ -4655,6 +4680,7 @@ just run {
         emit 0
     }
 
+    if environ("KCC_DEBUG_TRACE") == "1" { print("trace: pre-baseDir\n") }
     // Resolve base directory for relative imports
     let baseDir = ""
     let lastSlash = 0 - 1
@@ -4677,6 +4703,7 @@ just run {
     // dead-code paths used to write to (they're being deleted next).
     let sb = sbNew()
 
+    if environ("KCC_DEBUG_TRACE") == "1" { print("trace: imports start\n") }
     // === IMPORT PROCESSING ===
     // Walk tokens looking for import statements
     // Track imported files to avoid duplicates
@@ -5105,6 +5132,7 @@ just run {
         sb = sbAppend(sb, importBodies)
     }
 
+    if environ("KCC_DEBUG_TRACE") == "1" { print("trace: post-import-scan\n") }
     // === MAIN FILE FUNCTIONS ===
     // First pass: forward declarations
     let i = 0
@@ -5552,19 +5580,27 @@ just run {
             }
         }
 
+        if environ("KCC_DEBUG_TRACE") == "1" { print("trace: pre-main\n") }
         let irEntry = findEntry(tokens, ntoks)
+        if environ("KCC_DEBUG_TRACE") == "1" { print("trace: entry found\n") }
         if irEntry >= 0 {
             let mainTypes = kccStructTypes(tokens, ntoks) + kccFuncTypes(tokens, irEntry, ntoks) + kccEnums(tokens, ntoks)
             let ep = irBlockIR(tokens, irEntry, ntoks, 0, "0", mainTypes)
             // 2.0-alpha-3 GC stage 3: same shadow-stack save/restore wrap
             // as irFuncIR applies to __main__'s body (and prepended global
             // inits). On normal exit, all per-let pushes get popped.
-            let mainBody = importedInit + irScanStatics(tokens, ntoks, mainTypes) + sbToString(sbGlobInit) + irObjKSetup(tokens, ntoks) + pairVal(ep)
+            let clsCall = ""
+            if len(objkReg) > 0 {
+                clsCall = "CALL __objkClassInit 0\nPOP\n"
+                sbIR = sbAppend(sbIR, objkClassInitIR(objkReg))
+            }
+            let mainBody = importedInit + irScanStatics(tokens, ntoks, mainTypes) + sbToString(sbGlobInit) + clsCall + irObjKSetup(tokens, ntoks) + pairVal(ep)
             mainBody = "" + mainBody +
                        ""
             sbIR = sbAppend(sbIR, "FUNC __main__ 0\n" + mainBody + "END\n")
         }
 
+        if environ("KCC_DEBUG_TRACE") == "1" { print("trace: main emitted\n") }
         let irText = sbToString(sbIR)
 
         // -o mode: run full native pipeline internally
@@ -5595,4 +5631,304 @@ just run {
     }
 
     print(sbToString(sb))
+}
+
+// ── Objective-K class scaffolding (milestone 3) ──────────────────────────
+// @interface/@implementation blocks register classes with the arena runtime
+// at startup. Methods compile to ordinary Krypton funcs with
+// (runtime, self, _cmd, args...) params; registration wires FUNCPTRs.
+
+func objkField(text, idx) {
+    let total = 0
+    let si = 0
+    while si < len(text) {
+        if text[si] == "|" { total += 1 }
+        si += 1
+    }
+    if idx > total { emit "" }
+    let cur = 0
+    let start = 0
+    let i = 0
+    while i < len(text) {
+        if text[i] == "|" {
+            if cur == idx { emit substring(text, start, i) }
+            cur += 1
+            start = i + 1
+        }
+        i += 1
+    }
+    emit substring(text, start, len(text))
+}
+
+// Parse - (Type) selector[:(Type)name ...]* — returns "sel|arity|nextPos|p1,p2,..."
+func objkParseMethod(tokens, pos, ntoks) {
+    let p = pos + 1
+    if tokAt(tokens, p) != "LPAREN" { printErr("kcc: objective-k method needs '(' after '-'/'+'\n"); exit("1") }
+    p += 1
+    while tokAt(tokens, p) != "RPAREN" && p < ntoks { p += 1 }
+    if p >= ntoks { printErr("kcc: unterminated method return type\n"); exit("1") }
+    p += 1
+    let selector = ""
+    let arity = 0
+    let params = ""
+    while tokAt(tokens, p) != "LBRACE" && tokAt(tokens, p) != "SEMI" && p < ntoks {
+        let kwTok = tokAt(tokens, p)
+        if tokType(kwTok) != "ID" {
+            printErr("kcc: expected selector keyword, got '" + kwTok + "'\n")
+            exit("1")
+        }
+        selector = selector + tokVal(kwTok)
+        p += 1
+        if tokAt(tokens, p) == "COLON" {
+            p += 1
+            selector = selector + ":"
+            if tokAt(tokens, p) != "LPAREN" { printErr("kcc: selector keyword expects '(Type) param'\n"); exit("1") }
+            p += 1
+            while tokAt(tokens, p) != "RPAREN" && p < ntoks { p += 1 }
+            if p >= ntoks { printErr("kcc: unterminated method parameter type\n"); exit("1") }
+            p += 1
+            let pTok = tokAt(tokens, p)
+            if tokType(pTok) != "ID" { printErr("kcc: method parameter needs a name\n"); exit("1") }
+            if params == "" { params = tokVal(pTok) } else { params = params + "," + tokVal(pTok) }
+            p += 1
+            arity += 1
+        }
+    }
+    if p >= ntoks { printErr("kcc: unterminated method signature\n"); exit("1") }
+    emit selector + "|" + arity + "|" + p + "|" + params
+}
+
+// Class registry from @implementation blocks: one line per class
+//   Name|Parent|sel|mangled|arity|sel|mangled|arity|...
+// Parent comes from `@implementation Name : Parent` or an earlier/anywhere
+// @interface Name : Parent in the same file. Classes register in file order;
+// objkClassNamed resolves parents at startup, so a parent declared AFTER the
+// child fails loudly at runtime rather than silently.
+func objkClassRegistry(tokens, ntoks) {
+    let iface = ""
+    let i = 0
+    while i < ntoks {
+        if tokAt(tokens, i) == "AT_INTERFACE" {
+            let clsTok = tokAt(tokens, i + 1)
+            if tokType(clsTok) == "ID" {
+                let name = tokVal(clsTok)
+                let j = i + 2
+                if tokAt(tokens, j) == "COLON" && tokType(tokAt(tokens, j + 1)) == "ID" {
+                    iface = iface + name + "|" + tokVal(tokAt(tokens, j + 1)) + "\n"
+                }
+            }
+            while tokAt(tokens, i) != "AT_END" && i < ntoks { i += 1 }
+        }
+        i += 1
+    }
+    let out = ""
+    i = 0
+    while i < ntoks {
+        if tokAt(tokens, i) == "AT_IMPLEMENTATION" {
+            let clsTok = tokAt(tokens, i + 1)
+            if tokType(clsTok) != "ID" {
+                printErr("kcc: @implementation needs a class name\n")
+                exit("1")
+            }
+            let name = tokVal(clsTok)
+            let parent = ""
+            let j = i + 2
+            if tokAt(tokens, j) == "COLON" && tokType(tokAt(tokens, j + 1)) == "ID" {
+                parent = tokVal(tokAt(tokens, j + 1))
+                j += 2
+            } else {
+                let q = 0
+                let ln = lineCount(iface)
+                while q < ln {
+                    let l = getLine(iface, q)
+                    let jc = 0
+                    while jc < len(l) && l[jc] != "|" { jc += 1 }
+                    if substring(l, 0, jc) == name { parent = substring(l, jc + 1, len(l)) }
+                    q += 1
+                }
+            }
+            let methods = ""
+            while tokAt(tokens, j) != "AT_END" && j < ntoks {
+                let mt = tokAt(tokens, j)
+                if mt == "MINUS" || mt == "PLUS" {
+                    let pr = objkParseMethod(tokens, j, ntoks)
+                    let sel = objkField(pr, 0)
+                    let arity = objkField(pr, 1)
+                    let next = toInt(objkField(pr, 2))
+                    // mangled FUNC name: className + "_" + selector with ':'→'_'
+                    let mangled = name + "_" + replace(sel, ":", "_")
+                    if methods == "" {
+                        methods = sel + "|" + mangled + "|" + arity
+                    } else {
+                        methods = methods + "|" + sel + "|" + mangled + "|" + arity
+                    }
+                    // Skip the method clause itself: either ';' (no body) or body braces
+                    if verbTypeIsSemicolon(tokens, next) == "1" {
+                        j = next + 1
+                    } else {
+                        let depth = 0
+                        let b = next
+                        while b < ntoks {
+                            let bt = tokAt(tokens, b)
+                            if bt == "LBRACE" { depth += 1 }
+                            else if bt == "RBRACE" {
+                                depth -= 1
+                                if depth == 0 { b += 1; break }
+                            }
+                            b += 1
+                        }
+                        j = b
+                    }
+                } else { j += 1 }
+            }
+            if methods == "" {
+                printErr("kcc: @implementation " + name + " declares no methods\n")
+                exit("1")
+            }
+            if out == "" {
+                out = name + "|" + parent + "|" + methods
+            } else {
+                out = out + "\n" + name + "|" + parent + "|" + methods
+            }
+        }
+        i += 1
+    }
+    emit out
+}
+
+func verbTypeIsSemicolon(tokens, pos) {
+    if tokAt(tokens, pos) == "SEMI" { emit "1" }
+    emit "0"
+}
+
+// Token-level rewrite: @implementation methods become top-level Krypton funcs
+//   FUNC <mangled> <arity+2>  PARAM runtime PARAM self PARAM _cmd [PARAM p ...]
+// @interface bodies are dropped (signature docs). AT_END tokens vanish.
+func objkRewriteAt(tokens, ntoks) {
+    let out = sbNew()
+    let i = 0
+    while i < ntoks {
+        let t = tokAt(tokens, i)
+        if t == "AT_INTERFACE" {
+            // skip the whole interface block (docs only)
+            while i < ntoks && tokAt(tokens, i) != "AT_END" { i += 1 }
+            if i < ntoks { i += 1 }
+        } else if t == "AT_IMPLEMENTATION" {
+            let clsTok = tokAt(tokens, i + 1)
+            if tokType(clsTok) != "ID" { printErr("kcc: @implementation needs a class name\n"); exit("1") }
+            let className = tokVal(clsTok)
+            let j = i + 2
+            if tokAt(tokens, j) == "COLON" { j += 2 }
+            while tokAt(tokens, j) != "AT_END" && j < ntoks {
+                let mt = tokAt(tokens, j)
+                if mt == "MINUS" || mt == "PLUS" {
+                    let pr = objkParseMethod(tokens, j, ntoks)
+                    let sel = objkField(pr, 0)
+                    let arity = toInt(objkField(pr, 1))
+                    let next = toInt(objkField(pr, 2))
+                    let paramCsv = objkField(pr, 3)
+                    let mangled = className + "_" + replace(sel, ":", "_")
+                    // token-level rewrite to ordinary Krypton syntax:
+                    //   func <mangled>(runtime, self, _cmd, <params...>) { ... }
+                    out = sbAppend(out, "KW:func\n")
+                    out = sbAppend(out, "ID:" + mangled + "\n")
+                    out = sbAppend(out, "LPAREN\n")
+                    out = sbAppend(out, "ID:runtime\n")
+                    out = sbAppend(out, "COMMA\n")
+                    out = sbAppend(out, "ID:self\n")
+                    out = sbAppend(out, "COMMA\n")
+                    out = sbAppend(out, "ID:_cmd\n")
+                    if len(paramCsv) > 0 {
+                        let pnl = lineCount(replace(paramCsv, ",", "\n"))
+                        let pq = 0
+                        while pq < pnl {
+                            out = sbAppend(out, "COMMA\n")
+                            out = sbAppend(out, "ID:" + getLine(replace(paramCsv, ",", "\n"), pq) + "\n")
+                            pq += 1
+                        }
+                    }
+                    out = sbAppend(out, "RPAREN\n")
+                    // copy the body tokens (brace-counted) from `next` (LBRACE or SEMI)
+                    if tokAt(tokens, next) == "SEMI" {
+                        j = next + 1
+                    } else {
+                        let depth = 0
+                        let k = next
+                        while k < ntoks {
+                            let bt = tokAt(tokens, k)
+                            if bt == "LBRACE" { depth += 1 }
+                            else if bt == "RBRACE" {
+                                depth -= 1
+                                if depth == 0 {
+                                    out = sbAppend(out, bt + "\n")
+                                    k += 1
+                                    break
+                                }
+                            }
+                            out = sbAppend(out, bt + "\n")
+                            k += 1
+                        }
+                        j = k
+                    }
+                } else { j += 1 }
+            }
+            if j < ntoks { i = j + 1 } else { i = j }
+        } else {
+            out = sbAppend(out, t + "\n")
+            i += 1
+        }
+    }
+    emit sbToString(out)
+}
+
+// Emit FUNC __objkClassInit 0 registering every @implementation class in the
+// registry (file order). Parents must appear earlier in the file.
+func objkClassInitIR(registry) {
+    if len(registry) == 0 { emit "" }
+    let buf = sbNew()
+    buf = sbAppend(buf, "FUNC __objkClassInit 0\n")
+    let ln = lineCount(registry)
+    let i = 0
+    let clsIdx = 0
+    while i < ln {
+        let l = getLine(registry, i)
+        if len(l) == 0 { i += 1; continue }
+        let name = objkField(l, 0)
+        let parent = objkField(l, 1)
+        buf = sbAppend(buf, "CALL objkRuntime 0\n")
+        buf = sbAppend(buf, "PUSH \"" + name + "\"\n")
+        if parent == "" {
+            buf = sbAppend(buf, "PUSH 0\n")
+        } else {
+            buf = sbAppend(buf, "CALL objkRuntime 0\n")
+            buf = sbAppend(buf, "PUSH \"" + parent + "\"\n")
+            buf = sbAppend(buf, "CALL objkClassNamed 2\n")
+        }
+        buf = sbAppend(buf, "CALL okKClass 3\n")
+        buf = sbAppend(buf, "LOCAL __krtcls" + clsIdx + "\n")
+        buf = sbAppend(buf, "STORE __krtcls" + clsIdx + "\n")
+        // methods: flat fields in triples (selector, mangled, arity)
+        let f = 2
+        while objkField(l, f) != "" {
+            let sel = objkField(l, f)
+            let mangled = objkField(l, f + 1)
+            let arity = objkField(l, f + 2)
+            buf = sbAppend(buf, "CALL objkRuntime 0\n")
+            buf = sbAppend(buf, "LOAD __krtcls" + clsIdx + "\n")
+            buf = sbAppend(buf, "PUSH \"" + sel + "\"\n")
+            buf = sbAppend(buf, "PUSH " + arity + "\n")
+            buf = sbAppend(buf, "FUNCPTR " + mangled + "\n")
+            buf = sbAppend(buf, "CALL objkMethod 5\n")
+            buf = sbAppend(buf, "POP\n")
+            f += 3
+        }
+        buf = sbAppend(buf, "CALL objkRuntime 0\n")
+        buf = sbAppend(buf, "LOAD __krtcls" + clsIdx + "\n")
+        buf = sbAppend(buf, "CALL doKRegister 2\n")
+        buf = sbAppend(buf, "POP\n")
+        clsIdx += 1
+        i += 1
+    }
+    buf = sbAppend(buf, "RETURN\nEND\n\n")
+    emit sbToString(buf)
 }
