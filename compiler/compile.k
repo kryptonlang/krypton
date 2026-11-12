@@ -893,6 +893,30 @@ func tokenize(text) {
             i = pairPos(pair)
             out = sbAppend(out, "INTERP:" + str + "\n")
         }
+        else if c == "@" {
+            // Objective-K at-directives (milestone 9 scaffold):
+            //   @interface / @implementation / @end / @selector
+            // Anything else lexes as AT_OTHER:<ident> — the parser reports a
+            // clear error instead of silently dropping the token.
+            let ap = readIdent(text, i + 1)
+            let aid = pairVal(ap)
+            if aid == "interface" {
+                out = sbAppend(out, "AT_INTERFACE\n")
+                i = pairPos(ap)
+            } else if aid == "implementation" {
+                out = sbAppend(out, "AT_IMPLEMENTATION\n")
+                i = pairPos(ap)
+            } else if aid == "end" {
+                out = sbAppend(out, "AT_END\n")
+                i = pairPos(ap)
+            } else if aid == "selector" {
+                out = sbAppend(out, "AT_SELECTOR\n")
+                i = pairPos(ap)
+            } else {
+                out = sbAppend(out, "AT_OTHER:" + aid + "\n")
+                i = pairPos(ap)
+            }
+        }
         else {
             i += 1
         }
@@ -1088,6 +1112,9 @@ func scanFunctions(tokens, ntoks) {
             let op = i + 2
             while op < ntoks && tokAt(tokens, op) != "LBRACE" { op += 1 }
             i = skipBlock(tokens, op) - 1
+        } else if tok == "AT_INTERFACE" || tok == "AT_IMPLEMENTATION" {
+            // Objective-K class decl — signature docs only (milestone 9 scaffold).
+            i = skipATBlock(tokens, i) - 1
         } else if tok == "KW:func" {
             let nameTok = tokAt(tokens, i + 1)
             let fname = tokVal(nameTok)
@@ -1244,6 +1271,53 @@ func findEntry(tokens, ntoks) {
         i += 1
     }
     emit 0 - 1
+}
+
+// Objective-K at-directive blocks (@interface ... @end, @implementation ... @end,
+// milestone 9 scaffold): scan from `pos` (the AT_ token) to just past the matching
+// AT_END. Class bodies are signature docs for now — no codegen. Returns pos AFTER
+// the AT_END token (caller loops with i += 1 as usual).
+// Objective-K message-send disambiguation (milestone 9 scaffold):
+//   [receiver sel:arg ...]  → top-level COLON        → "objk"
+//   [receiver selector]     → two bare IDs, no comma → "objk"
+//   [a, b, c]               → top-level COMMA        → "list"
+// Legacy list literals otherwise keep their exact historical lowering.
+func bracketClass(tokens, pos, ntoks) {
+    let depth = 0
+    let p = pos + 1
+    let ids = 0
+    let sawColon = 0
+    let sawComma = 0
+    while p < ntoks {
+        let t = tokAt(tokens, p)
+        if t == "LBRACE" || t == "LPAREN" || t == "LBRACK" {
+            depth += 1
+        } else if t == "RBRACE" || t == "RPAREN" {
+            depth -= 1
+        } else if t == "RBRACK" {
+            if depth == 0 { break }
+            depth -= 1
+        } else if depth == 0 {
+            if t == "COLON" { sawColon = 1 }
+            else if t == "COMMA" { sawComma = 1 }
+            else if tokType(t) == "ID" { ids += 1 }
+        }
+        p += 1
+    }
+    if sawColon == 1 { emit "objk" }
+    if sawComma == 1 { emit "list" }
+    if ids >= 2 { emit "objk" }
+    emit "list"
+}
+
+func skipATBlock(tokens, pos) {
+    let j = pos + 1
+    let ntoks = lineCount(tokens)
+    while j < ntoks {
+        if tokAt(tokens, j) == "AT_END" { emit j + 1 }
+        j += 1
+    }
+    compilerSyntaxError("unterminated @interface/@implementation block; expected '@end'")
 }
 
 func skipBlock(tokens, pos) {
@@ -1605,6 +1679,11 @@ func irPostfix(tokens, pos, ntoks, lc, types) {
     }
     while tokAt(tokens, p) == "LBRACK" || tokAt(tokens, p) == "DOT" {
         if tokAt(tokens, p) == "LBRACK" {
+            // An objective-k message send inside a postfix span is always a
+            // mistake (it used to miscompile silently into INDEX of garbage).
+            if bracketClass(tokens, p, ntoks) == "objk" {
+                compilerSyntaxError("objective-k message send cannot terminate an expression — end the previous statement (e.g. with ';' or a keyword like 'let'/'emit') or parenthesize the receiver")
+            }
             let idxp = irExpr(tokens, p + 1, ntoks, lc, types)
             let idxcode = pairVal(idxp)
             p = pairPos(idxp) + 1
@@ -1789,10 +1868,100 @@ func irPrimary(tokens, pos, ntoks, lc, types) {
         emit code + "," + (p + 1)
     }
 
-    // List literal [a, b, c]
+    // Objective-K message send vs. legacy list literal disambiguation (milestone 9 scaffold).
+    // `[receiver sel:arg ...]` carries a top-level COLON → Objective-K; anything else
+    // keeps the historical list-literal lowering untouched.
     if tok == "LBRACK" {
+        if bracketClass(tokens, pos, ntoks) == "objk" {
+            // Objective-K message send: [receiver kw1:arg kw2:arg ...]
+            // Lowers to k:objc msgN-family calls with a compile-time selector.
+            let rpair = irExpr(tokens, pos + 1, ntoks, lc, types)
+            let rcode = pairVal(rpair)
+            let rp = pairPos(rpair)
+            let selName = ""
+            let argCode = ""
+            let arity = 0
+            while tokAt(tokens, rp) != "RBRACK" && rp < ntoks {
+                let kwTok = tokAt(tokens, rp)
+                if tokType(kwTok) != "ID" {
+                    printErr("kcc: objective-k message send: expected selector keyword, got '" + kwTok + "'\n")
+                    exit(1)
+                }
+                let kw = tokVal(kwTok)
+                rp += 1
+                if tokAt(tokens, rp) == "COLON" {
+                    rp += 1
+                    selName = selName + kw + ":"
+                    let argTok = tokAt(tokens, rp)
+                    if argTok == "COLON" || argTok == "RBRACK" {
+                        printErr("kcc: selector keyword '" + kw + "' is missing its argument\n")
+                        exit(1)
+                    }
+                    let apair = irExpr(tokens, rp, ntoks, lc, types)
+                    argCode = argCode + pairVal(apair)
+                    rp = pairPos(apair)
+                    arity += 1
+                } else if tokAt(tokens, rp) == "RBRACK" {
+                    selName = selName + kw
+                    // leave rp on the RBRACK — the loop condition terminates
+                } else {
+                    // Bare keyword followed directly by an argument expression
+                    selName = selName + kw + ":"
+                    let apair = irExpr(tokens, rp, ntoks, lc, types)
+                    argCode = argCode + pairVal(apair)
+                    rp = pairPos(apair)
+                    arity += 1
+                }
+            }
+            if rp >= ntoks {
+                compilerSyntaxError("unterminated '[' in objective-k message send")
+            }
+            if arity > 6 {
+                printErr("kcc: objective-k message send with more than 6 arguments is not supported (libobjc msg_N family)\n")
+                exit(1)
+            }
+            let callName = "objkMsgSend"
+            if arity == 1 { callName = "objkMsgSend1" }
+            if arity == 2 { callName = "objkMsgSend2" }
+            if arity == 3 { callName = "objkMsgSend3" }
+            if arity == 4 { callName = "objkMsgSend4" }
+            if arity == 5 { callName = "objkMsgSend5" }
+            if arity == 6 { callName = "objkMsgSend6" }
+            emit rcode + "PUSH \"" + selName + "\"\n" + argCode +
+                 "CALL " + callName + " " + (arity + 2) + "\n," + (rp + 1)
+        }
         emit irListLiteralIR(tokens, pos, ntoks, lc, types)
     }
+
+    // @selector(…) → compile-time selector string literal, e.g. @selector(foo:bar:) → "foo:bar:"
+    if tok == "AT_SELECTOR" {
+        if tokAt(tokens, pos + 1) != "LPAREN" {
+            compilerSyntaxError("@selector must be followed by '('")
+        }
+        let sp = pos + 2
+        let sel = ""
+        while tokAt(tokens, sp) != "RPAREN" && sp < ntoks {
+            let st = tokAt(tokens, sp)
+            if tokType(st) == "ID" { sel = sel + tokVal(st) }
+            else if st == "COLON" { sel = sel + ":" }
+            else {
+                printErr("kcc: @selector: unexpected token '" + st + "' (expected keyword or ':')\n")
+                exit(1)
+            }
+            sp += 1
+        }
+        if sp >= ntoks {
+            compilerSyntaxError("unterminated @selector(...)")
+        }
+        emit "PUSH \"" + sel + "\"\n," + (sp + 1)
+    }
+
+    // @unknown-directive — clear error, never silently dropped
+    if tokType(tok) == "AT_OTHER" {
+        printErr("kcc: unsupported objective-k directive '" + tokVal(tok) + "'\n")
+        exit(1)
+    }
+
 
     // 2.0-alpha: lambda expression `func(params) { body }` — pre-scan
     // hoists the body to a top-level `FUNC _krlam<pos> N` ahead of
@@ -4442,10 +4611,28 @@ just run {
     let tokens = tokenize(source)
     let ntoks = lineCount(tokens)
     validateTokens(tokens, ntoks, file)
+
+    // Milestone 1/2: objective-k message sends `[recv sel:args]` lower to the
+    // shared-runtime pure-Krypton dispatch family (objkMsgSend*) — no libobjc,
+    // no platform gate. @implementation/@interface classes register through the
+    // same arena at startup (milestone 3).
+    let sendScan = 0
+    let hasBracketSend = 0
+    while sendScan < ntoks {
+        if tokAt(tokens, sendScan) == "LBRACK" && bracketClass(tokens, sendScan, ntoks) == "objk" { hasBracketSend = 1; break }
+        sendScan += 1
+    }
+    if hasBracketSend == 1 {
+        source = "import \"k:objk_runtime\"\n" + source
+        tokens = tokenize(source)
+        ntoks = lineCount(tokens)
+    }
+
     let objkScan = 0
     let hasObjK = 0
     while objkScan < ntoks {
-        if tokAt(tokens, objkScan) == "KW:objk" { hasObjK = 1; break }
+        let st = tokAt(tokens, objkScan)
+        if st == "KW:objk" || st == "AT_INTERFACE" || st == "AT_IMPLEMENTATION" { hasObjK = 1; break }
         objkScan += 1
     }
     if hasObjK == 1 {
@@ -4989,6 +5176,9 @@ just run {
         } else if tok == "KW:jxt" {
             // skip jxt block entirely - already processed in import loop
             i = skipBlock(tokens, i + 1)
+        } else if tok == "AT_INTERFACE" || tok == "AT_IMPLEMENTATION" {
+            // Objective-K class decl — signature docs only (milestone 9 scaffold).
+            i = skipATBlock(tokens, i) - 1
         } else if tok == "KW:enum" {
             // A3: enum decl is compile-time only (scanned by irScanEnums) — skip body.
             i = skipBlock(tokens, i + 2) - 1
@@ -5078,6 +5268,9 @@ just run {
         } else if tok == "KW:interface" {
             // B4: interface decl — compile-time signature docs only; skip body.
             i = skipBlock(tokens, i + 2) - 1
+        } else if tok == "AT_INTERFACE" || tok == "AT_IMPLEMENTATION" {
+            // Objective-K class decl — signature docs only (milestone 9 scaffold).
+            i = skipATBlock(tokens, i) - 1
         } else if tok == "KW:struct" || tok == "KW:class" || tok == "KW:type" {
             // Inline struct compilation to avoid pairPos issues
             let sname = tokVal(tokAt(tokens, i + 1))
@@ -5288,6 +5481,9 @@ just run {
                     }
                 }
                 iri = scanP
+            } else if irtok == "AT_INTERFACE" || irtok == "AT_IMPLEMENTATION" {
+                // Objective-K class decl — signature docs only (milestone 9 scaffold).
+                iri = skipATBlock(tokens, iri)
             } else if irtok == "KW:enum" {
                 // A3: enum decl — compile-time only (scanned by irScanEnums). Skip
                 // body; no constructor (unlike struct).
