@@ -37,6 +37,9 @@ jxt {
 
     // ── Surface + swapchain (Metal via MoltenVK on macOS) ─────
     func vkCreateMetalSurfaceEXT(instance, pCreateInfo, pAllocator, pSurface)
+    func vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, pSurfaceCapabilities)
+    func vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, pSurfaceFormatCount, pSurfaceFormats)
+    func vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, pPresentModeCount, pPresentModes)
     func vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamilyIndex, surface, pSupported)
     func vkEnumerateDeviceExtensionProperties(physicalDevice, pLayerName, pPropertyCount, pProperties)
     func vkCreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain)
@@ -45,6 +48,25 @@ jxt {
     func vkAcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex)
     func vkQueuePresentKHR(queue, pPresentInfo)
     func vkQueueWaitIdle(queue)
+
+    func vkQueueSubmit(queue, submitCount, pSubmits, fence)
+
+    // ── Command buffers / barriers / clears ───────────────────
+    func vkCreateCommandPool(device, pCreateInfo, pAllocator, pCommandPool)
+    func vkDestroyCommandPool(device, commandPool, pAllocator)
+    func vkAllocateCommandBuffers(device, pAllocateInfo, pCommandBuffers)
+    func vkBeginCommandBuffer(commandBuffer, pBeginInfo)
+    func vkEndCommandBuffer(commandBuffer)
+    func vkCmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers)
+    func vkCmdClearColorImage(commandBuffer, image, imageLayout, pColor, rangeCount, pRanges)
+
+    // ── Fences + semaphores ────────────────────────────────────
+    func vkCreateFence(device, pCreateInfo, pAllocator, pFence)
+    func vkDestroyFence(device, fence, pAllocator)
+    func vkResetFences(device, fenceCount, pFences)
+    func vkWaitForFences(device, fenceCount, pFences, waitAll, timeout)
+    func vkCreateSemaphore(device, pCreateInfo, pAllocator, pSemaphore)
+    func vkDestroySemaphore(device, semaphore, pAllocator)
 
     // ── Debug / error strings ──────────────────────────────────
     func vkGetPhysicalDeviceDisplayPropertiesKHR(physicalDevice, pPropertyCount, pProperties)
