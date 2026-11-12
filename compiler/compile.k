@@ -41,6 +41,15 @@ func pairType(pair) {
     emit substring(rest, s + 1, len(rest))
 }
 
+// sq(path): single-quote a filesystem path for safe embedding in a shell
+// command (POSIX '\'' escaping). Used to probe import candidates via
+// shellRun; probing with readFile() on some hosts corrupts fd state such
+// that later fd-2 writes silently no-op, so we must never probe that way.
+func sq(s) {
+    let q = fromCharCode(39)
+    emit q + replace(s, q, q + "\\" + q + q) + q
+}
+
 // === Lexer helpers ===
 
 func isDigit(c) {
@@ -4532,7 +4541,7 @@ just run {
                 // everything moves to .ks — .k stays the default; this only
                 // catches modules that were renamed.)
                 if prefix == "k" || prefix == "core" {
-                    if len(readFile(fullPath)) == 0 {
+                    if shellRun("test -f " + sq(fullPath)) != "0" {
                         fullPath = installRoot + "/stdlib/" + sub + ".ks"
                     }
                 }
@@ -4544,8 +4553,7 @@ just run {
                     if !startsWith(importPath, "C:") {
                         if !startsWith(fullPath, installRoot) {
                             let relPath = baseDir + importPath
-                            let testSrc = readFile(relPath)
-                            if len(testSrc) > 0 {
+                            if shellRun("test -f " + sq(relPath)) == "0" {
                                 fullPath = relPath
                             }
                         }
@@ -4553,21 +4561,22 @@ just run {
                 }
             }
             // Try install root for legacy unprefixed paths.
-            let testSrc2 = readFile(fullPath)
-            if len(testSrc2) == 0 {
+            if shellRun("test -f " + sq(fullPath)) != "0" {
                 let hdPath = installRoot + "/headers/" + importPath
-                let testSrc3 = readFile(hdPath)
-                if len(testSrc3) > 0 {
+                if shellRun("test -f " + sq(hdPath)) == "0" {
                     fullPath = hdPath
                 }
             }
-            let testSrc4 = readFile(fullPath)
-            if len(testSrc4) == 0 {
+            if shellRun("test -f " + sq(fullPath)) != "0" {
                 let stdPath = installRoot + "/" + importPath
-                let testSrc5 = readFile(stdPath)
-                if len(testSrc5) > 0 {
+                if shellRun("test -f " + sq(stdPath)) == "0" {
                     fullPath = stdPath
                 }
+            }
+            // No candidate exists — fatal before readFile() touches fd state.
+            if shellRun("test -f " + sq(fullPath)) != "0" {
+                printErr("kcc: error: unresolvable import '" + importPath + "'\n")
+                exit("1")
             }
             // check cache - skip if already imported
             if !contains(imported, fullPath + "|") {
@@ -4603,7 +4612,7 @@ just run {
 	                                if depPrefix == "head"    { depFull = installRoot + "/headers/" + depSub + ".krh" }
 	                                if depPrefix == "headers" { depFull = installRoot + "/headers/" + depSub + ".krh" }
 	                                if depPrefix == "k" || depPrefix == "core" {
-	                                    if len(readFile(depFull)) == 0 { depFull = installRoot + "/stdlib/" + depSub + ".ks" }
+	                                    if shellRun("test -f " + sq(depFull)) != "0" { depFull = installRoot + "/stdlib/" + depSub + ".ks" }
 	                                }
 	                            } else {
 	                                let depBase = ""
@@ -4622,6 +4631,10 @@ just run {
 	                            }
 	                            if !contains(imported, depFull + "|") {
 	                                imported = imported + depFull + "|"
+	                                if shellRun("test -f " + sq(depFull)) != "0" {
+	                                    printErr("kcc: error: unresolvable import '" + depFull + "' (imported by " + fullPath + ")\n")
+	                                    exit("1")
+	                                }
 	                                let depSrc = readFile(depFull)
 	                                if len(depSrc) > 0 {
 	                                    let depToks = tokenize(depSrc)
@@ -4701,7 +4714,8 @@ just run {
 	                                        else { ftable = depFtable }
 	                                    }
 	                                } else {
-	                                    printErr("kcc: import not found: " + depFull)
+	                                    printErr("kcc: error: unresolvable or empty import '" + depFull + "' (imported by " + fullPath + ")\n")
+	                                    exit("1")
 	                                }
 	                            }
 	                            depScan += 2
@@ -4801,7 +4815,8 @@ just run {
                         }
                     }
                 } else {
-                    printErr("kcc: import not found: " + fullPath)
+                    printErr("kcc: error: unresolvable or empty import '" + fullPath + "'\n")
+                    exit("1")
                 }
             }
             ii += 2
@@ -4820,6 +4835,10 @@ just run {
                     }
                     if !contains(imported, jFullPath + "|") {
                         imported = imported + jFullPath + "|"
+                        if shellRun("test -f " + sq(jFullPath)) != "0" {
+                            printErr("kcc: error: unresolvable jxt k import '" + jFullPath + "'\n")
+                            exit("1")
+                        }
                         let jSrc = readFile(jFullPath)
                         if len(jSrc) > 0 {
                             let jToks = tokenize(jSrc)
@@ -4831,7 +4850,8 @@ just run {
                                 else { ftable = jFt }
                             }
                         } else {
-                            printErr("kcc: jxt k not found: " + jFullPath)
+                            printErr("kcc: error: unresolvable or empty jxt k import '" + jFullPath + "'\n")
+                            exit("1")
                         }
                     }
                     jxtPos += 2
