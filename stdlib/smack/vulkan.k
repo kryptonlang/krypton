@@ -96,28 +96,47 @@ func smackVkHasExtension(name) {
 // VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR
 func VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR() { emit 1 }
 
+// Build a NUL-free Krypton comma-list into a heap block of char* pointers,
+// one slot per entry (pointers to the Krypton string bytes). Returns the
+// block pointer. Entries must contain no commas or spaces.
+func smackVkStrListBlock(commaList) {
+    let n = 0
+    if len(commaList) > 0 { n = count(commaList) }
+    if n == 0 { emit 0 }
+    let arr = bufNew(n * 8)
+    let i = 0
+    while i < n {
+        bufSetQwordAt(arr, i * 8, split(commaList, i))
+        i += 1
+    }
+    emit arr
+}
+
 func smackVkInstanceInit() {
-    let app = bufNew(56)
+    let app = bufNew(48)
     bufSetQwordAt(app, 0, VK_STRUCTURE_TYPE_APPLICATION_INFO())
     bufSetQwordAt(app, 8, 0)
     bufSetQwordAt(app, 16, "smack-probe")
     bufSetQwordAt(app, 24, 0)
     bufSetQwordAt(app, 32, "smack")
     bufSetQwordAt(app, 40, 0)
-    bufSetQwordAt(app, 48, VK_API_VERSION_1_0())
+    bufSetQwordAt(app, 44, VK_API_VERSION_1_0())
 
     // MoltenVK is a portability driver; VK_KHR_portability_enumeration must
     // be enabled or vkCreateInstance returns VK_ERROR_INCOMPATIBLE_DRIVER.
+    // VK_KHR_surface + VK_EXT_metal_surface are required for any Metal
+    // surface creation later.
     let usePortability = smackVkHasExtension("VK_KHR_portability_enumeration")
     let flags = 0
-    let extCount = 0
+    let extCount = 2
     let extNamesPtr = 0
     if usePortability == 1 {
         flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR()
-        let extStorage = bufNew(8)
-        bufSetQwordAt(extStorage, 0, "VK_KHR_portability_enumeration")
-        extNamesPtr = extStorage
-        extCount = 1
+        extNamesPtr = smackVkStrListBlock("VK_KHR_surface,VK_EXT_metal_surface,VK_KHR_portability_enumeration")
+        extCount = 3
+    } else {
+        extNamesPtr = smackVkStrListBlock("VK_KHR_surface,VK_EXT_metal_surface")
+        extCount = 2
     }
 
     let info = bufNew(64)
