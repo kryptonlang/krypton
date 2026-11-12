@@ -3468,6 +3468,8 @@ func opByteSize(op) {
     if op == "LOAD_LOCAL" { emit 8 }    // MOV RAX, [RBP+d32] (7) + PUSH RAX (1)
     if op == "LOAD_PARAM" { emit 8 }    // same encoding (positive disp32)
     if op == "STORE_PARAM"{ emit 8 }
+    if op == "LOAD_GLOBAL" { emit 11 }  // MOV RAX, [abs64] (10) + PUSH RAX (1)
+    if op == "STORE_GLOBAL"{ emit 11 }  // POP RAX (1) + MOV [abs64], RAX (10)
     if op == "ADD"        { emit 35 }   // smart dispatch: int add OR call kr_concat
     if op == "CAT"        { emit 8 }    // POP RSI + POP RDI + CALL kr_concat + PUSH RAX
     if op == "SUB"        { emit 35 }   // smart-int dispatch + kr_subi slow path
@@ -3568,7 +3570,10 @@ func opByteSize(op) {
     // kr_alloc'd heap pointer; offsets index it directly. (kr_bufgetdwordat result may
     // exceed 0x7F000000 and be re-tagged as a pointer — caller's caution until 64-bit ints.)
     if op == "BUILTIN_BUFNEW"        { emit 7 }  // pop size; call kr_alloc; push ptr
-    if op == "BUILTIN_BUFSETBYTE"    { emit 7 }  // [buf+off] = val
+    if op == "BUILTIN_BUFSETBYTE"    { emit 7 }  // [buf+off] = val (push val)
+    if op == "BUILTIN_BUFSETWORDAT"  { emit 8 }  // pop val/off/buf; mov [rsi+rcx], ax; push val
+    if op == "BUILTIN_BUFSETDWORDAT" { emit 7 }  // pop val/off/buf; mov [rsi+rcx], eax; push val
+    if op == "BUILTIN_BUFSETQWORDAT" { emit 8 }  // pop val/off/buf; mov [rsi+rcx], rax; push val
     if op == "BUILTIN_BUFGETBYTE"    { emit 7 }  // movzx byte
     if op == "BUILTIN_BUFGETWORDAT"  { emit 7 }  // movzx word (u16 LE)
     if op == "BUILTIN_BUFGETDWORDAT" { emit 6 }  // mov eax (u32 LE)
@@ -3681,9 +3686,71 @@ func tabCount(list) {
     emit c
 }
 
+// Collect unique LOCAL variable names from __main__ — these are module globals
+// shared across all functions. Returns a newline-separated list of names.
+// (Mirror of the macho backend's collectModuleGlobals — module `let` roots live
+// in a shared globals page so non-__main__ functions can name them.)
+func collectModuleGlobals(ir) {
+    let sb = sbNew()
+    let n = 0
+    let nl = lineCount(ir)
+    let i = 0
+    let inMain = "0"
+    while i < nl {
+        let line = trim(getLine(ir, i))
+        if len(line) > 0 && line[0] != ";" {
+            let j = 0
+            while j < len(line) && line[j] != " " { j += 1 }
+            let op = substring(line, 0, j)
+            let rest = ""
+            if j < len(line) { rest = trim(substring(line, j + 1, len(line))) }
+            if op == "FUNC" {
+                let sp = 0
+                while sp < len(rest) && rest[sp] != " " { sp += 1 }
+                let fname = substring(rest, 0, sp)
+                if fname == "__main__" { inMain = "1" } else { inMain = "0" }
+            } else if op == "LOCAL" && inMain == "1" {
+                if len(rest) < 2 || rest[0] != "_" || rest[1] != "_" {
+                    if globFind(sbToString(sb), n, rest) < 0 {
+                        if n > 0 { sb = sbAppend(sb, "\n") }
+                        sb = sbAppend(sb, rest)
+                        n += 1
+                    }
+                }
+            }
+        }
+        i += 1
+    }
+    emit sbToString(sb)
+}
+
+// Find name in newline-separated list; returns index or -1.
+func globFind(list, count, name) {
+    let i = 0
+    let start = 0
+    let n = len(list)
+    while i < count {
+        let e = start
+        while e < n && list[e] != "\n" { e += 1 }
+        if substring(list, start, e) == name { emit i }
+        i += 1
+        start = e + 1
+    }
+    emit 0 - 1
+}
+
 func parseIR(ir) {
     let strTab = ""
     let strCount = 0
+
+    // Module-globals shared across all functions: non-__-prefixed LOCALs in
+    // FUNC __main__. They live in a dedicated RW page after the strings rodata
+    // (loaded as part of the single PT_LOAD, RWX). Inside __main__ they get NO
+    // frame slot (access via LOAD_GLOBAL/STORE_GLOBAL); in other functions a
+    // LOCAL of the same name takes a frame slot and shadows the global.
+    let globals = collectModuleGlobals(ir)
+    let nGlobals = 0
+    if len(globals) > 0 { nGlobals = lineCount(globals) }
 
     // Result: strTab + "~~~" + funcBlock1 + "~~~" + funcBlock2 + ...
     let resultSb = sbNew()
@@ -3735,17 +3802,23 @@ func parseIR(ir) {
             } else if op == "PARAM" {
                 params = tabAppend(params, rest)
             } else if op == "LOCAL" {
-                if toInt(tabFind(locals, rest)) < 0 {
+                let gIdxL = globFind(globals, nGlobals, rest)
+                if curName == "__main__" && gIdxL >= 0 {
+                    // module-global: lives in the globals page, no frame slot
+                } else if toInt(tabFind(locals, rest)) < 0 {
                     locals = tabAppend(locals, rest)
                 }
             } else if op == "LOAD" {
                 let pIdx = toInt(tabFind(params, rest))
                 let lIdx = toInt(tabFind(locals, rest))
+                let gIdx = globFind(globals, nGlobals, rest)
                 if opCount > 0 { opSb = sbAppend(opSb, "\n") }
                 if pIdx >= 0 {
                     opSb = sbAppend(opSb, "LOAD_PARAM " + pIdx)
                 } else if lIdx >= 0 {
                     opSb = sbAppend(opSb, "LOAD_LOCAL " + (lIdx + 1))
+                } else if gIdx >= 0 {
+                    opSb = sbAppend(opSb, "LOAD_GLOBAL " + gIdx)
                 } else {
                     // Unresolved name (e.g. a lambda's GC-epilogue `LOAD __sh_save`,
                     // which the front-end references without a matching LOCAL in the
@@ -3758,15 +3831,18 @@ func parseIR(ir) {
             } else if op == "STORE" {
                 let pIdx = toInt(tabFind(params, rest))
                 let lIdx = toInt(tabFind(locals, rest))
-                if pIdx < 0 && lIdx < 0 {
+                let gIdx = globFind(globals, nGlobals, rest)
+                if pIdx < 0 && lIdx < 0 && gIdx < 0 {
                     locals = tabAppend(locals, rest)
                     lIdx = toInt(tabFind(locals, rest))
                 }
                 if opCount > 0 { opSb = sbAppend(opSb, "\n") }
                 if pIdx >= 0 {
                     opSb = sbAppend(opSb, "STORE_PARAM " + pIdx)
-                } else {
+                } else if lIdx >= 0 {
                     opSb = sbAppend(opSb, "STORE_LOCAL " + (lIdx + 1))
+                } else if gIdx >= 0 {
+                    opSb = sbAppend(opSb, "STORE_GLOBAL " + gIdx)
                 }
                 opCount += 1
             } else if op == "PUSH" {
@@ -4002,6 +4078,12 @@ func parseIR(ir) {
                     opSb = sbAppend(opSb, "BUILTIN_BUFNEW")
                 } else if bname == "bufSetByte" {
                     opSb = sbAppend(opSb, "BUILTIN_BUFSETBYTE")
+                } else if bname == "bufSetWordAt" {
+                    opSb = sbAppend(opSb, "BUILTIN_BUFSETWORDAT")
+                } else if bname == "bufSetDwordAt" {
+                    opSb = sbAppend(opSb, "BUILTIN_BUFSETDWORDAT")
+                } else if bname == "bufSetQwordAt" {
+                    opSb = sbAppend(opSb, "BUILTIN_BUFSETQWORDAT")
                 } else if bname == "bufGetByte" {
                     opSb = sbAppend(opSb, "BUILTIN_BUFGETBYTE")
                 } else if bname == "bufGetWordAt" {
@@ -4103,7 +4185,9 @@ func parseIR(ir) {
     // Prefix the strTab with its line count so the reader can consume exactly
     // that many lines: a string-table ENTRY may itself be "~~~" (the section
     // delimiter), so scanning for "~~~" would truncate the table. Read by count.
-    emit strCount + "\n" + strTab + "\n" + sbToString(resultSb)
+    let globalsHeader = "" + nGlobals + "\n"
+    if len(globals) > 0 { globalsHeader = globalsHeader + globals + "\n" }
+    emit globalsHeader + strCount + "\n" + strTab + "\n" + sbToString(resultSb)
 }
 
 // ── Pass 2 (layout): compute label offsets and total code size ─────
@@ -4141,7 +4225,7 @@ func computeLayout(opList, localCount) {
 // funcStartVAddr: virtual address of THIS function's first byte (for CALL disp calc)
 // krPrintVAddr/krStrIntVAddr: vaddrs of runtime helpers, used by BUILTIN_KP/BUILTIN_TOSTR
 
-func emitFuncCode(opList, strVAddrs, argcount, localCount, labels, funcVAddrs, funcStartVAddr, krPrintVAddr, krStrIntVAddr, krConcatVAddr, krAtoiVAddr, krLengthVAddr, krStrlenVAddr, krSplitVAddr, krRangeVAddr, krIndexVAddr, krArgVAddr, krArgcountVAddr, krSubstringVAddr, krAllocVAddr, krReadfileVAddr, krWritefileVAddr, krPrinterrVAddr, krCharcodeVAddr, krFromcharcodeVAddr, krExitVAddr, krIsdigitVAddr, krIsalphaVAddr, krAbsVAddr, krStartswithVAddr, krIstruthyVAddr, krLinecountVAddr, krGetlineVAddr, krTrimVAddr, krToupperVAddr, krTolowerVAddr, krPowVAddr, krRepeatVAddr, krPlusVAddr, krSubiVAddr, krMuliVAddr, krDiviVAddr, krModiVAddr, krCmpiVAddr, krContainsVAddr, krIndexofVAddr, krEndswithVAddr, krReplaceVAddr, krStrcmpVAddr, krReverseVAddr, krSbnewVAddr, krSbappendVAddr, krSbtostringVAddr, krMinVAddr, krMaxVAddr, krBitandVAddr, krBitorVAddr, krBitxorVAddr, krBitnotVAddr, krShlVAddr, krShrVAddr, krHexVAddr, krBinVAddr, krPadleftVAddr, krPadrightVAddr) {
+func emitFuncCode(opList, strVAddrs, argcount, localCount, labels, funcVAddrs, funcStartVAddr, krPrintVAddr, krStrIntVAddr, krConcatVAddr, krAtoiVAddr, krLengthVAddr, krStrlenVAddr, krSplitVAddr, krRangeVAddr, krIndexVAddr, krArgVAddr, krArgcountVAddr, krSubstringVAddr, krAllocVAddr, krReadfileVAddr, krWritefileVAddr, krPrinterrVAddr, krCharcodeVAddr, krFromcharcodeVAddr, krExitVAddr, krIsdigitVAddr, krIsalphaVAddr, krAbsVAddr, krStartswithVAddr, krIstruthyVAddr, krLinecountVAddr, krGetlineVAddr, krTrimVAddr, krToupperVAddr, krTolowerVAddr, krPowVAddr, krRepeatVAddr, krPlusVAddr, krSubiVAddr, krMuliVAddr, krDiviVAddr, krModiVAddr, krCmpiVAddr, krContainsVAddr, krIndexofVAddr, krEndswithVAddr, krReplaceVAddr, krStrcmpVAddr, krReverseVAddr, krSbnewVAddr, krSbappendVAddr, krSbtostringVAddr, krMinVAddr, krMaxVAddr, krBitandVAddr, krBitorVAddr, krBitxorVAddr, krBitnotVAddr, krShlVAddr, krShrVAddr, krHexVAddr, krBinVAddr, krPadleftVAddr, krPadrightVAddr, globalsBase) {
     let c = sbNew()
     c = sbAppend(c, hexByte(0x55))  // [+0] PUSH RBP
     c = sbAppend(c, hexByte(0x48) + hexByte(0x89) + hexByte(0xE5))  // [+1] MOV RBP, RSP
@@ -4184,6 +4268,17 @@ func emitFuncCode(opList, strVAddrs, argcount, localCount, labels, funcVAddrs, f
             let dispVal = 0 - (slot * 8)
             c = sbAppend(c, hexByte(0x48) + hexByte(0x8B) + hexByte(0x85) + hexDword(dispVal))
             c = sbAppend(c, hexByte(0x50))
+        } else if op == "LOAD_GLOBAL" {
+            // Module globals live in the RW globals page appended after the
+            // rodata strings (offset globalsBase). Load Absolute. (11 bytes)
+            let gIdx = toInt(rest)
+            c = sbAppend(c, hexByte(0x48) + hexByte(0xA1) + hexQwordVaddr(globalsBase + gIdx * 8))
+            c = sbAppend(c, hexByte(0x50))
+        } else if op == "STORE_GLOBAL" {
+            // Store Absolute into the globals page. (11 bytes)
+            let gIdx = toInt(rest)
+            c = sbAppend(c, hexByte(0x58))
+            c = sbAppend(c, hexByte(0x48) + hexByte(0xA3) + hexQwordVaddr(globalsBase + gIdx * 8))
         } else if op == "LOAD_PARAM" {
             // PARAM idx 0 (first declared) is at the BOTTOM of pushed args, i.e. highest RBP offset.
             // Stack from caller: pushes p0, p1, ..., pN-1 in order. After CALL+prologue:
@@ -4833,6 +4928,27 @@ func emitFuncCode(opList, strVAddrs, argcount, localCount, labels, funcVAddrs, f
             c = sbAppend(c, hexByte(0x59))                                          // pop rcx (off)
             c = sbAppend(c, hexByte(0x5E))                                          // pop rsi (buf)
             c = sbAppend(c, hexByte(0x88) + hexByte(0x04) + hexByte(0x0E))          // mov [rsi+rcx], al
+            c = sbAppend(c, hexByte(0x50))                                          // push rax (val)
+        } else if op == "BUILTIN_BUFSETWORDAT" {
+            // bufSetWordAt(buf, off, val) -> [buf+off] = val&0xFFFF (LE), returns val. TOS=val. (8 bytes)
+            c = sbAppend(c, hexByte(0x58))                                          // pop rax (val)
+            c = sbAppend(c, hexByte(0x59))                                          // pop rcx (off)
+            c = sbAppend(c, hexByte(0x5E))                                          // pop rsi (buf)
+            c = sbAppend(c, hexByte(0x66) + hexByte(0x89) + hexByte(0x04) + hexByte(0x0E)) // mov [rsi+rcx], ax
+            c = sbAppend(c, hexByte(0x50))                                          // push rax (val)
+        } else if op == "BUILTIN_BUFSETDWORDAT" {
+            // bufSetDwordAt(buf, off, val) -> [buf+off] = val&0xFFFFFFFF (LE), returns val. TOS=val. (7 bytes)
+            c = sbAppend(c, hexByte(0x58))                                          // pop rax (val)
+            c = sbAppend(c, hexByte(0x59))                                          // pop rcx (off)
+            c = sbAppend(c, hexByte(0x5E))                                          // pop rsi (buf)
+            c = sbAppend(c, hexByte(0x89) + hexByte(0x04) + hexByte(0x0E))          // mov [rsi+rcx], eax
+            c = sbAppend(c, hexByte(0x50))                                          // push rax (val)
+        } else if op == "BUILTIN_BUFSETQWORDAT" {
+            // bufSetQwordAt(buf, off, val) -> [buf+off] = val (LE), returns val. TOS=val. (8 bytes)
+            c = sbAppend(c, hexByte(0x58))                                          // pop rax (val)
+            c = sbAppend(c, hexByte(0x59))                                          // pop rcx (off)
+            c = sbAppend(c, hexByte(0x5E))                                          // pop rsi (buf)
+            c = sbAppend(c, hexByte(0x48) + hexByte(0x89) + hexByte(0x04) + hexByte(0x0E)) // mov [rsi+rcx], rax
             c = sbAppend(c, hexByte(0x50))                                          // push rax (val)
         } else if op == "BUILTIN_BUFGETBYTE" {
             // bufGetByte(buf, off) -> zero-extended byte. TOS=off. (7 bytes)
@@ -5955,7 +6071,12 @@ just run {
     // We'll use a structured single string and re-parse per func when needed.
 
     // Walk parsed:
-    //   line 0..n: strTab lines (until "~~~")
+    //   line 0:      nGlobals
+    //   next lines:  module-global LOCAL names from __main__ (non-__ prefixed),
+    //                line per name (order = source order) — live in the RW globals
+    //                page appended after the rodata strings.
+    //   line:        strTab line count
+    //   that many lines: strTab
     //   then for each func:
     //     "~~~"
     //     "FUNC name argcount localCount"
@@ -5963,14 +6084,23 @@ just run {
     //     locals (tab-separated, possibly empty)
     //     opCount
     //     opCount ops (each on its own line)
-
-    // First line is the strTab line count. Read EXACTLY that many lines as the
-    // string table — do NOT scan for "~~~", because a table ENTRY may itself be
-    // the literal "~~~" (the section delimiter), which would truncate the table
-    // and leave later string indices dangling (→ vaddr 0 → null deref). Reading
-    // by count also correctly preserves interned "" (empty) entries.
-    let declaredStr = toInt(getLine(parsed, 0))
+    //
+    // Reading by count (not by "~~~") is load-bearing: a table entry may itself
+    // be the literal "~~~".
+    let declaredGlobals = toInt(getLine(parsed, 0))
     let pi = 1
+    let globals = ""
+    let gNames = 0
+    while gNames < declaredGlobals {
+        let gn = getLine(parsed, pi)
+        if globals == "" { globals = gn } else { globals = globals + "\n" + gn }
+        gNames += 1
+        pi += 1
+    }
+    let nGlobals = gNames
+
+    let declaredStr = toInt(getLine(parsed, pi))
+    pi += 1
     let strLines = 0
     while strLines < declaredStr {
         let pl = getLine(parsed, pi)
@@ -6305,6 +6435,7 @@ just run {
 
     // String virtual addresses (after all runtime helpers)
     let stringsBase = krPadrightVAddr + krPrtSz
+    let globalsBase = 0
     let strVAddrs = ""
     let strData = ""
     let curOff = 0
@@ -6317,6 +6448,9 @@ just run {
         curOff = curOff + len(sv) + 1
         si += 1
     }
+    // Module-globals page: appended after rodata strings, zero-initialized,
+    // read/written at runtime (PT_LOAD is RWX).
+    globalsBase = stringsBase + curOff
 
     // ── Emit pass: for each function in order, emit code with resolved CALL targets ──
     let allFuncCode = ""
@@ -6347,7 +6481,7 @@ just run {
         let nm2 = substring(hh, ss1 + 1, ss2)
         let funcStartV2 = toInt(funcVAddr(funcVAddrs, nm2))
 
-        let codeI = emitFuncCode(opStr2, strVAddrs, argc2, lcCount2, lab2, funcVAddrs, funcStartV2, krPrintVAddr, krStrIntVAddr, krConcatVAddr, krAtoiVAddr, krLengthVAddr, krStrlenVAddr, krSplitVAddr, krRangeVAddr, krIndexVAddr, krArgVAddr, krArgcountVAddr, krSubstringVAddr, krAllocVAddr, krReadfileVAddr, krWritefileVAddr, krPrinterrVAddr, krCharcodeVAddr, krFromcharcodeVAddr, krExitVAddr, krIsdigitVAddr, krIsalphaVAddr, krAbsVAddr, krStartswithVAddr, krIstruthyVAddr, krLinecountVAddr, krGetlineVAddr, krTrimVAddr, krToupperVAddr, krTolowerVAddr, krPowVAddr, krRepeatVAddr, krPlusVAddr, krSubiVAddr, krMuliVAddr, krDiviVAddr, krModiVAddr, krCmpiVAddr, krContainsVAddr, krIndexofVAddr, krEndswithVAddr, krReplaceVAddr, krStrcmpVAddr, krReverseVAddr, krSbnewVAddr, krSbappendVAddr, krSbtostringVAddr, krMinVAddr, krMaxVAddr, krBitandVAddr, krBitorVAddr, krBitxorVAddr, krBitnotVAddr, krShlVAddr, krShrVAddr, krHexVAddr, krBinVAddr, krPadleftVAddr, krPadrightVAddr)
+        let codeI = emitFuncCode(opStr2, strVAddrs, argc2, lcCount2, lab2, funcVAddrs, funcStartV2, krPrintVAddr, krStrIntVAddr, krConcatVAddr, krAtoiVAddr, krLengthVAddr, krStrlenVAddr, krSplitVAddr, krRangeVAddr, krIndexVAddr, krArgVAddr, krArgcountVAddr, krSubstringVAddr, krAllocVAddr, krReadfileVAddr, krWritefileVAddr, krPrinterrVAddr, krCharcodeVAddr, krFromcharcodeVAddr, krExitVAddr, krIsdigitVAddr, krIsalphaVAddr, krAbsVAddr, krStartswithVAddr, krIstruthyVAddr, krLinecountVAddr, krGetlineVAddr, krTrimVAddr, krToupperVAddr, krTolowerVAddr, krPowVAddr, krRepeatVAddr, krPlusVAddr, krSubiVAddr, krMuliVAddr, krDiviVAddr, krModiVAddr, krCmpiVAddr, krContainsVAddr, krIndexofVAddr, krEndswithVAddr, krReplaceVAddr, krStrcmpVAddr, krReverseVAddr, krSbnewVAddr, krSbappendVAddr, krSbtostringVAddr, krMinVAddr, krMaxVAddr, krBitandVAddr, krBitorVAddr, krBitxorVAddr, krBitnotVAddr, krShlVAddr, krShrVAddr, krHexVAddr, krBinVAddr, krPadleftVAddr, krPadrightVAddr, globalsBase)
         allFuncCode = allFuncCode + codeI
         oIdx2 += 1
     }
@@ -6429,7 +6563,7 @@ just run {
     let krPadleftCode    = emitKrPadleftCode(krPadleftVAddr, krAtoiVAddr, krStrlenVAddr, krAllocVAddr)
     let krPadrightCode   = emitKrPadrightCode(krPadrightVAddr, krAtoiVAddr, krStrlenVAddr, krAllocVAddr)
 
-    let segment = startCode + allFuncCode + krPrintCode + krStrIntCode + krAllocCode + krStrlenCode + krConcatCode + krAtoiCode + krLengthCode + krSplitCode + krRangeCode + krIndexCode + krArgCode + krArgcountCode + krSubstringCode + krReadfileCode + krWritefileCode + krWritebytesCode + krSbnewCode + krSbappendCode + krSbtostringCode + krPrinterrCode + krCharcodeCode + krFromcharcodeCode + krExitCode + krIsdigitCode + krIsalphaCode + krAbsCode + krStartswithCode + krIstruthyCode + krLinecountCode + krGetlineCode + krTrimCode + krToupperCode + krTolowerCode + krPowCode + krRepeatCode + krIsnumCode + krPlusCode + krAtoi2Code + krSubiCode + krMuliCode + krDiviCode + krModiCode + krStrcmpCode + krCmpiCode + krStrstrCode + krContainsCode + krIndexofCode + krEndswithCode + krReplaceCode2 + krReverseCode + krMinCode + krMaxCode + krBitandCode + krBitorCode + krBitxorCode + krBitnotCode + krShlCode + krShrCode + krHexCode + krBinCode + krPadleftCode + krPadrightCode + strData
+    let segment = startCode + allFuncCode + krPrintCode + krStrIntCode + krAllocCode + krStrlenCode + krConcatCode + krAtoiCode + krLengthCode + krSplitCode + krRangeCode + krIndexCode + krArgCode + krArgcountCode + krSubstringCode + krReadfileCode + krWritefileCode + krWritebytesCode + krSbnewCode + krSbappendCode + krSbtostringCode + krPrinterrCode + krCharcodeCode + krFromcharcodeCode + krExitCode + krIsdigitCode + krIsalphaCode + krAbsCode + krStartswithCode + krIstruthyCode + krLinecountCode + krGetlineCode + krTrimCode + krToupperCode + krTolowerCode + krPowCode + krRepeatCode + krIsnumCode + krPlusCode + krAtoi2Code + krSubiCode + krMuliCode + krDiviCode + krModiCode + krStrcmpCode + krCmpiCode + krStrstrCode + krContainsCode + krIndexofCode + krEndswithCode + krReplaceCode2 + krReverseCode + krMinCode + krMaxCode + krBitandCode + krBitorCode + krBitxorCode + krBitnotCode + krShlCode + krShrCode + krHexCode + krBinCode + krPadleftCode + krPadrightCode + strData + hexPad(nGlobals * 8)
     let segSize = hexBytesLen(segment)
     let fileSize = HDR_SIZE + segSize
 
@@ -6451,7 +6585,7 @@ just run {
 
     let ph = ""
     ph = ph + hexDword(1)              // PT_LOAD
-    ph = ph + hexDword(5)              // R+X
+    ph = ph + hexDword(7)              // R+W+X (needs the runtime-globals page)
     ph = ph + hexQword(0)
     ph = ph + hexQwordVaddr(0)   // p_vaddr = VADDR_BASE + offset 0
     ph = ph + hexQwordVaddr(0)   // p_paddr
