@@ -425,8 +425,14 @@ func cfCount(cname, argc) {
     if cname == "objc_msgSend_rect_h" { emit 5 + kbi }    // (self,sel): NSRect d3 -> x0
     // generic dispatch: the else path only adds the FFI wrap when the callee is
     // foreign (foreignIdx >= 0). Internal Krypton-to-Krypton calls take the
-    // standard path without the 4-instr wrap.
-    if foreignIdx(cname) >= 0 { emit argc + 2 + kbi }
+    // standard path without the 4-instr wrap. Foreign calls with argc > 8
+    // spill args 8.. onto the C stack: +2 instrs per spilled arg (ldr_imm +
+    // add_sp) + 1 sub_sp + 1 str per spill + 1 add_sp after the call = +3*spill + 2.
+    if foreignIdx(cname) >= 0 {
+        let fspill = argc - 8
+        if fspill > 0 { emit 3 * fspill + 12 + kbi }
+        emit argc + 2 + kbi
+    }
     emit argc + 2
 }
 // 0-based index of foreign symbol "_"+name in g_FORSYMS, or -1 if not foreign.
@@ -1177,6 +1183,10 @@ func arm64_and_xxx(rd, rn, rm) {
 // and Wd, Wn, Wm  (32-bit bitwise AND, zero-extends to Xd) → 0x0a000000 | ...
 func arm64_and_www(rd, rn, rm) {
     emit hexDword(0x0a000000 + (rm * 0x10000) + (rn * 0x20) + rd)
+}
+// and Xd, Xn, #0xFFFFFFFFFFFFFFF8  (clear low 3 bits) → 0x927df000 | (rn << 5) | rd
+func arm64_bic_imm7(rd, rn) {
+    emit hexDword((0x927d * 0x10000 + 0xf000) + (rn * 0x20) + rd)
 }
 // orr Wd, Wn, Wm  (32-bit bitwise OR, zero-extends to Xd) → 0x2a000000 | ...
 func arm64_orr_www(rd, rn, rm) {
@@ -3119,7 +3129,7 @@ func opInstrCount(opTok) {
     if opTok == "BUILTIN_FEQ"    { emit 7 }
     if opTok == "BUILTIN_FFORMAT" { emit 4 }  // pop x1(prec),pop x0(val),bl __f_format,push
     if opTok == "BUILTIN_INTTOFLOAT" { emit 4 }  // pop,scvtf,bl __f_box,push
-    if opTok == "BUILTIN_BUFNEW" { emit 5 }          // pop size, alloc, push ptr
+    if opTok == "BUILTIN_BUFNEW" { emit 7 }          // pop size, align, alloc, push ptr
     if opTok == "BUILTIN_BUFGETQWORDAT" { emit 5 }   // pop off, pop buf, add, ldr, push
     if opTok == "BUILTIN_BUFSETQWORDAT" { emit 6 }   // pop val/off/buf, add, str, push val
     if opTok == "BUILTIN_BUFSETBYTE" { emit 6 }      // pop val/off/buf, add, strb, push val
@@ -3159,12 +3169,12 @@ func opInstrCount(opTok) {
     if opTok == "BUILTIN_EXIT"     { emit 17 }  // int-or-atoi(str) then exit(code)
     if opTok == "BUILTIN_LEN"      { emit 7 }   // pop, mov, ldrb-post, cbnz, sub-reg, sub-imm, push
     if opTok == "BUILTIN_CHARCODE" { emit 3 }   // pop, ldrb, push
-    if opTok == "BUILTIN_SUBSTRING"{ emit 37 }  // alloc(21) bumped from 15 → +6
+    if opTok == "BUILTIN_SUBSTRING"{ emit 39 }  // alloc(21) bumped from 15 → +6
     if opTok == "BUILTIN_STARTSWITH"{ emit 14 }
     if opTok == "BUILTIN_ISDIGIT"  { emit 10 }
     if opTok == "BUILTIN_TOINT"    { emit 30 }  // signed parse (handles leading '-')
     if opTok == "BUILTIN_INDEXOF"  { emit 21 }
-    if opTok == "BUILTIN_SBNEW"        { emit 52 }   // stable handle + buffer (2 allocs)
+    if opTok == "BUILTIN_SBNEW"        { emit 54 }   // stable handle + buffer (2 allocs)
     if opTok == "BUILTIN_SBAPPEND"     { emit 84 }   // grow-in-place via handle indirection
     if opTok == "BUILTIN_SBTOSTRING"   { emit 4 }    // handle → buf+16
     if opTok == "BUILTIN_CONTAINS"     { emit 23 }   // indexOf core (20) + cmp + cset + push
@@ -3180,16 +3190,16 @@ func opInstrCount(opTok) {
     if opTok == "BUILTIN_ENDSWITH"     { emit 29 }
     if opTok == "BUILTIN_ARG"          { emit 25 }  // inline-toInt + load argv + index
     if opTok == "BUILTIN_ARGCOUNT"     { emit 5 }
-    if opTok == "BUILTIN_READFILE"     { emit 68 }   // open-err guard + alloc(21) +6
+    if opTok == "BUILTIN_READFILE"     { emit 70 }   // open-err guard + alloc(21) +6
     if opTok == "BUILTIN_WRITEFILE"    { emit 22 }
     if opTok == "BUILTIN_WRITEBYTES"   { emit 54 }
-    if opTok == "BUILTIN_TRIM"         { emit 56 }   // alloc(21) +6 from 50
-    if opTok == "BUILTIN_TOLOWER"      { emit 42 }   // strlen(7)+alloc(21)+xform copy(14)
-    if opTok == "BUILTIN_TOUPPER"      { emit 42 }   // strlen(7)+alloc(21)+xform copy(14)
+    if opTok == "BUILTIN_TRIM"         { emit 58 }   // alloc(21) +6 from 50
+    if opTok == "BUILTIN_TOLOWER"      { emit 44 }   // strlen(7)+alloc(21)+xform copy(14)
+    if opTok == "BUILTIN_TOUPPER"      { emit 44 }   // strlen(7)+alloc(21)+xform copy(14)
     if opTok == "BUILTIN_ENVIRON"      { emit 21 }   // scan saved envp (cell+80) for name= ; value ptr or ""
     if opTok == "BUILTIN_LENGTH"       { emit 13 }   // empty-check + comma-counter loop
     if opTok == "BUILTIN_SPLIT"        { emit 50 }   // scan + alloc(21) + copy + NUL + push
-    if opTok == "BUILTIN_RANGE"        { emit 75 }   // alloc(21) + inline itoa loop with stack scratch
+    if opTok == "BUILTIN_RANGE"        { emit 77 }   // alloc(21) + inline itoa loop with stack scratch
     if opTok == "BUILTIN_COUNT"        { emit 10 }   // walk string, cnt = 1 + commas
     if opTok == "BUILTIN_ISTRUTHY"     { emit 35 }   // int=nonzero / ptr: empty / "0" / "false" → falsy, else truthy
     if opTok == "BUILTIN_LINECOUNT"    { emit 18 }   // \n counter with trailing-NL adjustment (matches C kr_linecount)
@@ -3698,11 +3708,13 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             // bufNew(size): allocate `size` bytes via the GC allocator, return ptr.
             // (A5 fixed-size arrays + raw byte buffers.) 5 instrs.
             s = sbAppend(s, arm64_pop(4))                              // 0: x4 = size
-            s = sbAppend(s, arm64_stp_fp_lr_pre16())                   // 1: save lr
-            s = sbAppend(s, arm64_bl(g_RT_ALLOC_INSTR - (instrIdx + 2)))// 2: x0 = ptr
-            s = sbAppend(s, arm64_ldp_fp_lr_post16())                  // 3
-            s = sbAppend(s, arm64_push_x0())                           // 4
-            instrIdx = instrIdx + 5
+            s = sbAppend(s, arm64_add_imm(4, 4, 7))                    // 1: round up to 8
+            s = sbAppend(s, arm64_bic_imm7(4, 4))                      // 2: x4 = align8(size)
+            s = sbAppend(s, arm64_stp_fp_lr_pre16())                   // 3: save lr
+            s = sbAppend(s, arm64_bl(g_RT_ALLOC_INSTR - (instrIdx + 4)))// 4: x0 = ptr
+            s = sbAppend(s, arm64_ldp_fp_lr_post16())                  // 5
+            s = sbAppend(s, arm64_push_x0())                           // 6
+            instrIdx = instrIdx + 7
         } else if opTok == "BUILTIN_BUFGETQWORDAT" {
             // bufGetQwordAt(buf, byteoff) -> 8-byte value at buf+byteoff. 5 instrs.
             s = sbAppend(s, arm64_pop(1))                              // 0: x1 = byteoff
@@ -4149,7 +4161,9 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_pop(8))  // x8 = s
             s = sbAppend(s, arm64_sub_xxx(4, 6, 7))  // x4 = end - start (len_data)
             s = sbAppend(s, arm64_add_imm(4, 4, 1))  // x4 = len_data + 1 (alloc room for NUL)
-            instrIdx = instrIdx + 5
+            s = sbAppend(s, arm64_add_imm(4, 4, 7))
+            s = sbAppend(s, arm64_bic_imm7(4, 4))
+            instrIdx = instrIdx + 7
             s = sbAppend(s, emitAllocVar(instrIdx, textVaddr, textOff))
             instrIdx = instrIdx + 21
             s = sbAppend(s, arm64_add_xxx(9, 8, 7))  // x9 = src = s + start
@@ -4318,7 +4332,9 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_add_xxx(4, 4, 4))  // 31: 2*cap
             s = sbAppend(s, arm64_add_xxx(4, 4, 5))  // 32: +strlen
             s = sbAppend(s, arm64_add_imm(4, 4, 17))  // 33: +17
-            instrIdx = instrIdx + 6
+            s = sbAppend(s, arm64_add_imm(4, 4, 7))
+            s = sbAppend(s, arm64_bic_imm7(4, 4))
+            instrIdx = instrIdx + 8
             s = sbAppend(s, emitAllocVar(instrIdx, textVaddr, textOff))  // 34-54: x0 = new buffer
             instrIdx = instrIdx + 21
             s = sbAppend(s, arm64_ldr_imm(5, 31, 0))  // 55: restore strlen
@@ -4617,7 +4633,9 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_b(25))  // 43: b .exit (68 = 43 + 25)
             instrIdx = instrIdx + 14        // 30..43 (instructions before .fail)
             s = sbAppend(s, arm64_movz_x_imm(4, 1))  // 44: .fail x4 = 1 (empty string)
-            instrIdx = instrIdx + 1
+            s = sbAppend(s, arm64_add_imm(4, 4, 7))
+            s = sbAppend(s, arm64_bic_imm7(4, 4))
+            instrIdx = instrIdx + 3
             s = sbAppend(s, emitAllocVar(instrIdx, textVaddr, textOff))
             instrIdx = instrIdx + 21
             s = sbAppend(s, arm64_strb_imm(31, 0, 0))  // strb wzr, [x0, #0]
@@ -4669,7 +4687,9 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_movz_x_imm(10, 0))  // ALL_WS
             s = sbAppend(s, arm64_movz_x_imm(12, 0))
             s = sbAppend(s, arm64_add_imm(4, 10, 1))  // ALLOC
-            instrIdx = instrIdx + 25
+            s = sbAppend(s, arm64_add_imm(4, 4, 7))
+            s = sbAppend(s, arm64_bic_imm7(4, 4))
+            instrIdx = instrIdx + 27
             s = sbAppend(s, emitAllocVar(instrIdx, textVaddr, textOff))
             instrIdx = instrIdx + 21
             s = sbAppend(s, arm64_add_xxx(9, 6, 12))
@@ -4702,7 +4722,9 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_sub_xxx(10, 8, 6))
             s = sbAppend(s, arm64_sub_imm(10, 10, 1))
             s = sbAppend(s, arm64_add_imm(4, 10, 1))
-            instrIdx = instrIdx + 7
+            s = sbAppend(s, arm64_add_imm(4, 4, 7))
+            s = sbAppend(s, arm64_bic_imm7(4, 4))
+            instrIdx = instrIdx + 9
             s = sbAppend(s, emitAllocVar(instrIdx, textVaddr, textOff))
             instrIdx = instrIdx + 21
             s = sbAppend(s, arm64_movz_x_imm(11, 0))
@@ -4729,7 +4751,9 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_sub_xxx(10, 8, 6))
             s = sbAppend(s, arm64_sub_imm(10, 10, 1))
             s = sbAppend(s, arm64_add_imm(4, 10, 1))
-            instrIdx = instrIdx + 7
+            s = sbAppend(s, arm64_add_imm(4, 4, 7))
+            s = sbAppend(s, arm64_bic_imm7(4, 4))
+            instrIdx = instrIdx + 9
             s = sbAppend(s, emitAllocVar(instrIdx, textVaddr, textOff))
             instrIdx = instrIdx + 21
             s = sbAppend(s, arm64_movz_x_imm(11, 0))
@@ -4861,8 +4885,10 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_sub_xxx(9, 6, 3))  // 6: n = end-start
             s = sbAppend(s, arm64_movz_x_imm(10, 12))  // 7
             s = sbAppend(s, arm64_mul_xxx(4, 9, 10))  // 8: size = n*12
+            s = sbAppend(s, arm64_add_imm(4, 4, 7))
+            s = sbAppend(s, arm64_bic_imm7(4, 4))
             // ALLOC @ 9:
-            instrIdx = instrIdx + 9
+            instrIdx = instrIdx + 11
             s = sbAppend(s, emitAllocVar(instrIdx, textVaddr, textOff))  // 21 instr → x0 = dest
             instrIdx = instrIdx + 21
             // POST_ALLOC @ 30: empty check again
@@ -6697,16 +6723,11 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                 }
                 s = sbAppend(s, arm64_push(0))  instrIdx = instrIdx + 1
             } else {
-            // Pop args in reverse: x(argc-1) first (TOS), down to x0 (deepest)
-            let ai = argc - 1
-            while ai >= 0 {
-                s = sbAppend(s, arm64_pop(ai))
-                instrIdx = instrIdx + 1
-                ai = ai - 1
-            }
-            // bl <target> — foreign symbol routes to its __stubs entry (C ABI: args already in x0..xN)
-            // Krypton-to-Krypton dispatch: 4 instructions fewer — no FFI
-            // flush/reload (the callee may itself advance rBUMP through __rt_alloc).
+            // Generic foreign (jxt) calls with argc > 8 must spill args 8.. onto
+            // the C stack per AAPCS64 ([sp]=arg8, [sp+8]=arg9, ...). Krypton's
+            // eval-stack entries are 16B strided, so the spilled args are
+            // repacked into a fresh 8B-contiguous area just below the frame
+            // top and released after the call.
             let fidx = foreignIdx(cname)
             let targetInstr = findLabel(funcTable, cname)
             if fidx < 0 && targetInstr < 0 {
@@ -6714,6 +6735,46 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                 exit("1")
             }
             if fidx >= 0 { targetInstr = textSz / 4 + fidx * 3 }   // stub i at __text_end + i*12
+            let spill = 0
+            if fidx >= 0 && argc > 8 { spill = argc - 8 }
+            if spill > 8 {
+                printErr("macho_arm64_self: foreign call '" + cname + "' has too many arguments (max 16)")
+                exit("1")
+            }
+            if spill > 0 {
+                // Strided 16B pops: TOS holds argN, argN-1, ...; pull args argc-1..8 into x(9+spill)..x10.
+                let li = 0
+                while li < spill {
+                    s = sbAppend(s, arm64_ldr_imm(10 + spill - 1 - li, 31, 0))
+                    s = sbAppend(s, arm64_add_sp(16))
+                    instrIdx = instrIdx + 2
+                    li = li + 1
+                }
+                let ai = 7
+                while ai >= 0 {
+                    s = sbAppend(s, arm64_pop(ai))     // x7..x0 = args 7..0
+                    instrIdx = instrIdx + 1
+                    ai = ai - 1
+                }
+                let area = spill * 8
+                area = ((area + 15) / 16) * 16
+                s = sbAppend(s, arm64_sub_sp(area))
+                instrIdx = instrIdx + 1
+                let si = 0
+                while si < spill {
+                    s = sbAppend(s, arm64_str_imm(10 + si, 31, si))  // [sp, #si*8] = arg(8+si)
+                    instrIdx = instrIdx + 1
+                    si = si + 1
+                }
+            } else {
+                // Standard reverse pop: x(argc-1) from TOS down to x0 (deepest).
+                let ai = argc - 1
+                while ai >= 0 {
+                    s = sbAppend(s, arm64_pop(ai))
+                    instrIdx = instrIdx + 1
+                    ai = ai - 1
+                }
+            }
             if g_KBI == "1" && fidx >= 0 {
                 s = sbAppend(s, emitKbiFlushBump(instrIdx, textOff))
                 instrIdx = instrIdx + 2
@@ -6724,6 +6785,12 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             if g_KBI == "1" && fidx >= 0 {
                 s = sbAppend(s, emitKbiReloadBump(instrIdx, textOff))
                 instrIdx = instrIdx + 2
+            }
+            if spill > 0 {
+                let area2 = spill * 8
+                area2 = ((area2 + 15) / 16) * 16
+                s = sbAppend(s, arm64_add_sp(area2))       // caller releases the AAPCS area
+                instrIdx = instrIdx + 1
             }
             s = sbAppend(s, arm64_push(0))
             instrIdx = instrIdx + 1
