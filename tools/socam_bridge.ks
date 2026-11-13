@@ -19,6 +19,9 @@
 // Usage (run from the Krypton repository root, macOS arm64 host for artifact;
 // iso also usable from the Lima VM for packaging only):
 //   kr tools/socam_bridge.ks check              verify socam + driver + smack sources
+//   kr tools/socam_bridge.ks cortex             validate the cortex Wayland sources
+//                                               (socam explain; Linux hosts also compile
+//                                               cortex_wl.k; macOS prints the in-VM build cmd)
 //   kr tools/socam_bridge.ks iso [OUT_TAR]      validate, then stage the ISO payload
 //                                               tarball (default
 //                                               dist/staging/krypton-payload.tar.zst)
@@ -41,7 +44,7 @@ func q(s) {
 }
 
 func usage() {
-    print("usage: socam_bridge.ks check|iso [out.tar.zst]|artifact [out.bin]")
+    print("usage: socam_bridge.ks check|iso [out.tar.zst]|artifact [out.bin]|cortex")
     exit("1")
 }
 
@@ -51,6 +54,10 @@ just run {
     let root = envOr("KRYPTON_ROOT", trim(exec("pwd")))
     let arch = trim(exec("uname -s -m"))
     let socam = envOr("SOCAM", root + "/../socam/bin/socam")
+    let homeSocam = envOr("HOME", "") + "/Documents/GitHub/socam/bin/socam"
+    if shellRun("test -x " + q(socam)) != "0" && shellRun("test -x " + q(homeSocam)) == "0" {
+        socam = homeSocam
+    }
     // The socam payload chain: version + explain on every SmackUI source.
     // Paths under this repository contain no spaces.
     let explainChain = q(socam) + " version >/dev/null 2>&1 && " +
@@ -155,6 +162,53 @@ just run {
             exit("1")
         }
         print("artifact: " + outBin)
+        exit("0")
+    }
+
+    // cortex: wire the Linux Wayland-native file manager (pure Krypton,
+    // no toolkits, no FFI) into the socam gate. On macOS hosts we validate
+    // the source with socam and point at the in-VM build; on Linux hosts we
+    // actually compile it with the Linux driver and verify the ELF artifact.
+    if cmd == "cortex" {
+        let cortex = envOr("CORTEX_ROOT", root + "/../cortex")
+        let home = envOr("HOME", "")
+        let homeCortex = home + "/Documents/GitHub/cortex"
+        if shellRun("test -f " + q(cortex + "/cortex_wl.k")) != "0" && home != "" && shellRun("test -f " + q(homeCortex + "/cortex_wl.k")) == "0" {
+            cortex = homeCortex
+        }
+        let mainK = cortex + "/cortex_wl.k"
+        let srcRc = shellRun("test -f " + q(mainK))
+        if srcRc != "0" {
+            print("FAIL cortex source not found at " + mainK + " (set CORTEX_ROOT to the cortex checkout)")
+            exit("1")
+        }
+        if arch == "Darwin arm64" {
+            print("cortex: " + mainK)
+            let rc = shellRun(q(socam) + " explain " + q(mainK) + " >/dev/null 2>&1")
+            if rc != "0" {
+                print("FAIL socam explain cortex_wl.k (rc " + rc + ")")
+                exit("1")
+            }
+            print("OK socam explain: cortex_wl.k")
+        } else {
+            print("note: socam explain skipped on " + arch + " (socam is a macOS arm64 binary)")
+        }
+        if contains(arch, "Linux") {
+            let out = envOr("OUT", root + "/dist/staging")
+            let bin = out + "/cortex_wl_linux_x86_64"
+            let build = "mkdir -p " + q(out) + " && KRYPTON_ROOT=" + q(root) + " " + q(driver) + " " + q(mainK) + " -o " + q(bin) + " && file " + q(bin) +
+                        " | grep -q 'x86-64'"
+            let brc = shellRun(build)
+            if brc != "0" {
+                print("FAIL cortex build (rc " + brc + ")")
+                exit("1")
+            }
+            print("OK cortex build: " + bin)
+        } else {
+            print("note: macOS host — the x86_64 Linux driver cannot run here; build in the VM:")
+            print("  limactl shell krypton -- sudo KRYPTON_ROOT=/mnt/lfs/usr/local/krypton /mnt/lfs/usr/local/krypton/bootstrap/kcc_driver_linux_x86_64 " + mainK + " -o /tmp/cortex_wl")
+        }
+        print("cortex: OK")
         exit("0")
     }
 
