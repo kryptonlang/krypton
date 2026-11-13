@@ -60,6 +60,19 @@ jxt {
     func vkCmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers)
     func vkCmdClearColorImage(commandBuffer, image, imageLayout, pColor, rangeCount, pRanges)
 
+    // ── Buffers + memory ──────────────────────────────────────
+    func vkCreateBuffer(device, pCreateInfo, pAllocator, pBuffer)
+    func vkDestroyBuffer(device, buffer, pAllocator)
+    func vkGetBufferMemoryRequirements(device, buffer, pMemoryRequirements)
+    func vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory)
+    func vkFreeMemory(device, memory, pAllocator)
+    func vkBindBufferMemory(device, buffer, memory, memoryOffset)
+    func vkMapMemory(device, memory, offset, size, flags, ppData)
+    func vkUnmapMemory(device, memory)
+
+    // ── Image transfer ────────────────────────────────────────
+    func vkCmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, dstImageLayout, regionCount, pRegions)
+
     // ── Fences + semaphores ────────────────────────────────────
     func vkCreateFence(device, pCreateInfo, pAllocator, pFence)
     func vkDestroyFence(device, fence, pAllocator)
