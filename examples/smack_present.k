@@ -1,18 +1,39 @@
 // examples/smack_present.k — SmackUI present: NSWindow + CAMetalLayer +
-// Vulkan (MoltenVK) clear-frame presentation, all in pure Krypton.
+// Vulkan (MoltenVK), all in pure Krypton.
 //
 //   KRYPTON_ROOT=$PWD ./bootstrap/kcc_driver_macos_aarch64 examples/smack_present.k -o /tmp/smack_present
 //   /tmp/smack_present
 //
-// Opens a 640x480 window and presents 90 cleared frames (alternating orange
-// and teal per swapchain image), then quits. Requires MoltenVK (brew install
-// molten-vk) and the Homebrew Vulkan loader. macOS arm64 only.
+// Opens a 640x480 window and presents 90 frames of the SmackSurface scene
+// drawn by the pure-Krypton compositor, uploaded into the swapchain via a
+// host-visible staging buffer and vkCmdCopyBufferToImage. Requires MoltenVK
+// (brew install molten-vk) and the Homebrew Vulkan loader. macOS arm64 only.
 //
-// No shaders are needed: clearing a swapchain image is vkCmdPipelineBarrier
-// + vkCmdClearColorImage inside one command buffer, then vkQueuePresentKHR.
+// No shaders are needed: the swapchain image is written by a buffer-to-image
+// copy; layout transitions are pipeline barriers.
 import "k:smack/vulkan"
+import "k:smack/geometry"
+import "k:smack/compositor"
+import "k:smack/vulkan_bridge"
 import "k:choc_macos"
-just run {
+
+// Auxiliary Vulkan helper buffers are allocated in a tiny helper frame so they
+// land at the low end of Krypton's bump arena — away from the unmapped page
+// reserved by the much larger __main__ frame.
+func _makeAuxiliaryBuffers() {
+    let barrier = bufNew(128)
+    let copyRegion = bufNew(56)
+    let r = structNew()
+    r = setField(r, "barrier", barrier)
+    r = setField(r, "copyRegion", copyRegion)
+    emit r
+}
+
+func _runPresent() {
+
+    let aux = _makeAuxiliaryBuffers()
+    let barrier = getField(aux, "barrier")
+    let copyRegion = getField(aux, "copyRegion")
     print("n0 window first")
     let app = chocSharedApp()
     msg_1(app, "setActivationPolicy:", 0)
@@ -20,7 +41,7 @@ just run {
     let raw = msg(cls("NSWindow"), "alloc")
     let win = msg_rect(raw, "initWithContentRect:styleMask:backing:defer:",
         0, 0, 640, 480, mask, 2, 0)
-    msg_1(win, "setTitle:", nsString("bisect"))
+    msg_1(win, "setTitle:", nsString("SmackUI over Vulkan"))
     let cv = msg(win, "contentView")
     chocShow(win, app)
     let layer = msg(msg(cls("CAMetalLayer"), "alloc"), "init")
@@ -212,6 +233,23 @@ just run {
     vkGetDeviceQueue(device, queueFamily, 0, pQueue)
     let queue = bufGetQwordAt(pQueue, 0)
     print("queue ok")
+
+    // ── SmackSurface scene + staging buffer ─────────────────────
+    let surf = smackSurface(curW, curH)
+    smackSurfaceClear(surf, colorRGB(16, 16, 48))
+    smackSurfaceFillRect(surf, 20, 20, 600, 440, colorRGB(120, 120, 120))
+    smackSurfaceFillRect(surf, 40, 40, 220, 160, colorRGB(255, 128, 0))
+    smackSurfaceFillRect(surf, 300, 120, 280, 200, colorRGB(0, 200, 100))
+    smackSurfaceFillRect(surf, 120, 300, 400, 120, colorRGB(200, 200, 200))
+    smackSurfaceFillRect(surf, 150, 330, 100, 60, colorRGB(220, 60, 60))
+    smackSurfaceStrokeRect(surf, 20, 20, 600, 440, colorRGB(255, 255, 255), 2)
+    let staging = smackVkStagingCreate(device, pDevice, curW * curH * 4)
+    if staging == "" { print("FAIL staging create"); exit("1") }
+    let stagingRc = getField(staging, "rc")
+    if stagingRc != 0 { print("FAIL staging rc=" + stagingRc); exit("1") }
+    let upRc = smackVkStagingUpload(staging, smackSurfaceBuffer(surf), curW * curH * 4)
+    if upRc != 1 { print("FAIL staging upload rc=" + upRc); exit("1") }
+    print("surface uploaded: " + (curW * curH * 4) + " bytes")
     // query swapchain images
     let pImgCount = bufNew(8)
     bufSetQwordAt(pImgCount, 0, 0)
@@ -262,7 +300,6 @@ just run {
     bufSetQwordAt(beginI, 24, 0)
     let rcCB = vkBeginCommandBuffer(cmd, beginI)
     print("n7 begin rc=" + rcCB)
-    let barrier = bufNew(128)
     bufSetQwordAt(barrier, 0, 45)
     bufSetQwordAt(barrier, 8, 0)
     bufSetQwordAt(barrier, 16, 0)
@@ -278,6 +315,11 @@ just run {
     bufSetByte(barrier, 60, 0)
     bufSetByte(barrier, 64, 1)
     print("n8 barrier built")
+    print("barrier[0]=" + bufGetByte(barrier, 0))
+    print("barrier[63]=" + bufGetByte(barrier, 63))
+    print("barrier[64]=" + bufGetByte(barrier, 64))
+    print("barrier[65]=" + bufGetByte(barrier, 65))
+    print("barrier[127]=" + bufGetByte(barrier, 127))
     // REAL image: use swapchain image 0 in the barrier
     bufSetQwordAt(barrier, 40, bufGetQwordAt(swapImages, 0))
     vkCmdPipelineBarrier(cmd,
@@ -285,20 +327,49 @@ just run {
         0, 0,
         0, 0,
         1, barrier)
-    // Clear to orange-ish via vkCmdClearColorImage
-    let color = bufNew(16)
-    bufSetDwordAt(color, 0, 1064514355)   // 0.95f
-    bufSetDwordAt(color, 4, 1057803469)   // 0.55f
-    bufSetDwordAt(color, 8, 1048576000)   // 0.25f
-    bufSetDwordAt(color, 12, 1065353216)  // 1.0f
-    let range = bufNew(20)
-    bufSetDwordAt(range, 0, 1)            // VK_IMAGE_ASPECT_COLOR_BIT
-    bufSetDwordAt(range, 4, 0)            // baseMipLevel
-    bufSetDwordAt(range, 8, 1)            // levelCount
-    bufSetDwordAt(range, 12, 0)           // baseArrayLayer
-    bufSetDwordAt(range, 16, 1)           // layerCount
-    vkCmdClearColorImage(cmd, bufGetQwordAt(swapImages, 0), 7, color, 1, range)
-    print("n9b clear survived")
+    // Copy SmackSurface pixels from the staging buffer into the swapchain image
+    bufSetQwordAt(copyRegion, 0, 0)        // bufferOffset
+    bufSetByte(copyRegion, 8, 0)           // bufferRowLength = 0 (tight)
+    bufSetByte(copyRegion, 9, 0)
+    bufSetByte(copyRegion, 10, 0)
+    bufSetByte(copyRegion, 11, 0)
+    bufSetByte(copyRegion, 12, 0)          // bufferImageHeight = 0 (tight)
+    bufSetByte(copyRegion, 13, 0)
+    bufSetByte(copyRegion, 14, 0)
+    bufSetByte(copyRegion, 15, 0)
+    bufSetByte(copyRegion, 16, 1)          // aspectMask = VK_IMAGE_ASPECT_COLOR_BIT
+    bufSetByte(copyRegion, 17, 0)
+    bufSetByte(copyRegion, 18, 0)
+    bufSetByte(copyRegion, 19, 0)
+    bufSetByte(copyRegion, 20, 0)          // mipLevel
+    bufSetByte(copyRegion, 21, 0)
+    bufSetByte(copyRegion, 22, 0)
+    bufSetByte(copyRegion, 23, 0)
+    bufSetByte(copyRegion, 24, 0)          // baseArrayLayer
+    bufSetByte(copyRegion, 25, 0)
+    bufSetByte(copyRegion, 26, 0)
+    bufSetByte(copyRegion, 27, 0)
+    bufSetByte(copyRegion, 28, 1)          // layerCount = 1
+    bufSetByte(copyRegion, 29, 0)
+    bufSetByte(copyRegion, 30, 0)
+    bufSetByte(copyRegion, 31, 0)
+    bufSetByte(copyRegion, 32, 0)          // imageOffset.x
+    bufSetByte(copyRegion, 33, 0)
+    bufSetByte(copyRegion, 34, 0)
+    bufSetByte(copyRegion, 35, 0)
+    bufSetByte(copyRegion, 36, 0)          // .y
+    bufSetByte(copyRegion, 37, 0)
+    bufSetByte(copyRegion, 38, 0)
+    bufSetByte(copyRegion, 39, 0)
+    bufSetByte(copyRegion, 40, 0)          // .z
+    bufSetByte(copyRegion, 41, 0)
+    bufSetByte(copyRegion, 42, 0)
+    bufSetByte(copyRegion, 43, 0)
+    bufSetDwordAt(copyRegion, 44, curW)    // extent.width
+    bufSetDwordAt(copyRegion, 48, curH)    // .height
+    bufSetDwordAt(copyRegion, 52, 1)       // .depth
+    vkCmdCopyBufferToImage(cmd, getField(staging, "buffer"), bufGetQwordAt(swapImages, 0), 7, 1, copyRegion)
+    print("n9b copy survived")
     // second barrier: TRANSFER_DST -> PRESENT_SRC
     bufSetDwordAt(barrier, 24, 7)         // oldLayout
     bufSetDwordAt(barrier, 28, 1000001002) // VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
@@ -355,4 +426,8 @@ just run {
         frames += 1
     }
     print("presented " + frames + " frames")
+}
+
+just run {
+    _runPresent()
 }
