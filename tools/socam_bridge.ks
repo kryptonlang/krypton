@@ -173,8 +173,10 @@ just run {
         let cortex = envOr("CORTEX_ROOT", root + "/../cortex")
         let home = envOr("HOME", "")
         let homeCortex = home + "/Documents/GitHub/cortex"
-        if shellRun("test -f " + q(cortex + "/cortex_wl.k")) != "0" && home != "" && shellRun("test -f " + q(homeCortex + "/cortex_wl.k")) == "0" {
-            cortex = homeCortex
+        let homeCortexLn = home + "/Documents/GitHub/cortex-linux"
+        if shellRun("test -f " + q(cortex + "/cortex_wl.k")) != "0" && home != "" {
+            if shellRun("test -f " + q(homeCortex + "/cortex_wl.k")) == "0" { cortex = homeCortex }
+            else if shellRun("test -f " + q(homeCortexLn + "/cortex_wl.k")) == "0" { cortex = homeCortexLn }
         }
         let mainK = cortex + "/cortex_wl.k"
         let srcRc = shellRun("test -f " + q(mainK))
