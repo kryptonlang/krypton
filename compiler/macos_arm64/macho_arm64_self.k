@@ -1103,6 +1103,14 @@ func arm64_str_imm(rt, rn, imm12_scaled) {
 func arm64_strb_imm(rt, rn, imm12) {
     emit hexDword(0x39000000 + (imm12 * 0x400) + (rn * 0x20) + rt)
 }
+// str Wt, [Xn, #imm12_scaled] (unsigned offset, 32-bit store) → 0xb9000000 | ...
+func arm64_strw_imm(rt, rn, imm12_scaled) {
+    emit hexDword((0xb900 * 0x10000 + 0x0) + (imm12_scaled * 0x400) + (rn * 0x20) + rt)
+}
+// strh Wt, [Xn, #imm12_scaled] (unsigned offset, 16-bit store) → 0x79000000 | ...
+func arm64_strh_imm(rt, rn, imm12_scaled) {
+    emit hexDword((0x7900 * 0x10000 + 0x0) + (imm12_scaled * 0x400) + (rn * 0x20) + rt)
+}
 // ldrb Wt, [Xn, Xm, LSL #0]  (register-offset byte load, 32-bit)
 func arm64_ldrb_reg(rt, rn, rm) {
     emit hexDword(0x38606800 + (rm * 0x10000) + (rn * 0x20) + rt)
@@ -2624,6 +2632,10 @@ func parseFullIR(ir) {
                         curOps = sbAppend(curOps, "BUILTIN_BUFSETQWORDAT\n")  nOps += 1
                     } else if bname == "bufSetByte" {
                         curOps = sbAppend(curOps, "BUILTIN_BUFSETBYTE\n")  nOps += 1
+                    } else if bname == "bufSetWordAt" {
+                        curOps = sbAppend(curOps, "BUILTIN_BUFSETWORDAT\n")  nOps += 1
+                    } else if bname == "bufSetDwordAt" {
+                        curOps = sbAppend(curOps, "BUILTIN_BUFSETDWORDAT\n")  nOps += 1
                     } else if bname == "bufGetByte" {
                         curOps = sbAppend(curOps, "BUILTIN_BUFGETBYTE\n")  nOps += 1
                     } else if bname == "bufGetWordAt" {
@@ -3111,6 +3123,8 @@ func opInstrCount(opTok) {
     if opTok == "BUILTIN_BUFGETQWORDAT" { emit 5 }   // pop off, pop buf, add, ldr, push
     if opTok == "BUILTIN_BUFSETQWORDAT" { emit 6 }   // pop val/off/buf, add, str, push val
     if opTok == "BUILTIN_BUFSETBYTE" { emit 6 }      // pop val/off/buf, add, strb, push val
+    if opTok == "BUILTIN_BUFSETWORDAT" { emit 6 }    // pop val/off/buf, add, strh, push val
+    if opTok == "BUILTIN_BUFSETDWORDAT" { emit 6 }   // pop val/off/buf, add, str w, push val
     if opTok == "BUILTIN_BUFGETBYTE" { emit 5 }      // pop off/buf, add, ldrb, push
     if opTok == "BUILTIN_BUFGETWORDAT" { emit 5 }    // pop off/buf, add, ldrh (u16 LE), push
     if opTok == "BUILTIN_BUFGETDWORDAT" { emit 5 }   // pop off/buf, add, ldr w (u32 LE), push
@@ -3713,6 +3727,24 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_pop_x0())                            // 2: x0 = buf
             s = sbAppend(s, arm64_add_xxx(0, 0, 1))                    // 3: x0 = buf+off
             s = sbAppend(s, arm64_strb_imm(2, 0, 0))                   // 4: byte [x0] = w2
+            s = sbAppend(s, arm64_push(2))                             // 5: return val
+            instrIdx = instrIdx + 6
+        } else if opTok == "BUILTIN_BUFSETWORDAT" {
+            // bufSetWordAt(buf, byteoff, val): store low u16 (LE) at buf+off. 6.
+            s = sbAppend(s, arm64_pop(2))                              // 0: x2 = val
+            s = sbAppend(s, arm64_pop(1))                              // 1: x1 = byteoff
+            s = sbAppend(s, arm64_pop_x0())                            // 2: x0 = buf
+            s = sbAppend(s, arm64_add_xxx(0, 0, 1))                    // 3: x0 = buf+off
+            s = sbAppend(s, arm64_strh_imm(2, 0, 0))                   // 4: word [x0] = w2
+            s = sbAppend(s, arm64_push(2))                             // 5: return val
+            instrIdx = instrIdx + 6
+        } else if opTok == "BUILTIN_BUFSETDWORDAT" {
+            // bufSetDwordAt(buf, byteoff, val): store low u32 (LE) at buf+off. 6.
+            s = sbAppend(s, arm64_pop(2))                              // 0: x2 = val
+            s = sbAppend(s, arm64_pop(1))                              // 1: x1 = byteoff
+            s = sbAppend(s, arm64_pop_x0())                            // 2: x0 = buf
+            s = sbAppend(s, arm64_add_xxx(0, 0, 1))                    // 3: x0 = buf+off
+            s = sbAppend(s, arm64_strw_imm(2, 0, 0))                   // 4: dword [x0] = w2
             s = sbAppend(s, arm64_push(2))                             // 5: return val
             instrIdx = instrIdx + 6
         } else if opTok == "BUILTIN_BUFGETBYTE" {
@@ -7162,18 +7194,36 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_pop_x0())
             instrIdx = instrIdx + 1
         } else if opTok == "END" {
-            if frame > 0 {
-                s = sbAppend(s, arm64_add_sp(frame))
+            if funcName(parsed, fIdx) == "__main__" {
+                if frame > 0 {
+                    s = sbAppend(s, arm64_add_sp(frame))
+                    instrIdx = instrIdx + 1
+                }
+                // Terminate directly with exit(0) instead of returning into the
+                // dyld exit trampoline: on current macOS dyld faults at exit for
+                // native arm64 images that exercised the bump allocator (heap is
+                // mmap'd either way), so skip the trampoline entirely. 3 instrs.
+                s = sbAppend(s, arm64_movz_x_imm(0, 0))
+                s = sbAppend(s, arm64_movz_x_imm(16, 1))   // SYS_exit
+                s = sbAppend(s, arm64_svc(0x80))
+                instrIdx = instrIdx + 3
+            } else {
+                // Non-main function with implicit fall-through (no terminating
+                // emit): emit the same epilogue as RETURN. The caller POPs the
+                // slot regardless of its contents, so an empty eval stack is
+                // fine. Previously this fell into SYS_exit(0), silently
+                // terminating the caller mid-statement — void Krypton
+                // functions never returned on macOS arm64.
+                s = sbAppend(s, arm64_pop_x0())
                 instrIdx = instrIdx + 1
+                if frame > 0 {
+                    s = sbAppend(s, arm64_add_sp(frame))
+                    instrIdx = instrIdx + 1
+                }
+                s = sbAppend(s, arm64_ldp_fp_lr_post16())
+                s = sbAppend(s, arm64_ret())
+                instrIdx = instrIdx + 2
             }
-            // Terminate directly with exit(0) instead of returning into the
-            // dyld exit trampoline: on current macOS dyld faults at exit for
-            // native arm64 images that exercised the bump allocator (heap is
-            // mmap'd either way), so skip the trampoline entirely. 3 instrs.
-            s = sbAppend(s, arm64_movz_x_imm(0, 0))
-            s = sbAppend(s, arm64_movz_x_imm(16, 1))   // SYS_exit
-            s = sbAppend(s, arm64_svc(0x80))
-            instrIdx = instrIdx + 3
         }
         oi += 1
     }
