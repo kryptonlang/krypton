@@ -4,6 +4,9 @@ All notable changes to the Krypton language and compiler.
 
 ## [Unreleased]
 
+- Linux x86_64: rebuilt the driver from current source and promoted the
+  Linux driver version constant to 2.4.6. macOS stays 2.5.0-alpha; Windows stays 2.3.0.
+
 - Check Objective-K callback arity, explicit annotations and known value
   types in returns, assignments and direct calls during frontend compilation.
 - Add multiple Objective-K protocol conformances and witness tables. Inherited

@@ -12,7 +12,7 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 ![Version](https://img.shields.io/badge/version-2.4.9-brightgreen)
 ![macOS](https://img.shields.io/badge/macOS-arm64%202.4.9-success)
-![Linux](https://img.shields.io/badge/Linux-x86__64%202.4.4-yellow)
+![Linux](https://img.shields.io/badge/Linux-x86__64%202.4.6-yellow)
 ![Windows](https://img.shields.io/badge/Windows-x86__64%202.3.0-orange)
   
 ## Objective-K On macOS 2.4.9
@@ -66,7 +66,7 @@ provides Developer ID-signed, notarized and stapled `.pkg`/`.tar.gz` files and
 SHA-256 checksums. Temporary installation and Gatekeeper checks pass. Install
 with `brew install t3m3d/krypton/krypton`, or use the signed installer. Existing
 Homebrew users can run `brew update && brew upgrade krypton`. This is Developer
-ID distribution, not an App Store submission. Linux remains 2.4.4; Windows 2.3.0.
+ID distribution, not an App Store submission. Linux remains 2.4.6; Windows 2.3.0.
 
 The native and Node.js URL-shortener apps now live in the separate
 [KryptLink repository](https://github.com/t3m3d/kryptlink).
@@ -237,12 +237,12 @@ run, imports, and self-host on macOS (arm64), Linux (x86-64), and Windows
 | Platform | Shipped version | Notes |
 |----------|-----------------|-------|
 | macOS arm64 | **2.4.9** | `.pkg`, tarball, or Homebrew. Includes `kweb`, `/usr/local/bin/kweb`, and `/Applications/Krypton/kweb.app`. |
-| Linux x86_64 | **2.4.4** | Prebuilt tarball -> `./install.sh`, or build from source. No C compiler. Self-hosting. Includes rebuilt `kcc` seed, driver, kweb, and aarch64 via `kcc --aarch64` cross-compile. |
+| Linux x86_64 | **2.4.6** | Prebuilt tarball -> `./install.sh`, or build from source. No C compiler. Self-hosting. Includes rebuilt `kcc` seed, driver, kweb, and aarch64 via `kcc --aarch64` cross-compile. |
 | Windows x86_64 | **2.3.0** | Inno Setup installer: `kcc.exe`/`kcc-bin.exe` driver/backend split, native `krypton_rt.dll`, `kr.exe` REPL, kweb, WASM, .k/.ks associations. |
 | **brain / VS Code / Antigravity ext.** | **2.4.8** | `krypton-language-2.4.8.vsix` on the 2.4.8 release. Objective-K highlighting, `print` snippets/completions, diagnostics, and outline. Bundles macOS arm64 `kls`; other platforms use an installed server. |
 
 macOS is on [`2.4.9`](https://github.com/t3m3d/krypton/releases/tag/v2.4.9).
-Linux is on [`2.4.4`](https://github.com/t3m3d/krypton/releases/tag/2.4.4).
+Linux carries [`2.4.6`](https://github.com/t3m3d/krypton/releases/tag/2.4.4) in-tree (last tagged release remains `2.4.4`).
 Windows stays on [`2.3.0`](https://github.com/t3m3d/krypton/releases/tag/2.3.0).
 The editor extension remains [2.4.8](https://github.com/t3m3d/krypton/releases/tag/v2.4.8),
 separate from the macOS compiler version.
