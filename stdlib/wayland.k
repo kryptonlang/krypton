@@ -78,6 +78,22 @@ func wlSync(fd, cbId) {
     emit 1
 }
 // wl_registry(registryId).bind(opcode 0): name, interface(string), version, new_id.
+
+// Find a global in the registry reply by interface name; returns the global's
+// id (name) or -1 if absent.
+func wlRegistryFind(b, n, iface) {
+    let off = 0
+    while off + 8 <= n {
+        let sz = wlSize(b, off)
+        if sz < 8 { emit -1 }
+        if wlObject(b, off) == 2 && wlOpcode(b, off) == 0 {
+            if wlReadStr(b, off + 12) == iface { emit wlU32(b, off + 8) }
+        }
+        off = off + sz
+    }
+    emit -1
+}
+
 func wlBind(fd, registryId, name, iface, version, newId) {
     let ilen = len(iface) + 1
     let padded = _wlPad4(ilen)
