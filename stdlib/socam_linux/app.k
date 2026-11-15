@@ -24,18 +24,18 @@ func socamLinuxAppConnect() {
     let XS  = 10
     let TOP = 11
     let app = structNew()
-    setField(app, "fd", fd)
-    setField(app, "reg", REG)
-    setField(app, "comp", COMP)
-    setField(app, "shm", SHM)
-    setField(app, "wm", WM)
-    setField(app, "seat", SEAT)
-    setField(app, "kb", KB)
-    setField(app, "ptr", PTR)
-    setField(app, "surf", SURF)
-    setField(app, "xs", XS)
-    setField(app, "top", TOP)
-    setField(app, "nextId", 12)
+    app = setField(app, "fd", fd)
+    app = setField(app, "reg", REG)
+    app = setField(app, "comp", COMP)
+    app = setField(app, "shm", SHM)
+    app = setField(app, "wm", WM)
+    app = setField(app, "seat", SEAT)
+    app = setField(app, "kb", KB)
+    app = setField(app, "ptr", PTR)
+    app = setField(app, "surf", SURF)
+    app = setField(app, "xs", XS)
+    app = setField(app, "top", TOP)
+    app = setField(app, "nextId", 12)
 
     wlGetRegistry(fd, REG)
     let rb = bufNew(8192)
@@ -44,16 +44,18 @@ func socamLinuxAppConnect() {
     let shmName = wlRegistryFind(rb, rn, "wl_shm")
     let xdgName = wlRegistryFind(rb, rn, "xdg_wm_base")
     let seatName = wlRegistryFind(rb, rn, "wl_seat")
-    if compName < 0 || shmName < 0 || xdgName < 0 || seatName < 0 {
+    if compName < 0 || shmName < 0 || xdgName < 0 {
         sockClose(fd)
         emit 0
     }
     wlBind(fd, REG, compName, "wl_compositor", 4, COMP)
     wlBind(fd, REG, shmName,  "wl_shm", 1, SHM)
     wlBind(fd, REG, xdgName,  "xdg_wm_base", 1, WM)
-    wlBind(fd, REG, seatName, "wl_seat", 5, SEAT)
-    wlGetKeyboard(fd, SEAT, KB)
-    wlGetPointer(fd, SEAT, PTR)
+    if seatName >= 0 {
+        wlBind(fd, REG, seatName, "wl_seat", 5, SEAT)
+        wlGetKeyboard(fd, SEAT, KB)
+        wlGetPointer(fd, SEAT, PTR)
+    }
     emit app
 }
 
@@ -61,8 +63,8 @@ func socamLinuxAppConnect() {
 func socamLinuxAppQuit(app) {
     let fd = getField(app, "fd")
     sockClose(fd)
-    setField(app, "closed", 1)
-    emit 0
+    app = setField(app, "closed", 1)
+    emit app
 }
 
 // Derive an appid from title — lowercase alnum/hyphen only.
@@ -94,7 +96,7 @@ func socamLinuxAppRepaint(app, win, surf) {
 
     let poolId = nextId
     let bufId = poolId + 1
-    setField(app, "nextId", nextId + 2)
+    app = setField(app, "nextId", nextId + 2)
 
     let m = memfdCreate(sz)
     let px = mmapShared(m, sz)

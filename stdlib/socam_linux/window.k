@@ -14,23 +14,23 @@ func socamLinuxWindowCreate(app, w, h, title) {
     let surf = nextId
     let xdgSurf = nextId + 1
     let topId = nextId + 2
-    setField(app, "nextId", nextId + 3)
+    app = setField(app, "nextId", nextId + 3)
 
     wlCreateSurface(fd, getField(app, "comp"), surf)
     wlGetXdgSurface(fd, getField(app, "wm"), xdgSurf, surf)
     wlGetToplevel(fd, xdgSurf, topId)
 
     let win = structNew()
-    setField(win, "fd", fd)
-    setField(win, "surf", surf)
-    setField(win, "xdgS", xdgSurf)
-    setField(win, "top", topId)
-    setField(win, "w", toInt(w))
-    setField(win, "h", toInt(h))
-    setField(win, "app", app)
-    setField(win, "title", title)
-    setField(win, "appid", appidOf(title))
-    setField(win, "closed", 0)
+    win = setField(win, "fd", fd)
+    win = setField(win, "surf", surf)
+    win = setField(win, "xdgS", xdgSurf)
+    win = setField(win, "top", topId)
+    win = setField(win, "w", toInt(w))
+    win = setField(win, "h", toInt(h))
+    win = setField(win, "app", app)
+    win = setField(win, "title", title)
+    win = setField(win, "appid", appidOf(title))
+    win = setField(win, "closed", 0)
 
     wlSetTitle(fd, topId, title)
     wlSetAppId(fd, topId, appidOf(title))
@@ -45,13 +45,13 @@ func socamLinuxWindowSetTitle(win, title) {
     let fd = getField(win, "fd")
     let top = getField(win, "top")
     wlSetTitle(fd, top, title)
-    setField(win, "title", title)
-    emit 1
+    win = setField(win, "title", title)
+    emit win
 }
 
 // Mark the window as closed.
 func socamLinuxWindowClose(win) {
     if win == 0 { emit 0 }
-    setField(win, "closed", 1)
-    emit 1
+    win = setField(win, "closed", 1)
+    emit win
 }

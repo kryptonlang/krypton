@@ -12,7 +12,7 @@ import "k:choc_macos"
 func socamAppShared() {
     let app = structNew()
     let ptr = chocSharedApp()
-    setField(app, "ptr", ptr)
+    app = setField(app, "ptr", ptr)
     emit app
 }
 func socamAppSetPolicy(app, policy) {

@@ -35,7 +35,7 @@ func chocSharedApp() { emit 1 }
 func chocQuit(win) {
     if win == "" { emit 1 }
     else {
-        setField(win, "quit", 1)
+        win = setField(win, "quit", 1)
         emit 1
     }
 }
@@ -76,10 +76,19 @@ func chocWindow(app, title, w, h) {
     wlGetRegistry(fd, REG)
     let rb = bufNew(8192)
     let rn = wlRecvInto(fd, rb, 8192)
-    wlBind(fd, REG, _wlFind(rb, rn, "wl_compositor"), "wl_compositor", 4, COMP)
-    wlBind(fd, REG, _wlFind(rb, rn, "wl_shm"), "wl_shm", 1, SHM)
-    wlBind(fd, REG, _wlFind(rb, rn, "xdg_wm_base"), "xdg_wm_base", 1, WM)
-    wlBind(fd, REG, _wlFind(rb, rn, "wl_seat"), "wl_seat", 5, SEAT)
+    let compName = wlRegistryFind(rb, rn, "wl_compositor")
+    let shmName = wlRegistryFind(rb, rn, "wl_shm")
+    let xdgName = wlRegistryFind(rb, rn, "xdg_wm_base")
+    let seatName = wlRegistryFind(rb, rn, "wl_seat")
+    if compName < 0 || shmName < 0 || xdgName < 0 {
+        print("refused: missing required globals"); exit("1")
+    }
+    wlBind(fd, REG, compName, "wl_compositor", 4, COMP)
+    wlBind(fd, REG, shmName, "wl_shm", 1, SHM)
+    wlBind(fd, REG, xdgName, "xdg_wm_base", 1, WM)
+    if seatName >= 0 {
+        wlBind(fd, REG, seatName, "wl_seat", 5, SEAT)
+    }
     wlGetKeyboard(fd, SEAT, KB)
     wlGetPointer(fd, SEAT, PTR)
     wlCreateSurface(fd, COMP, SURF)
@@ -193,7 +202,7 @@ func chocPresent(win) {
     }
     let pool = getField(win, "nextId")
     let buf = pool + 1
-    setField(win, "nextId", pool + 2)
+    win = setField(win, "nextId", pool + 2)
 
     let m = memfdCreate(sz)
     let px = mmapShared(m, sz)
@@ -212,10 +221,10 @@ func chocPresent(win) {
     wlDamage(fd, getField(win, "surf"), 0, 0, W, H)
     wlCommit(fd, getField(win, "surf"))
 
-    setField(win, "prevBuf", buf)
-    setField(win, "prevPool", pool)
-    setField(win, "prevMfd", m)
-    setField(win, "dirty", 0)
+    win = setField(win, "prevBuf", buf)
+    win = setField(win, "prevPool", pool)
+    win = setField(win, "prevMfd", m)
+    win = setField(win, "dirty", 0)
     emit 1
 }
 
@@ -232,10 +241,10 @@ func _chocDispatchEvent(win, eb, off, obj, op, sizeB) {
         let cw = wlU32(eb, off + 8)
         let chh = wlU32(eb, off + 12)
         if cw > 0 && chh > 0 {
-            setField(win, "w", cw)
-            setField(win, "h", chh)
+            win = setField(win, "w", cw)
+            win = setField(win, "h", chh)
         }
-        setField(win, "dirty", 1)
+        win = setField(win, "dirty", 1)
     }
     else if obj == getField(win, "kb") && op == 3 {
         let st = wlU32(eb, off + 20)
