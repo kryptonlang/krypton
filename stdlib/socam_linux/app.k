@@ -8,6 +8,8 @@ module socam_linux_app
 
 import "k:wayland"
 import "k:smack/compositor"
+import "k:socam_linux/delegate"
+import "k:socam_linux/events"
 
 // Connect and bind compositor/shm/xdg_wm_base/seat. Returns an app handle or 0.
 func socamLinuxAppConnect() {
@@ -60,20 +62,71 @@ func socamLinuxAppQuit(app) {
     emit app
 }
 
-// Pump the event queue once: pong server pings, ack the first
-// xdg_surface.configure. Returns 1 once a configure was acknowledged, 0 on a
-// dead connection. Blocks until the compositor speaks — call before the
-// first repaint; xdg-shell forbids attaching a buffer before the first
-// ack_configure.
-func socamLinuxAppDrain(app, win) {
+// Pump the event queue: pong server pings, ack xdg_surface configures, and
+// route every other event to the app's catch-all delegate (if set).
+// Returns 1 while the connection is still alive. Call this repeatedly (once
+// per frame, or in a blocking loop) — apps register their interest on the app
+// struct via socamLinuxOnEvent / socamLinuxSetDelegate.
+func socamLinuxAppPump(app) {
     let fd = getField(app, "fd")
+    let delegate = socamLinuxDelegate(app)
+    let delegateCtx = socamLinuxDelegateContext(app)
+
+    let eb = bufNew(8192)
+    let en = wlRecvInto(fd, eb, 8192)
+    if en <= 0 { emit 0 }
+    let off = 0
+    while off + 8 <= en {
+        let obj = wlObject(eb, off)
+        let op = wlOpcode(eb, off)
+        let s = wlSize(eb, off)
+        if s < 8 { off = en }
+        else {
+            let wm = getField(app, "wm")
+            if obj == wm && op == 0 {
+                wlPong(fd, wm, wlU32(eb, off + 8))
+                off = off + s
+                continue
+            }
+            let handler = socamLinuxEventHandler(app, obj, op)
+            if handler != 0 {
+                let ctx = socamLinuxEventContext(app, obj, op)
+                callPtr(handler, ctx, obj, op, off, s)
+            } else if delegate != 0 {
+                callPtr(delegate, delegateCtx, obj, op, off, s)
+            }
+            off = off + s
+        }
+        if off > en { off = en }
+    }
+    emit 1
+}
+
+// Thin legacy wrapper: wait for the first xdg_surface.configure and ack it.
+// Now based on socamLinuxAppPump by registering a one-shot configure handler
+// on the app for the correct xdg_surface object id, then running the pump.
+// Use socamLinuxOnEvent + socamLinuxAppPump directly in new code.
+func socamLinuxAppDrain(app, win) {
+    if win == 0 {
+        // no window context — drain everything and count configures acked
+        let tries = 0
+        let acked = 0
+        while tries < 32 && acked == 0 {
+            tries += 1
+            acked = socamLinuxAppPump(app)
+        }
+        emit acked
+    }
+    // window case: xdg_surface.configure handler is set by the window
     let acked = 0
+    let eb = bufNew(8192)
+    let fd = getField(app, "fd")
+    let nextId = getField(app, "nextId")
     let tries = 0
-    while acked == 0 && tries < 32 {
+    while tries < 32 && acked == 0 {
         tries += 1
-        let eb = bufNew(8192)
         let en = wlRecvInto(fd, eb, 8192)
-        if en <= 0 { sockClose(fd); emit 0 }
+        if en <= 0 { emit 0 }
         let off = 0
         while off + 8 <= en {
             let obj = wlObject(eb, off)
@@ -81,13 +134,16 @@ func socamLinuxAppDrain(app, win) {
             let s = wlSize(eb, off)
             if s < 8 { off = en }
             else {
-                if obj == getField(app, "wm") && op == 0 { wlPong(fd, obj, wlU32(eb, off + 8)) }
+                if obj == getField(app, "wm") && op == 0 {
+                    wlPong(fd, getField(app, "wm"), wlU32(eb, off + 8))
+                }
                 else if obj == getField(win, "xdgS") && op == 0 {
-                    wlAckConfigure(fd, obj, wlU32(eb, off + 8))
+                    wlAckConfigure(fd, getField(win, "xdgS"), wlU32(eb, off + 8))
                     acked = 1
                 }
                 off = off + s
             }
+            if off > en { off = en }
         }
     }
     emit acked

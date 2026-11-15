@@ -3595,6 +3595,7 @@ func opByteSize(op) {
     // PTY / fd / process builtins (stem terminal). Inline x86-64 syscalls, no C.
     // Counts MUST equal the emit blocks in emitFuncCode exactly (or offsets desync).
     if op == "BUILTIN_FDREAD"      { emit 43 }  // alloc n+1; read(fd,buf,n); NUL-term; return buf
+    if op == "BUILTIN_FDREADN"    { emit 13 }  // read(fd,buf,n); push nread directly
     if op == "BUILTIN_FDWRITE"     { emit 11 }  // write(fd,buf,len)=1  (== SOCKSEND)
     if op == "BUILTIN_FDCLOSE"     { emit 9 }   // close(fd)=3          (== SOCKCLOSE)
     if op == "BUILTIN_FDSETNB"     { emit 19 }  // fcntl(fd,F_SETFL,O_NONBLOCK)=72
@@ -3604,6 +3605,7 @@ func opByteSize(op) {
     if op == "BUILTIN_PTYMASTER"   { emit 53 }  // open(/dev/ptmx,O_RDWR|O_NOCTTY)+ioctl(TIOCSPTLCK)
     if op == "BUILTIN_PTYSLAVENAME"{ emit 73 }  // ioctl(TIOCGPTN); "/dev/pts/"+itoa(n)
     if op == "BUILTIN_PTYFORKEXEC" { emit 151 } // fork+setsid+open(slave)+TIOCSCTTY+dup2+execve
+    if op == "BUILTIN_IOCTL"       { emit 11 }  // ioctl(fd,req,argp): generic — termios/winsz/VT later
     if op == "POP"        { emit 1 }
     if op == "LABEL"      { emit 0 }
     if op == "JUMP"       { emit 5 }    // E9 + d32
@@ -3912,6 +3914,10 @@ func parseIR(ir) {
                     opSb = sbAppend(opSb, "BUILTIN_PTRADD")
                 } else if cname == "ptrEq" {
                     opSb = sbAppend(opSb, "BUILTIN_PTREQ")
+                } else if cname == "ioctl" {
+                    opSb = sbAppend(opSb, "BUILTIN_IOCTL")
+                } else if cname == "fdReadN" {
+                    opSb = sbAppend(opSb, "BUILTIN_FDREADN")
                 } else {
                     opSb = sbAppend(opSb, "CALL_FUNC " + rest)
                 }
@@ -4105,6 +4111,8 @@ func parseIR(ir) {
                     opSb = sbAppend(opSb, "BUILTIN_SHELLRUN")
                 } else if bname == "fdRead" {
                     opSb = sbAppend(opSb, "BUILTIN_FDREAD")
+                } else if bname == "fdReadN" {
+                    opSb = sbAppend(opSb, "BUILTIN_FDREADN")
                 } else if bname == "fdWrite" {
                     opSb = sbAppend(opSb, "BUILTIN_FDWRITE")
                 } else if bname == "fdClose" {
@@ -4123,6 +4131,8 @@ func parseIR(ir) {
                     opSb = sbAppend(opSb, "BUILTIN_PTYSLAVENAME")
                 } else if bname == "ptyForkExec" {
                     opSb = sbAppend(opSb, "BUILTIN_PTYFORKEXEC")
+                } else if bname == "ioctl" {
+                    opSb = sbAppend(opSb, "BUILTIN_IOCTL")
                 } else {
                     // Unknown builtin: emit a marker and leave the stack
                     // alone. Programs that hit this are already incorrect;
@@ -5222,6 +5232,15 @@ func emitFuncCode(opList, strVAddrs, argcount, localCount, labels, funcVAddrs, f
             let wbDisp = (krWritefileVAddr + 66) - (funcStartVAddr + off + 7)
             c = sbAppend(c, hexByte(0xE8) + hexDword(wbDisp))
             c = sbAppend(c, hexByte(0x50))
+        } else if op == "BUILTIN_FDREADN" {
+            // fdReadN(fd, buf, n) -> read(fd, buf, n); push nread. (13 bytes)
+            c = sbAppend(c, hexByte(0x5B))                  // pop rbx (n)
+            c = sbAppend(c, hexByte(0x5E))                  // pop rsi (buf)
+            c = sbAppend(c, hexByte(0x5F))                  // pop rdi (fd)
+            c = sbAppend(c, hexByte(0xB8) + hexDword(0))    // mov eax,0 (SYS_read)
+            c = sbAppend(c, hexByte(0x89) + hexByte(0xDA))  // mov edx,ebx (count)
+            c = sbAppend(c, hexByte(0x0F) + hexByte(0x05))  // syscall
+            c = sbAppend(c, hexByte(0x50))                  // push rax
         } else if op == "BUILTIN_FDWRITE" {
             // fdWrite(fd, buf, len) -> write(fd, buf, len)=1. TOS=len,buf,fd. (11 bytes)
             c = sbAppend(c, hexByte(0x5A))                  // pop rdx (len)
@@ -5262,6 +5281,14 @@ func emitFuncCode(opList, strVAddrs, argcount, localCount, labels, funcVAddrs, f
             c = sbAppend(c, hexByte(0xBE) + hexDword(4))    // mov esi,4 (F_SETFL)
             c = sbAppend(c, hexByte(0xBA) + hexDword(2048)) // mov edx,2048 (O_NONBLOCK)
             c = sbAppend(c, hexByte(0xB8) + hexDword(72))   // mov eax,72 (SYS_fcntl)
+            c = sbAppend(c, hexByte(0x0F) + hexByte(0x05))  // syscall
+            c = sbAppend(c, hexByte(0x50))                  // push rax
+        } else if op == "BUILTIN_IOCTL" {
+            // ioctl(fd, req, argp) -> syscall 16. TOS=argp, next=req, next=fd. (11 bytes)
+            c = sbAppend(c, hexByte(0x5A))                  // pop rdx (argp)
+            c = sbAppend(c, hexByte(0x5E))                  // pop rsi (req)
+            c = sbAppend(c, hexByte(0x5F))                  // pop rdi (fd)
+            c = sbAppend(c, hexByte(0xB8) + hexDword(16))   // mov eax,16 (SYS_ioctl)
             c = sbAppend(c, hexByte(0x0F) + hexByte(0x05))  // syscall
             c = sbAppend(c, hexByte(0x50))                  // push rax
         } else if op == "BUILTIN_SLEEPUS" {
