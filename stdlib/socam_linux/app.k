@@ -13,29 +13,13 @@ import "k:smack/compositor"
 func socamLinuxAppConnect() {
     let fd = wlConnect()
     if fd < 0 { emit 0 }
-    let REG = 2
-    let COMP = 3
-    let SHM = 4
-    let WM  = 5
-    let SEAT = 6
-    let KB  = 7
-    let PTR = 8
-    let SURF = 9
-    let XS  = 10
-    let TOP = 11
+    let REG = wlNewId()
     let app = structNew()
     app = setField(app, "fd", fd)
     app = setField(app, "reg", REG)
-    app = setField(app, "comp", COMP)
-    app = setField(app, "shm", SHM)
-    app = setField(app, "wm", WM)
-    app = setField(app, "seat", SEAT)
-    app = setField(app, "kb", KB)
-    app = setField(app, "ptr", PTR)
-    app = setField(app, "surf", SURF)
-    app = setField(app, "xs", XS)
-    app = setField(app, "top", TOP)
-    app = setField(app, "nextId", 12)
+    let COMP = wlNewId()
+    let SHM = wlNewId()
+    let WM  = wlNewId()
 
     wlGetRegistry(fd, REG)
     let rb = bufNew(8192)
@@ -48,10 +32,19 @@ func socamLinuxAppConnect() {
         sockClose(fd)
         emit 0
     }
+    app = setField(app, "comp", COMP)
+    app = setField(app, "shm", SHM)
+    app = setField(app, "wm", WM)
     wlBind(fd, REG, compName, "wl_compositor", 4, COMP)
     wlBind(fd, REG, shmName,  "wl_shm", 1, SHM)
     wlBind(fd, REG, xdgName,  "xdg_wm_base", 1, WM)
     if seatName >= 0 {
+        let SEAT = wlNewId()
+        let KB  = wlNewId()
+        let PTR = wlNewId()
+        app = setField(app, "seat", SEAT)
+        app = setField(app, "kb", KB)
+        app = setField(app, "ptr", PTR)
         wlBind(fd, REG, seatName, "wl_seat", 5, SEAT)
         wlGetKeyboard(fd, SEAT, KB)
         wlGetPointer(fd, SEAT, PTR)
@@ -65,6 +58,39 @@ func socamLinuxAppQuit(app) {
     sockClose(fd)
     app = setField(app, "closed", 1)
     emit app
+}
+
+// Pump the event queue once: pong server pings, ack the first
+// xdg_surface.configure. Returns 1 once a configure was acknowledged, 0 on a
+// dead connection. Blocks until the compositor speaks — call before the
+// first repaint; xdg-shell forbids attaching a buffer before the first
+// ack_configure.
+func socamLinuxAppDrain(app, win) {
+    let fd = getField(app, "fd")
+    let acked = 0
+    let tries = 0
+    while acked == 0 && tries < 32 {
+        tries += 1
+        let eb = bufNew(8192)
+        let en = wlRecvInto(fd, eb, 8192)
+        if en <= 0 { sockClose(fd); emit 0 }
+        let off = 0
+        while off + 8 <= en {
+            let obj = wlObject(eb, off)
+            let op = wlOpcode(eb, off)
+            let s = wlSize(eb, off)
+            if s < 8 { off = en }
+            else {
+                if obj == getField(app, "wm") && op == 0 { wlPong(fd, obj, wlU32(eb, off + 8)) }
+                else if obj == getField(win, "xdgS") && op == 0 {
+                    wlAckConfigure(fd, obj, wlU32(eb, off + 8))
+                    acked = 1
+                }
+                off = off + s
+            }
+        }
+    }
+    emit acked
 }
 
 // Derive an appid from title — lowercase alnum/hyphen only.
@@ -92,16 +118,14 @@ func socamLinuxAppRepaint(app, win, surf) {
     let wlSurf = getField(win, "surf")
     let stride = getField(win, "w") * 4
     let sz = stride * getField(win, "h")
-    let nextId = getField(app, "nextId")
 
-    let poolId = nextId
-    let bufId = poolId + 1
-    app = setField(app, "nextId", nextId + 2)
+    let poolId = wlNewId()
+    let bufId = wlNewId()
 
     let m = memfdCreate(sz)
     let px = mmapShared(m, sz)
     let src = smackSurfaceBuffer(surf)
-    if px == 0 || src == 0 { sockClose(m); emit 0 }
+    if px == "" || src == 0 { sockClose(m); emit 0 }
     let k = 0
     while k < sz {
         bufSetByte(px, k, bufGetByte(src, k))

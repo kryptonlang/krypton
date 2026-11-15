@@ -56,6 +56,18 @@ func wlSockPath() {
 }
 func wlConnect() { emit unixConnect(wlSockPath()) }
 
+// ── dense new_id allocator ─────────────────────────────────────────────────
+// Client-chosen object ids (new_id args) MUST be allocated sequentially with
+// no forward gaps, in creation order. Every caller that needs a fresh client
+// id MUST get it from wlNewId(); hardcoding ids or jumping ahead makes the
+// compositor reject the request ("not a valid new object id").
+let wlIdCursor = 2
+func wlNewId() {
+    let id = wlIdCursor
+    wlIdCursor = wlIdCursor + 1
+    emit id
+}
+
 // ── requests ───────────────────────────────────────────────────────────────
 // wl_display(1).get_registry(opcode 1): new_id registry.
 func wlGetRegistry(fd, registryId) {

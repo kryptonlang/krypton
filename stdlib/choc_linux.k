@@ -26,6 +26,17 @@ module choc_linux
 import "k:wayland"
 import "k:smack/compositor"
 
+// Single-window MVP state that must escape a single call frame: the Wayland
+// event loop polls these module-globals every iteration, because struct
+// handles passed by value cannot push an update back to the caller.
+let chocQuitFlag = 0
+let chocDirtyFlag = 1
+let chocOnKeyCb = 0
+let chocOnPointerCb = 0
+let chocPrevBuf = 0
+let chocPrevPool = 0
+let chocPrevMfd = 0
+
 // ── colors it needs ──────────────────────────────────────────────────
 func chocColor(r, g, b) { emit r * 65536 + g * 256 + b }
 
@@ -35,16 +46,17 @@ func chocSharedApp() { emit 1 }
 func chocQuit(win) {
     if win == "" { emit 1 }
     else {
-        win = setField(win, "quit", 1)
+        chocQuitFlag = 1
         emit 1
     }
 }
 func chocRun(win) {
     // Pump the Wayland loop until chocQuit(win) is set (or the server closes us).
-    while getField(win, "quit") != 1 {
+    chocQuitFlag = 0
+    while chocQuitFlag != 1 {
         let eb = bufNew(8192)
         let en = wlRecvInto(getField(win, "fd"), eb, 8192)
-        if en <= 0 { setField(win, "quit", 1) }
+        if en <= 0 { chocQuitFlag = 1 }
         if en > 0 {
             let off = 0
             while off + 8 <= en {
@@ -59,7 +71,7 @@ func chocRun(win) {
             }
         }
         // If the WM configured us (configure event marks dirty), re-present.
-        if getField(win, "dirty") == 1 { _chocPresentFrame(win) }
+        if chocDirtyFlag == 1 { chocDirtyFlag = 0; _chocPresentFrame(win) }
     }
     sockClose(getField(win, "fd"))
     emit 0
@@ -69,10 +81,7 @@ func chocRun(win) {
 func chocWindow(app, title, w, h) {
     let fd = wlConnect()
     if fd < 0 { print("connect failed"); exit(1) }
-    let REG = 2  let COMP = 3  let SHM = 4  let WM = 5  let SEAT = 6
-    let KB = 7   let PTR = 8   let SURF = 9 let XS = 10 let TOP = 11
-    let POOL = 12 let BUF = 13
-
+    let REG = wlNewId()
     wlGetRegistry(fd, REG)
     let rb = bufNew(8192)
     let rn = wlRecvInto(fd, rb, 8192)
@@ -83,14 +92,26 @@ func chocWindow(app, title, w, h) {
     if compName < 0 || shmName < 0 || xdgName < 0 {
         print("refused: missing required globals"); exit("1")
     }
+    let COMP = wlNewId()
+    let SHM = wlNewId()
+    let WM = wlNewId()
+    let SEAT = 0
+    let KB  = 0
+    let PTR = 0
     wlBind(fd, REG, compName, "wl_compositor", 4, COMP)
     wlBind(fd, REG, shmName, "wl_shm", 1, SHM)
     wlBind(fd, REG, xdgName, "xdg_wm_base", 1, WM)
     if seatName >= 0 {
+        SEAT = wlNewId()
+        KB = wlNewId()
+        PTR = wlNewId()
         wlBind(fd, REG, seatName, "wl_seat", 5, SEAT)
+        wlGetKeyboard(fd, SEAT, KB)
+        wlGetPointer(fd, SEAT, PTR)
     }
-    wlGetKeyboard(fd, SEAT, KB)
-    wlGetPointer(fd, SEAT, PTR)
+    let SURF = wlNewId()
+    let XS = wlNewId()
+    let TOP = wlNewId()
     wlCreateSurface(fd, COMP, SURF)
     wlGetXdgSurface(fd, WM, XS, SURF)
     wlGetToplevel(fd, XS, TOP)
@@ -111,18 +132,9 @@ func chocWindow(app, title, w, h) {
     state = setField(state, "wm", WM)
     state = setField(state, "kb", KB)
     state = setField(state, "ptr", PTR)
-    state = setField(state, "pool", POOL)
-    state = setField(state, "buf", BUF)
-    state = setField(state, "nextId", 14)
     state = setField(state, "smack", smack)
     state = setField(state, "font", font)
-    state = setField(state, "quit", 0)
-    state = setField(state, "dirty", 1)
-    state = setField(state, "onKey", 0)
-    state = setField(state, "onPointer", 0)
-    state = setField(state, "prevBuf", 0)
-    state = setField(state, "prevPool", 0)
-    state = setField(state, "prevMfd", 0)
+    chocDirtyFlag = 1
     emit state
 }
 
@@ -195,14 +207,13 @@ func chocPresent(win) {
     let sz = stride * H
 
     // free the previous frame
-    if getField(win, "prevBuf") != 0 {
-        wlBufferDestroy(fd, getField(win, "prevBuf"))
-        wlPoolDestroy(fd, getField(win, "prevPool"))
-        sockClose(getField(win, "prevMfd"))
+    if chocPrevBuf != 0 {
+        wlBufferDestroy(fd, chocPrevBuf)
+        wlPoolDestroy(fd, chocPrevPool)
+        sockClose(chocPrevMfd)
     }
-    let pool = getField(win, "nextId")
-    let buf = pool + 1
-    win = setField(win, "nextId", pool + 2)
+    let pool = wlNewId()
+    let buf = wlNewId()
 
     let m = memfdCreate(sz)
     let px = mmapShared(m, sz)
@@ -221,10 +232,9 @@ func chocPresent(win) {
     wlDamage(fd, getField(win, "surf"), 0, 0, W, H)
     wlCommit(fd, getField(win, "surf"))
 
-    win = setField(win, "prevBuf", buf)
-    win = setField(win, "prevPool", pool)
-    win = setField(win, "prevMfd", m)
-    win = setField(win, "dirty", 0)
+    chocPrevBuf = buf
+    chocPrevPool = pool
+    chocPrevMfd = m
     emit 1
 }
 
@@ -236,7 +246,7 @@ func _chocDispatchEvent(win, eb, off, obj, op, sizeB) {
     let fd = getField(win, "fd")
     let wm = getField(win, "wm")
     if obj == wm && op == 0 { wlPong(fd, wm, wlU32(eb, off + 8)) }
-    else if obj == getField(win, "xdg") && op == 0 { wlAckConfigure(fd, getField(win, "xdg"), wlU32(eb, off + 8)); setField(win, "dirty", 1) }
+    else if obj == getField(win, "xdg") && op == 0 { wlAckConfigure(fd, getField(win, "xdg"), wlU32(eb, off + 8)); chocDirtyFlag = 1 }
     else if obj == getField(win, "top") && op == 0 {
         let cw = wlU32(eb, off + 8)
         let chh = wlU32(eb, off + 12)
@@ -244,28 +254,26 @@ func _chocDispatchEvent(win, eb, off, obj, op, sizeB) {
             win = setField(win, "w", cw)
             win = setField(win, "h", chh)
         }
-        win = setField(win, "dirty", 1)
+        chocDirtyFlag = 1
     }
     else if obj == getField(win, "kb") && op == 3 {
         let st = wlU32(eb, off + 20)
         if st == 1 {
-            let cb = getField(win, "onKey")
-            if cb != 0 {
-                callPtr(cb, wlU32(eb, off + 16), wlU32(eb, off + 24))
+            if chocOnKeyCb != 0 {
+                callPtr(chocOnKeyCb, wlU32(eb, off + 16), wlU32(eb, off + 24))
             }
         }
     }
     else if obj == getField(win, "ptr") && op == 1 {
         let fx = wlU32(eb, off + 16)
         let fy = wlU32(eb, off + 24)
-        let cb = getField(win, "onPointer")
-        if cb != 0 { callPtr(cb, fx / 256, fy / 256) }
+        if chocOnPointerCb != 0 { callPtr(chocOnPointerCb, fx / 256, fy / 256) }
     }
     else if obj == 1 && op == 0 { print("wl error code=" + wlU32(eb, off + 12)) }
 }
 
-func chocOnKey(win, fnPtr) { setField(win, "onKey", toInt(fnPtr)); emit 1 }
-func chocOnPointer(win, fnPtr) { setField(win, "onPointer", toInt(fnPtr)); emit 1 }
+func chocOnKey(win, fnPtr) { chocOnKeyCb = toInt(fnPtr); emit 1 }
+func chocOnPointer(win, fnPtr) { chocOnPointerCb = toInt(fnPtr); emit 1 }
 
 // Single command: pump one event batch; returns 1 if a frame was presented.
 func chocPumpEvents(win) {
@@ -288,7 +296,7 @@ func chocPumpEvents(win) {
             }
         }
     }
-    if getField(win, "dirty") == 1 { _chocPresentFrame(win) }
+    if chocDirtyFlag == 1 { chocDirtyFlag = 0; _chocPresentFrame(win) }
     emit any
 }
 

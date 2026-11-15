@@ -27,6 +27,11 @@ just run {
     smackSurfaceFillRect(surf, 40, 40, 220, 160, colorRGB(31, 164, 99))
     smackSurfaceFillRect(surf, 80, 80, 140, 80, colorRGB(255, 128, 0))
 
+    let ackd = socamLinuxAppDrain(app, win)
+    if ackd == 0 {
+        print("no configure from compositor")
+        exit("1")
+    }
     socamLinuxAppRepaint(app, win, surf)
     print("socam_linux_demo: ok")
     exit("0")
