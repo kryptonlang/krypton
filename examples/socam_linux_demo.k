@@ -32,7 +32,11 @@ just run {
         print("no configure from compositor")
         exit("1")
     }
-    socamLinuxAppRepaint(app, win, surf)
+    let shown = socamLinuxAppRepaint(app, win, surf)
+    if shown == 0 {
+        print("repaint failed")
+        exit("1")
+    }
     print("socam_linux_demo: ok")
     exit("0")
 }

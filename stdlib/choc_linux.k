@@ -216,9 +216,8 @@ func chocPresent(win) {
     let buf = wlNewId()
 
     let m = memfdCreate(sz)
+    if m < 0 { print("choc_linux: memfdCreate failed"); exit("1") }
     let px = mmapShared(m, sz)
-    if px == "" { print("choc_linux: mmapShared failed"); exit("1") }
-    // copy SmackSurface pixels (RGBA byte order) into the shared pool
     let sb = smackSurfaceBuffer(smack)
     let i = 0
     while i < sz {

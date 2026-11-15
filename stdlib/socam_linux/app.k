@@ -123,9 +123,9 @@ func socamLinuxAppRepaint(app, win, surf) {
     let bufId = wlNewId()
 
     let m = memfdCreate(sz)
+    if m < 0 { sockClose(m); emit 0 }
     let px = mmapShared(m, sz)
     let src = smackSurfaceBuffer(surf)
-    if px == "" || src == 0 { sockClose(m); emit 0 }
     let k = 0
     while k < sz {
         bufSetByte(px, k, bufGetByte(src, k))

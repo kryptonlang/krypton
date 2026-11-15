@@ -8,7 +8,11 @@
 // exits. Exists as a build/link-time regression check for k:choc_linux, not as
 // an interactive app. Without a Wayland compositor (headless/CI) it prints
 // "connect failed" and exits 1, which is the expected smoke-test outcome.
+// NOTE: k:smack/geometry is imported directly (as in k:socam_linux demos) —
+// the Linux ELF frontend only processes transitive imports one level deep, so
+// geometry (where colorRGB lives) would otherwise go missing from the IR.
 import "k:choc_linux"
+import "k:smack/geometry"
 
 just run {
     let app = chocSharedApp()
