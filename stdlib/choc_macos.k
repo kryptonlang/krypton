@@ -4,6 +4,7 @@
 module choc_macos
 
 import "k:objc"
+import "k:objk"
 
 func chocInit() {
     let app = msg(cls("NSApplication"), "sharedApplication")
@@ -18,7 +19,7 @@ func chocQuit(app) { msg_1(app, "terminate:", app)  emit "1" }
 
 func chocWindow(app, title, w, h) {
     let mask = 15                                 // Titled|Closable|Miniaturizable|Resizable
-    let raw = msg(cls("NSWindow"), "alloc")
+    let raw = msg(okCls("NSWindow"), "alloc")
     let win = msg_rect(raw, "initWithContentRect:styleMask:backing:defer:",
         0, 0, w, h, mask, 2, 0)                   // backing = NSBackingStoreBuffered (2)
     msg_1(win, "setTitle:", nsString(title))
