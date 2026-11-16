@@ -71,3 +71,6 @@ docs/objk_*_followup.md
 # Generated WASM example output
 /hello.wasm
 /examples/wasm/*.wasm
+scripts/release.sh
+scripts/build_tarball_linux.sh
+scripts/build_tarball_linux.sh
