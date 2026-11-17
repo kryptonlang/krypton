@@ -10,9 +10,11 @@ import "k:socam_linux/app"
 func socamLinuxWindowCreate(app, w, h, title) {
     if app == 0 { emit 0 }
     let fd = getField(app, "fd")
-    let surf = wlNewId()
-    let xdgSurf = wlNewId()
-    let topId = wlNewId()
+    let nextId = getField(app, "nextId")
+    if nextId == 0 { nextId = 2 }
+    let surf = nextId
+    let xdgSurf = nextId + 1
+    let topId = nextId + 2
 
     wlCreateSurface(fd, getField(app, "comp"), surf)
     wlGetXdgSurface(fd, getField(app, "wm"), xdgSurf, surf)
@@ -29,6 +31,10 @@ func socamLinuxWindowCreate(app, w, h, title) {
     win = setField(win, "title", title)
     win = setField(win, "appid", appidOf(title))
     win = setField(win, "closed", 0)
+    win = setField(win, "nextId", nextId + 3)
+    win = setField(win, "prevBuf", 0)
+    win = setField(win, "prevPool", 0)
+    win = setField(win, "prevMfd", 0)
 
     wlSetTitle(fd, topId, title)
     wlSetAppId(fd, topId, appidOf(title))

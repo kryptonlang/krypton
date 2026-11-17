@@ -104,7 +104,9 @@ RME
 find "$ROOT" -type f \( -name elf_host -o -name "kcc-*" -o -name "kcc_*" \) -exec touch {} +
 sleep 1; find "$ROOT" -type f \( -name elf_host -o -name "kcc-*" -o -name "kcc_*" \) -exec touch {} +
 
-mkdir -p releases
 OUT="releases/${NAME}.tar.gz"
+mkdir -p releases
 tar -czf "$OUT" -C "$STAGE" "$NAME"
+sha256sum "$OUT" > "$OUT.sha256"
 echo "wrote $OUT ($(du -h "$OUT" | cut -f1))"
+echo "wrote $OUT.sha256"

@@ -12,20 +12,35 @@ import "k:socam_linux/delegate"
 import "k:socam_linux/events"
 
 // Connect and bind compositor/shm/xdg_wm_base/seat. Returns an app handle or 0.
+// The app struct carries "nextId" — its Wayland object id counter. Module-
+// level `let` state does not persist across imports in Krypton, so all
+// allocations flow through this struct (each caller gets a fresh handle via
+// the return value).
 func socamLinuxAppConnect() {
     let fd = wlConnect()
     if fd < 0 { emit 0 }
-    let REG = wlNewId()
     let app = structNew()
     app = setField(app, "fd", fd)
+    let nextId = 2
+    let REG = nextId
+    nextId = nextId + 1
     app = setField(app, "reg", REG)
-    let COMP = wlNewId()
-    let SHM = wlNewId()
-    let WM  = wlNewId()
+    let COMP = nextId
+    nextId = nextId + 1
+    let SHM = nextId
+    nextId = nextId + 1
+    let WM = nextId
+    nextId = nextId + 1
 
     wlGetRegistry(fd, REG)
     let rb = bufNew(8192)
-    let rn = wlRecvInto(fd, rb, 8192)
+    let SYNCB = nextId
+    nextId = nextId + 1
+    let rn = wlSyncRegistry(fd, SYNCB, rb, 8192)
+    if rn < 0 {
+        sockClose(fd)
+        emit 0
+    }
     let compName = wlRegistryFind(rb, rn, "wl_compositor")
     let shmName = wlRegistryFind(rb, rn, "wl_shm")
     let xdgName = wlRegistryFind(rb, rn, "xdg_wm_base")
@@ -41,9 +56,12 @@ func socamLinuxAppConnect() {
     wlBind(fd, REG, shmName,  "wl_shm", 1, SHM)
     wlBind(fd, REG, xdgName,  "xdg_wm_base", 1, WM)
     if seatName >= 0 {
-        let SEAT = wlNewId()
-        let KB  = wlNewId()
-        let PTR = wlNewId()
+        let SEAT = nextId
+        nextId = nextId + 1
+        let KB = nextId
+        nextId = nextId + 1
+        let PTR = nextId
+        nextId = nextId + 1
         app = setField(app, "seat", SEAT)
         app = setField(app, "kb", KB)
         app = setField(app, "ptr", PTR)
@@ -51,6 +69,7 @@ func socamLinuxAppConnect() {
         wlGetKeyboard(fd, SEAT, KB)
         wlGetPointer(fd, SEAT, PTR)
     }
+    app = setField(app, "nextId", nextId)
     emit app
 }
 
@@ -167,6 +186,9 @@ func appidOf(title) {
 
 // Commit a window surface by allocating a wlbuffer backed by the smack
 // surface pixels. If the caller passes a nil surface this is a no-op.
+// Per-frame bookkeeping (nextId / prevBuf / prevPool / prevMfd) lives in the
+// WIN struct — module-level `let` state does not persist across imports.
+// Emits the updated win (caller must reassign), or 0 on failure.
 func socamLinuxAppRepaint(app, win, surf) {
     if win == 0 || surf == 0 { emit 0 }
     let fd = getField(app, "fd")
@@ -175,8 +197,18 @@ func socamLinuxAppRepaint(app, win, surf) {
     let stride = getField(win, "w") * 4
     let sz = stride * getField(win, "h")
 
-    let poolId = wlNewId()
-    let bufId = wlNewId()
+    let nextId = getField(win, "nextId")
+    if nextId == 0 { nextId = 100 }
+    let poolId = nextId
+    let bufId = nextId + 1
+    win = setField(win, "nextId", nextId + 2)
+
+    let prevBuf = getField(win, "prevBuf")
+    if prevBuf != 0 {
+        wlBufferDestroy(fd, prevBuf)
+        wlPoolDestroy(fd, getField(win, "prevPool"))
+        sockClose(getField(win, "prevMfd"))
+    }
 
     let m = memfdCreate(sz)
     if m < 0 { sockClose(m); emit 0 }
@@ -194,6 +226,8 @@ func socamLinuxAppRepaint(app, win, surf) {
     wlDamage(fd, wlSurf, 0, 0, getField(win, "w"), getField(win, "h"))
     wlCommit(fd, wlSurf)
 
-    sockClose(m)
-    emit 1
+    win = setField(win, "prevBuf", bufId)
+    win = setField(win, "prevPool", poolId)
+    win = setField(win, "prevMfd", m)
+    emit win
 }

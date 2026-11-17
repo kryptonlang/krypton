@@ -5,6 +5,31 @@
 
 module objk_runtime
 
+// Linux (and possibly other) native backends ship bufSetQwordAt/bufGetQwordAt
+// as stubs — the store never lands and reads return garbage (verified on the
+// 2.4.6 Linux x86_64 backend, 2026-11-17). The Objective-K arena is built on
+// qwords, so the runtime packs/unpacks them byte-wise instead (LE), which
+// works everywhere. Handles and sizes stay far below 2^53.
+func okKPutQ(b, off, v) {
+    let i = 0
+    let r = v
+    while i < 8 {
+        bufSetByte(b, off + i, r - r / 256 * 256)
+        r = r / 256
+        i += 1
+    }
+    emit 1
+}
+func okKGetQ(b, off) {
+    let v = 0
+    let i = 7
+    while i >= 0 {
+        v = v * 256 + bufGetByte(b, off + i)
+        i -= 1
+    }
+    emit v
+}
+
 func okKFail(message) {
     print("Objective-K: " + message)
     exit("1")
@@ -13,56 +38,56 @@ func okKFail(message) {
 func okKRuntime(capacity) {
     if capacity < 64 || capacity > 1048576 { okKFail("arena capacity out of range") }
     let runtime = bufNew(capacity)
-    bufSetQwordAt(runtime, 0, capacity)
-    bufSetQwordAt(runtime, 8, 32)
-    bufSetQwordAt(runtime, 16, 24)
+    okKPutQ(runtime, 0, capacity)
+    okKPutQ(runtime, 8, 32)
+    okKPutQ(runtime, 16, 24)
     emit runtime
 }
 
 func okKAllocate(runtime, bytes) {
-    let used = bufGetQwordAt(runtime, 8)
+    let used = okKGetQ(runtime, 8)
     let size = ((bytes + 7) / 8) * 8 + 16
     let cursor = 32
     while cursor < used {
-        if bufGetQwordAt(runtime, cursor + 16) == 0 {
-            let next = cursor + bufGetQwordAt(runtime, cursor)
-            while next < used && bufGetQwordAt(runtime, next + 16) == 0 {
-                bufSetQwordAt(runtime, cursor, bufGetQwordAt(runtime, cursor) + bufGetQwordAt(runtime, next))
-                next = cursor + bufGetQwordAt(runtime, cursor)
+        if okKGetQ(runtime, cursor + 16) == 0 {
+            let next = cursor + okKGetQ(runtime, cursor)
+            while next < used && okKGetQ(runtime, next + 16) == 0 {
+                okKPutQ(runtime, cursor, okKGetQ(runtime, cursor) + okKGetQ(runtime, next))
+                next = cursor + okKGetQ(runtime, cursor)
             }
-            let available = bufGetQwordAt(runtime, cursor)
+            let available = okKGetQ(runtime, cursor)
             if available >= size {
                 if available - size >= 24 {
                     let remainder = cursor + size
-                    bufSetQwordAt(runtime, remainder, available - size)
-                    bufSetQwordAt(runtime, remainder + 8, 0)
-                    bufSetQwordAt(runtime, remainder + 16, 0)
-                    bufSetQwordAt(runtime, cursor, size)
+                    okKPutQ(runtime, remainder, available - size)
+                    okKPutQ(runtime, remainder + 8, 0)
+                    okKPutQ(runtime, remainder + 16, 0)
+                    okKPutQ(runtime, cursor, size)
                 }
                 break
             }
         }
-        cursor += bufGetQwordAt(runtime, cursor)
+        cursor += okKGetQ(runtime, cursor)
     }
     if cursor == used {
-        if cursor + size > bufGetQwordAt(runtime, 0) { okKFail("arena full") }
-        bufSetQwordAt(runtime, cursor, size)
-        bufSetQwordAt(runtime, 8, cursor + size)
+        if cursor + size > okKGetQ(runtime, 0) { okKFail("arena full") }
+        okKPutQ(runtime, cursor, size)
+        okKPutQ(runtime, 8, cursor + size)
     }
-    let handle = bufGetQwordAt(runtime, 16)
+    let handle = okKGetQ(runtime, 16)
     if handle > 999999984 { okKFail("handle ID exhausted") }
-    bufSetQwordAt(runtime, 16, handle + 16)
-    bufSetQwordAt(runtime, cursor + 8, handle)
-    bufSetQwordAt(runtime, cursor + 16, 6)
+    okKPutQ(runtime, 16, handle + 16)
+    okKPutQ(runtime, cursor + 8, handle)
+    okKPutQ(runtime, cursor + 16, 6)
     emit handle
 }
 
 func okKLookup(runtime, handle) {
-    if handle < 24 || handle >= bufGetQwordAt(runtime, 16) || handle % 16 != 8 { okKFail("invalid handle") }
+    if handle < 24 || handle >= okKGetQ(runtime, 16) || handle % 16 != 8 { okKFail("invalid handle") }
     let cursor = 32
-    while cursor < bufGetQwordAt(runtime, 8) {
-        if bufGetQwordAt(runtime, cursor + 8) == handle && bufGetQwordAt(runtime, cursor + 16) != 0 { emit cursor + 16 }
-        cursor += bufGetQwordAt(runtime, cursor)
+    while cursor < okKGetQ(runtime, 8) {
+        if okKGetQ(runtime, cursor + 8) == handle && okKGetQ(runtime, cursor + 16) != 0 { emit cursor + 16 }
+        cursor += okKGetQ(runtime, cursor)
     }
     emit 0
 }
@@ -74,11 +99,11 @@ func okKOffset(runtime, handle) {
 }
 
 func okKRead(runtime, handle, offset) {
-    emit bufGetQwordAt(runtime, okKOffset(runtime, handle) + offset)
+    emit okKGetQ(runtime, okKOffset(runtime, handle) + offset)
 }
 
 func okKWrite(runtime, handle, offset, value) {
-    bufSetQwordAt(runtime, okKOffset(runtime, handle) + offset, value)
+    okKPutQ(runtime, okKOffset(runtime, handle) + offset, value)
 }
 
 func okKRequire(runtime, handle, kind) {
@@ -87,19 +112,19 @@ func okKRequire(runtime, handle, kind) {
 }
 
 func doKFree(runtime, handle) {
-    bufSetQwordAt(runtime, okKOffset(runtime, handle), 0)
+    okKPutQ(runtime, okKOffset(runtime, handle), 0)
     let cursor = 32
     let freeTail = 0
-    let used = bufGetQwordAt(runtime, 8)
+    let used = okKGetQ(runtime, 8)
     while cursor < used {
-        if bufGetQwordAt(runtime, cursor + 16) == 0 {
+        if okKGetQ(runtime, cursor + 16) == 0 {
             if freeTail == 0 { freeTail = cursor }
         } else {
             freeTail = 0
         }
-        cursor += bufGetQwordAt(runtime, cursor)
+        cursor += okKGetQ(runtime, cursor)
     }
-    if freeTail != 0 { bufSetQwordAt(runtime, 8, freeTail) }
+    if freeTail != 0 { okKPutQ(runtime, 8, freeTail) }
 }
 
 // Record layouts: class {kind,parent,name,methods,sealed,cleanup,protocols}; method
@@ -1017,13 +1042,13 @@ func objkAllocClass(name) {
 // Find a registered/pending class by name by walking arena block headers.
 // Handles are virtual (not memory offsets); read them from the block headers.
 func objkClassNamed(runtime, name) {
-    let used = bufGetQwordAt(runtime, 8)
+    let used = okKGetQ(runtime, 8)
     let cursor = 32
     while cursor < used {
-        let size = bufGetQwordAt(runtime, cursor)
-        let kind = bufGetQwordAt(runtime, cursor + 16)
+        let size = okKGetQ(runtime, cursor)
+        let kind = okKGetQ(runtime, cursor + 16)
         if kind == 1 {
-            let handle = bufGetQwordAt(runtime, cursor + 8)
+            let handle = okKGetQ(runtime, cursor + 8)
             if okKTextEquals(runtime, okKRead(runtime, handle, 16), name) { emit handle }
         }
         if size == 0 { emit 0 }

@@ -74,3 +74,4 @@ docs/objk_*_followup.md
 scripts/release.sh
 scripts/build_tarball_linux.sh
 scripts/build_tarball_linux.sh
+scripts/build_tarball_linux.sh

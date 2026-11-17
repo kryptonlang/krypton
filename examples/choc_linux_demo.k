@@ -23,7 +23,7 @@ just run {
     chocStrokeRect(win, 40, 60, 220, 90, colorRGB(56, 206, 132), 2)
     chocDrawText(win, 58, 100, "pure Krypton", colorRGB(232, 232, 235))
     chocDrawText(win, 40, 30, "k:choc_linux - Wayland + SmackUI", colorRGB(136, 144, 153))
-    chocPumpEvents(win)                                       // ack_configure + present
-    chocPresent(win)
+    win = chocPumpEvents(win)                              // ack_configure + present
+    win = chocPresent(win)
     print("choc-linux-demo ready")
 }

@@ -45,7 +45,43 @@ func _wlPad4(n) {
     emit p
 }
 
-// ── connect ──────────────────────────────────────────────────────────────
+// ── registry handshake ──────────────────────────────────────────────
+// The Wayland globals list is NOT atomic on the wire: a compositor may
+// deliver wl_registry.global events in several TCP packets, and a client
+// that reads a single recv() can see only the first global (and then try to
+// bind to a name it never received). Every real client waits for
+// wl_display.sync to complete before touching globals. This helper does
+// exactly that: it sends sync with `syncId` and accumulates EVERYTHING the
+// compositor sends until the callback's done event arrives.
+// Returns the byte count accumulated in rb, or -1 on connection failure.
+func wlSyncRegistry(fd, syncId, rb, maxlen) {
+    wlSync(fd, syncId)
+    let used = 0
+    let gotAll = 0
+    while gotAll == 0 {
+        let chunk = bufNew(8192)
+        let n = wlRecvInto(fd, chunk, 8192)
+        if n <= 0 { emit 0 - 1 }
+        let i = 0
+        while i < n { bufSetByte(rb, used + i, bufGetByte(chunk, i))  i += 1 }
+        used += n
+        if used > maxlen { emit 0 - 1 }
+        let off = 0
+        while off + 8 <= used && gotAll == 0 {
+            let mobj = wlObject(rb, off)
+            let mop = wlOpcode(rb, off)
+            let msz = wlSize(rb, off)
+            if msz < 8 { off = used }
+            else {
+                if mobj == syncId && mop == 0 { gotAll = 1 }
+                off = off + msz
+            }
+        }
+    }
+    emit used
+}
+
+
 func wlSockPath() {
     let disp = environ("WAYLAND_DISPLAY")
     if disp == "" { disp = "wayland-0" }
@@ -56,17 +92,20 @@ func wlSockPath() {
 }
 func wlConnect() { emit unixConnect(wlSockPath()) }
 
-// ── dense new_id allocator ─────────────────────────────────────────────────
-// Client-chosen object ids (new_id args) MUST be allocated sequentially with
-// no forward gaps, in creation order. Every caller that needs a fresh client
-// id MUST get it from wlNewId(); hardcoding ids or jumping ahead makes the
-// compositor reject the request ("not a valid new object id").
-let wlIdCursor = 2
-func wlNewId() {
-    let id = wlIdCursor
-    wlIdCursor = wlIdCursor + 1
-    emit id
-}
+// ── object id allocation ───────────────────────────────────────────────
+// Client-chosen object ids (new_id args) MUST be allocated SEQUENTIALLY with
+// NO forward gaps, in creation order. Module-level `let` state does NOT
+// persist across an import boundary in Krypton (see k:server_native's header),
+// so a shared counter here would silently return 0 forever (verified
+// 2026-11-17). wlNewId() was removed for that reason.
+//
+// Pattern: keep a counter in YOUR main module (top-level `let` works there)
+// and increment it for every id you allocate:
+//     let nextId = 2
+//     func newId() { let id = nextId; nextId = nextId + 1; emit id }
+// socam_linux keeps the counter inside its app struct instead (see
+// socam_linux/app.k) — either works. Hardcoding ids also works if you
+// guarantee density and order (cortex did exactly this).
 
 // ── requests ───────────────────────────────────────────────────────────────
 // wl_display(1).get_registry(opcode 1): new_id registry.
@@ -145,6 +184,11 @@ func wlGetKeyboard(fd, seatId, kbId)  { emit _wlSend1(fd, seatId, 1, kbId) }
 //   wl_pointer.motion (op2): time,x(fixed +12),y(fixed +16)
 //   wl_pointer.button (op3): serial,time,button(+16),state(+20)
 //      button: 0x110=left 0x111=right 0x112=middle ; state 1=press
+// X11-vestige (future-edit item): wlKeyToKc maps evdev keycodes to the X11
+// keycode grid (+8) so brain/cortex/stem_wl can index their hardcoded US-layout
+// tables. This is NOT an X11 dependency; it is a legacy constant grid. The
+// real fix is xkbcommon keysyms from the wl_keyboard.keymap event — migrate
+// all three apps together when it lands.
 func wlKeyToKc(wlKey) { emit wlKey + 8 }          // evdev -> X11 keycode
 // 24.8 signed fixed-point -> int pixel coordinate. Read byte-wise and sign-extend
 // the 24-bit integer part: bufGetDwordAt would zero-extend a NEGATIVE coordinate
@@ -455,6 +499,68 @@ func fbDrawText(px, fbW, fbH, font, x, y, s, color) {
     emit cx
 }
 func fbTextWidth(s) { emit len(s) * 8 }
+
+// ── zwp_text_input_manager_v3 (unstable text-input-v3) ──────────────────────
+// Wayland has no "type a character" event: compositors route typed text
+// (including IME composition and emoji) through this protocol. Clients using
+// text-input-v3 receive commit_string (UTF-8) for every printable key, while
+// wl_keyboard still delivers raw key events for modifiers/control combos.
+// Bind the manager if the compositor exposes it (Hyprland does); without it,
+// fall back to a plain ASCII keymap (degraded but functional).
+//
+// zwp_text_input_v3 request opcodes:
+//   0 destroy  1 enable  2 disable  3 set_surrounding_text  4 set_text_change_cause
+//   5 set_content_type  6 set_cursor_rectangle  7 commit   (9/10 = since v2, unused)
+// Event opcodes:
+//   0 enter  1 leave  2 preedit_string  3 commit_string  4 delete_surrounding_text
+//   5 done   (6 action, 7 language, 8 preedit_hint — v2, unused)
+func wlGetTextInput(fd, managerId, textInputId, seatId) {
+    let m = bufNew(16)
+    _wlPutU32(m, 0, managerId)  _wlPutU16(m, 4, 1)  _wlPutU16(m, 6, 16)
+    _wlPutU32(m, 8, textInputId)  _wlPutU32(m, 12, seatId)
+    sockSend(fd, m, 16)
+    emit 1
+}
+func wlTextInputEnable(fd, tiId)  { emit _wlSend0(fd, tiId, 1) }
+func wlTextInputDisable(fd, tiId) { emit _wlSend0(fd, tiId, 2) }
+// set_surrounding_text (opcode 3): string text, int32 cursor, int32 anchor.
+// `text` is raw UTF-8 bytes; len() is the byte count. `cursor`/`anchor` are
+// byte offsets into `text`.
+func wlTextInputSetSurrounding(fd, tiId, text, cursor, anchor) {
+    let slen = len(text) + 1
+    let padded = _wlPad4(slen)
+    let size = 8 + 4 + padded + 8
+    let m = bufNew(size)
+    _wlPutU32(m, 0, tiId)  _wlPutU16(m, 4, 3)  _wlPutU16(m, 6, size)
+    _wlPutU32(m, 8, slen)
+    let i = 0
+    while i < len(text) { bufSetByte(m, 12 + i, charCode(text[i]))  i += 1 }
+    let o = 12 + padded
+    _wlPutU32(m, o, cursor)
+    _wlPutU32(m, o + 4, anchor)
+    sockSend(fd, m, size)
+    emit 1
+}
+// set_content_type (opcode 5): uint hint, uint purpose. 0/0 = plain normal text.
+func wlTextInputSetContentType(fd, tiId, hint, purpose) { emit _wlSend2(fd, tiId, 5, hint, purpose) }
+// set_cursor_rectangle (opcode 6): int32 x, int32 y, int32 width, int32 height —
+// surface-local coordinates; compositors position the preedit box from this.
+func wlTextInputSetCursorRectangle(fd, tiId, x, y, w, h) {
+    let m = bufNew(24)
+    _wlPutU32(m, 0, tiId)  _wlPutU16(m, 4, 6)  _wlPutU16(m, 6, 24)
+    _wlPutU32(m, 8, x)  _wlPutU32(m, 12, y)  _wlPutU32(m, 16, w)  _wlPutU32(m, 20, h)
+    sockSend(fd, m, 24)
+    emit 1
+}
+// commit (opcode 7): apply the staged double-buffered state.
+func wlTextInputCommit(fd, tiId) { emit _wlSend0(fd, tiId, 7) }
+// Parse the string argument of a preedit_string/commit_string event at `off`
+// (absolute offset of the message header).
+func wlTextInputEventText(b, off) { emit wlReadStr(b, off + 8) }
+// preedit_string adds two int32s after the variable-length string:
+//   cursor_begin at off + 8 + padded(strlen), cursor_end at +4 after that.
+func wlPreeditCursorBegin(b, off) { emit bufGetDwordAt(b, wlStrEnd(b, off + 8)) }
+func wlPreeditCursorEnd(b, off)   { emit bufGetDwordAt(b, wlStrEnd(b, off + 8) + 4) }
 
 // ── shared-memory buffers ───────────────────────────────────────────────────
 // wl_shm.create_pool (opcode 0): new_id pool, fd(ancillary), int size.
