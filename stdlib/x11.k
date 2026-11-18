@@ -1,3 +1,5 @@
+// DEPRECATED (2026-11-17): X11 path retired — KryptOS is Wayland-only.
+// Kept as legacy reference; delete before public release. See ANTI-X11.md section 4.
 // Copyright 2026 The Krypton Authors.
 // Licensed under the Apache License, Version 2.0 (see LICENSE or
 // http://www.apache.org/licenses/LICENSE-2.0).

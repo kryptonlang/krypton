@@ -1,3 +1,5 @@
+// DEPRECATED (2026-11-17): X11 path retired — KryptOS is Wayland-only.
+// Kept as legacy reference; delete before public release. See ANTI-X11.md section 4.
 // brain_win.ks -- Windows port of brain.ks (the pure-Krypton IDE).
 //
 // v0.2.  Rewritten on guiStateSet/Get because module-level mutable

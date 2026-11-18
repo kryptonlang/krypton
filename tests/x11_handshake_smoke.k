@@ -1,3 +1,5 @@
+// DEPRECATED (2026-11-17): X11 path retired — KryptOS is Wayland-only.
+// Kept as legacy reference; delete before public release. See ANTI-X11.md section 4.
 // tests/x11_handshake_smoke.k — proves stdlib/x11.k speaks the X11
 // wire protocol against a real (TCP-listening) X server, and parses
 // the full server-info reply via the Linux Phase C buffer machinery.
