@@ -97,11 +97,17 @@ func cocoaSecureTextField(win, x, y, w, h) {
 }
 
 func cocoaLabel(win, text, x, y, w, h) {
+    print("cocoaLabel: a-alloc")
     let raw = msg(cls("NSTextField"), "alloc")
+    print("cocoaLabel: a-frame")
     let lbl = msg_frame(raw, "initWithFrame:", x, y, w, h)
+    print("cocoaLabel: a-text")
     msg_1(lbl, "setStringValue:", nsString(text))
+    print("cocoaLabel: a-editable")
     msg_1(lbl, "setEditable:", 0)
+    print("cocoaLabel: a-add")
     _addToContentView(win, lbl)
+    print("cocoaLabel: a-done")
     emit lbl
 }
 
@@ -672,6 +678,9 @@ func cocoaMenuItem(menu, title, key, fnPtr) {
 // ── Internal helpers ───────────────────────────────────────────────────
 
 func _addToContentView(win, view) {
+    print("_addToContentView(c): cv")
     let cv = msg(win, "contentView")
+    print("_addToContentView(c): add")
     msg_1(cv, "addSubview:", view)
+    print("_addToContentView(c): done")
 }
