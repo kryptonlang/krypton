@@ -1413,9 +1413,13 @@ func emitKbiReloadBump(instrIdx, textOff) {
     emit s
 }
 func emitRtAllocHelper(instrIdx, textOff) {
-    let imm21 = (g_TEXT_VMSIZE + 0x8000) / 4096 - (textOff + instrIdx * 4) / 4096
+    // Round the requested size up to 8 at entry: every bump-allocator caller
+    // gets 8-aligned heap regardless of how it computed the size.
+    let imm21 = (g_TEXT_VMSIZE + 0x8000) / 4096 - (textOff + (instrIdx + 2) * 4) / 4096
     let s = ""
-    s = s + arm64_adrp(1, imm21)                        // 0
+    s = s + arm64_add_imm(4, 4, 7)                      // 0: round size up to 8
+    s = s + arm64_bic_imm7(4, 4)                        // 1: x4 = align8(size)
+    s = s + arm64_adrp(1, imm21)                        // 2
     s = s + arm64_add_imm(1, 1, 0)                      // 1: x1 = gcGlobals base
     s = s + arm64_ldr_imm(9, 1, 3)                      // 2: x9 = alloc_total (+24)
     s = s + arm64_add_xxx(9, 9, 4)                      // 3: x9 += size
@@ -1478,7 +1482,7 @@ func emitRtAllocHelper(instrIdx, textOff) {
     s = s + arm64_stp_pre16(16, 17)                     // 49
     s = s + arm64_stp_pre16(18, 30)                     // 50
     // COLLECT body @51..110 (60 instr; scans [sp,stack_base] incl spilled regs):
-    s = s + emitGcCollectBody(instrIdx + 51, textOff)   // 51..110
+    s = s + emitGcCollectBody(instrIdx + 53, textOff)   // 53..112
     // reset counter (collect re-derived x1 = gcGlobals base) @111:
     s = s + arm64_str_imm(31, 1, 13)                    // 111: allocs_since = 0 (+104)
     // RESTORE x0..x18 + x30 (reverse order) @112..121:
@@ -1505,9 +1509,11 @@ func emitRtAllocHelper(instrIdx, textOff) {
 // When rBUMP == 0 (mmap failed) we fall through to the classic cell path so
 // we never silently stall. 126 instructions.
 func emitKbiAllocHelper(instrIdx, textOff) {
-    let imm21 = (g_TEXT_VMSIZE + 0x8000) / 4096 - (textOff + instrIdx * 4) / 4096
+    let imm21 = (g_TEXT_VMSIZE + 0x8000) / 4096 - (textOff + (instrIdx + 2) * 4) / 4096
     let s = ""
-    s = s + arm64_adrp(1, imm21)                        // 0
+    s = s + arm64_add_imm(4, 4, 7)                      // 0: round size up to 8
+    s = s + arm64_bic_imm7(4, 4)                        // 1: x4 = align8(size)
+    s = s + arm64_adrp(1, imm21)                        // 2
     s = s + arm64_add_imm(1, 1, 0)                      // 1: x1 = gcGlobals base
     s = s + arm64_ldr_imm(9, 1, 3)                      // 2: x9 = alloc_total (+24)
     s = s + arm64_add_xxx(9, 9, 4)                      // 3: x9 += size
@@ -1569,7 +1575,7 @@ func emitKbiAllocHelper(instrIdx, textOff) {
     s = s + arm64_stp_pre16(16, 17)                     // 52
     s = s + arm64_stp_pre16(18, 30)                     // 53
     // COLLECT body @54..113:
-    s = s + emitGcCollectBody(instrIdx + 54, textOff)   // 54..113
+    s = s + emitGcCollectBody(instrIdx + 56, textOff)   // 56..115
     // reset counter @114:
     s = s + arm64_str_imm(31, 1, 13)                    // 114: allocs_since = 0
     // RESTORE x0..x18 + x30 @115..124:
@@ -1590,8 +1596,8 @@ func emitKbiAllocHelper(instrIdx, textOff) {
 func kbiAllocInstrCount() { emit 126 }
 // Number of instructions in the allocator helper (either classic __rt_alloc
 // or KBI's __kbi_alloc). KBI is exactly 126 due to the extra rBUMP bookkeeping.
-func allocInstrCount() { if g_KBI == "1" { emit 126 } emit 123 }
-func rtAllocInstrCount() { emit 123 }
+func allocInstrCount() { if g_KBI == "1" { emit 128 } emit 125 }
+func rtAllocInstrCount() { emit 125 }
 // A1 float helper sizes (must match the emit funcs below).
 func fLoad1InstrCount() { emit 7 }
 func fLoad2InstrCount() { emit 7 }
@@ -3176,13 +3182,13 @@ func opInstrCount(opTok) {
     if opTok == "BUILTIN_EXIT"     { emit 17 }  // int-or-atoi(str) then exit(code)
     if opTok == "BUILTIN_LEN"      { emit 7 }   // pop, mov, ldrb-post, cbnz, sub-reg, sub-imm, push
     if opTok == "BUILTIN_CHARCODE" { emit 3 }   // pop, ldrb, push
-    if opTok == "BUILTIN_SUBSTRING"{ emit 39 }  // alloc(21) bumped from 15 → +6
+    if opTok == "BUILTIN_SUBSTRING"{ emit 38 }  // alloc(21); len_data held in x12
     if opTok == "BUILTIN_STARTSWITH"{ emit 14 }
     if opTok == "BUILTIN_ISDIGIT"  { emit 10 }
     if opTok == "BUILTIN_TOINT"    { emit 30 }  // signed parse (handles leading '-')
     if opTok == "BUILTIN_INDEXOF"  { emit 21 }
-    if opTok == "BUILTIN_SBNEW"        { emit 54 }   // stable handle + buffer (2 allocs)
-    if opTok == "BUILTIN_SBAPPEND"     { emit 84 }   // grow-in-place via handle indirection
+    if opTok == "BUILTIN_SBNEW"        { emit 52 }   // stable handle + buffer (2 allocs); must match emitted 52
+    if opTok == "BUILTIN_SBAPPEND"     { emit 86 }   // grow-in-place via handle indirection; realloc path emits 86
     if opTok == "BUILTIN_SBTOSTRING"   { emit 4 }    // handle → buf+16
     if opTok == "BUILTIN_CONTAINS"     { emit 23 }   // indexOf core (20) + cmp + cset + push
     if opTok == "BUILTIN_PRINT"        { emit 52 }
@@ -4166,8 +4172,10 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_pop(6))  // x6 = end
             s = sbAppend(s, arm64_pop(7))  // x7 = start
             s = sbAppend(s, arm64_pop(8))  // x8 = s
-            s = sbAppend(s, arm64_sub_xxx(4, 6, 7))  // x4 = end - start (len_data)
-            s = sbAppend(s, arm64_add_imm(4, 4, 1))  // x4 = len_data + 1 (alloc room for NUL)
+            // Keep len_data in x12 (survives __rt_alloc and the copy loop); x4
+            // is only the aligned alloc size, so it is not safe to reuse after.
+            s = sbAppend(s, arm64_sub_xxx(12, 6, 7))  // x12 = end - start (len_data)
+            s = sbAppend(s, arm64_add_imm(4, 12, 1))  // x4 = len_data + 1 (alloc room for NUL)
             s = sbAppend(s, arm64_add_imm(4, 4, 7))
             s = sbAppend(s, arm64_bic_imm7(4, 4))
             instrIdx = instrIdx + 7
@@ -4175,16 +4183,15 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             instrIdx = instrIdx + 21
             s = sbAppend(s, arm64_add_xxx(9, 8, 7))  // x9 = src = s + start
             s = sbAppend(s, arm64_movz_x_imm(5, 0))  // x5 = i = 0
-            s = sbAppend(s, arm64_sub_imm(4, 4, 1))  // x4 = len_data
-            s = sbAppend(s, arm64_cmp_xx(5, 4))  // cmp i, len_data
+            s = sbAppend(s, arm64_cmp_xx(5, 12))  // cmp i, len_data
             s = sbAppend(s, arm64_b_cond(0xa, 5))  // b.ge done (+5: ldrb,strb,add,b,strb_NUL)
             s = sbAppend(s, arm64_ldrb_reg(10, 9, 5))  // ldrb w10, [x9, x5]
             s = sbAppend(s, arm64_strb_reg(10, 0, 5))  // strb w10, [x0, x5]
             s = sbAppend(s, arm64_add_imm(5, 5, 1))  // i++
             s = sbAppend(s, arm64_b(0 - 5))  // back to cmp
-            s = sbAppend(s, arm64_strb_reg(31, 0, 4))  // strb wzr, [x0, x4] (NUL terminator)
+            s = sbAppend(s, arm64_strb_reg(31, 0, 12))  // strb wzr, [x0, len_data] (NUL terminator)
             s = sbAppend(s, arm64_push_x0())
-            instrIdx = instrIdx + 11
+            instrIdx = instrIdx + 10
         } else if opTok == "BUILTIN_STARTSWITH" {
             // startsWith(s, prefix): returns 1 if s starts with prefix, 0 otherwise.
             // Stack TOS = prefix, then s.

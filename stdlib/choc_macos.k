@@ -540,9 +540,15 @@ func chocDrawText(str, x, y, w, h, attrs) {
 }
 // Instantiate a custom view with a frame and add it to the window.
 func chocCustomView(win, c, x, y, w, h) {
-    let v = msg_frame(msg(c, "alloc"), "initWithFrame:", x, y, w, h)
+    print("chocCustomView: alloc begin")
+    let raw = msg(c, "alloc")
+    print("chocCustomView: initWithFrame begin")
+    let v = msg_frame(raw, "initWithFrame:", x, y, w, h)
+    print("chocCustomView: mask begin")
     msg_1(v, "setAutoresizingMask:", 18)   // width+height sizable -> follow the window
+    print("chocCustomView: addSubview begin")
     _addToContentView(win, v)
+    print("chocCustomView: done")
     emit v
 }
 func chocNeedsDisplay(v)           { msg_1(v, "setNeedsDisplay:", 1)  emit "1" }
@@ -1057,6 +1063,9 @@ func chocMenuItem(menu, title, key, fnPtr) {
 
 
 func _addToContentView(win, view) {
+    print("_addToContentView: contentView begin")
     let cv = msg(win, "contentView")
+    print("_addToContentView: addSubview begin")
     msg_1(cv, "addSubview:", view)
+    print("_addToContentView: done")
 }
