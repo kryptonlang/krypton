@@ -7290,20 +7290,19 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                 instrIdx = instrIdx + 3
             } else {
                 // Non-main function with implicit fall-through (no terminating
-                // emit): emit the same epilogue as RETURN. The caller POPs the
-                // slot regardless of its contents, so an empty eval stack is
-                // fine. Previously this fell into SYS_exit(0), silently
-                // terminating the caller mid-statement — void Krypton
-                // functions never returned on macOS arm64.
-                s = sbAppend(s, arm64_pop_x0())
-                instrIdx = instrIdx + 1
+                // emit): tear down the frame and return cleanly. Do NOT pop the
+                // eval stack here — void functions (e.g. _addToContentView)
+                // leave it balanced/empty already; popping reads garbage and
+                // ret() jumps to it (SIGBUS). w0 = 0 is the conventional null
+                // handle return, matching RETURN's epilogue minus the pop.
                 if frame > 0 {
                     s = sbAppend(s, arm64_add_sp(frame))
                     instrIdx = instrIdx + 1
                 }
+                s = sbAppend(s, arm64_movz_w0_zero())
                 s = sbAppend(s, arm64_ldp_fp_lr_post16())
                 s = sbAppend(s, arm64_ret())
-                instrIdx = instrIdx + 2
+                instrIdx = instrIdx + 3
             }
         }
         oi += 1
