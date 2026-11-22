@@ -328,6 +328,23 @@ func foreignLibFor(name) {
     if name == "class_addMethod"          { emit "/usr/lib/libobjc.A.dylib" }
     // libc/posix (libSystem) — explicit allowlist so non-foreign user funcs
     // (cls, msg, …) keep falling through to "" and are filtered out of imports.
+    if name == "posix_spawn" { emit "/usr/lib/libSystem.B.dylib" }
+    if name == "posix_spawnattr_init" { emit "/usr/lib/libSystem.B.dylib" }
+    if name == "posix_spawnattr_destroy" { emit "/usr/lib/libSystem.B.dylib" }
+    if name == "posix_spawnattr_setflags" { emit "/usr/lib/libSystem.B.dylib" }
+    if name == "posix_spawnattr_setpgroup" { emit "/usr/lib/libSystem.B.dylib" }
+    if name == "posix_spawn_file_actions_init" { emit "/usr/lib/libSystem.B.dylib" }
+    if name == "posix_spawn_file_actions_destroy" { emit "/usr/lib/libSystem.B.dylib" }
+    if name == "posix_spawn_file_actions_addopen" { emit "/usr/lib/libSystem.B.dylib" }
+    if name == "posix_spawn_file_actions_addchdir_np" { emit "/usr/lib/libSystem.B.dylib" }
+    if name == "waitpid" { emit "/usr/lib/libSystem.B.dylib" }
+    if name == "usleep" { emit "/usr/lib/libSystem.B.dylib" }
+    if name == "CC_SHA256_Init" { emit "/usr/lib/libSystem.B.dylib" }
+    if name == "CC_SHA256_Update" { emit "/usr/lib/libSystem.B.dylib" }
+    if name == "CC_SHA256_Final" { emit "/usr/lib/libSystem.B.dylib" }
+    if name == "CC_MD5_Init" { emit "/usr/lib/libSystem.B.dylib" }
+    if name == "CC_MD5_Update" { emit "/usr/lib/libSystem.B.dylib" }
+    if name == "CC_MD5_Final" { emit "/usr/lib/libSystem.B.dylib" }
     if name == "posix_openpt" { emit "/usr/lib/libSystem.B.dylib" }
     if name == "grantpt"      { emit "/usr/lib/libSystem.B.dylib" }
     if name == "unlockpt"     { emit "/usr/lib/libSystem.B.dylib" }
@@ -3189,7 +3206,7 @@ func opInstrCount(opTok) {
     if opTok == "BUILTIN_INDEXOF"  { emit 21 }
     if opTok == "BUILTIN_SBNEW"        { emit 52 }   // stable handle + buffer (2 allocs); must match emitted 52
     if opTok == "BUILTIN_SBAPPEND"     { emit 86 }   // grow-in-place via handle indirection; realloc path emits 86
-    if opTok == "BUILTIN_SBTOSTRING"   { emit 4 }    // handle → buf+16
+    if opTok == "BUILTIN_SBTOSTRING"   { emit 35 }   // owned text snapshot
     if opTok == "BUILTIN_CONTAINS"     { emit 23 }   // indexOf core (20) + cmp + cset + push
     if opTok == "BUILTIN_PRINT"        { emit 52 }
     if opTok == "BUILTIN_PRINTERR"     { emit 52 }
@@ -4389,12 +4406,27 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             instrIdx = instrIdx + 10
             // END @84
         } else if opTok == "BUILTIN_SBTOSTRING" {
-            // sbToString(handle): return data ptr = handle.buf + 16. 4 instructions.
-            s = sbAppend(s, arm64_pop(7))  // 0: handle
-            s = sbAppend(s, arm64_ldr_imm(0, 7, 0))  // 1: buffer
-            s = sbAppend(s, arm64_add_imm(0, 0, 16))  // 2: data
-            s = sbAppend(s, arm64_push_x0())  // 3
+            // Return an independent, base-addressed text allocation. The old
+            // buf+16 view was neither an allocation root nor mutation-stable.
+            // x6/x8 survive emitAllocVar; its collector spills live registers.
+            s = sbAppend(s, arm64_pop(7))
+            s = sbAppend(s, arm64_ldr_imm(6, 7, 0))
+            s = sbAppend(s, arm64_ldr_imm(8, 6, 1))  // byte length
+            s = sbAppend(s, arm64_add_imm(4, 8, 1))  // include NUL
             instrIdx = instrIdx + 4
+            s = sbAppend(s, emitAllocVar(instrIdx, textVaddr, textOff))
+            instrIdx = instrIdx + 21
+            s = sbAppend(s, arm64_add_imm(6, 6, 16))
+            s = sbAppend(s, arm64_movz_x_imm(5, 0))
+            s = sbAppend(s, arm64_cmp_xx(5, 8))
+            s = sbAppend(s, arm64_b_cond(0xa, 5))
+            s = sbAppend(s, arm64_ldrb_reg(9, 6, 5))
+            s = sbAppend(s, arm64_strb_reg(9, 0, 5))
+            s = sbAppend(s, arm64_add_imm(5, 5, 1))
+            s = sbAppend(s, arm64_b(0 - 5))
+            s = sbAppend(s, arm64_strb_reg(31, 0, 8))
+            s = sbAppend(s, arm64_push_x0())
+            instrIdx = instrIdx + 10
         } else if opTok == "BUILTIN_CONTAINS" {
             // contains(s, sub): same logic as indexOf but returns bool (1 / 0).
             // 23 instructions. Stack TOS = sub, then s.

@@ -1,0 +1,16 @@
+// macOS Darwin process primitives; opaque spawn objects are pointer-sized
+// out-parameters. Initialize/destroy them using the matching libc functions.
+jxt {
+    func posix_spawn(pidOut, path, actions, attributes, argv, envp)
+    func posix_spawnattr_init(attributes)
+    func posix_spawnattr_destroy(attributes)
+    func posix_spawnattr_setflags(attributes, flags)
+    func posix_spawnattr_setpgroup(attributes, group)
+    func posix_spawn_file_actions_init(actions)
+    func posix_spawn_file_actions_destroy(actions)
+    func posix_spawn_file_actions_addopen(actions, fd, path, flags, mode)
+    func posix_spawn_file_actions_addchdir_np(actions, path)
+    func waitpid(pid, status, options)
+    func kill(pid, signal)
+    func usleep(microseconds)
+}
