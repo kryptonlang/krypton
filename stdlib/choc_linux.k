@@ -103,6 +103,7 @@ func chocWindow(app, title, w, h) {
     let SEAT = 0
     let KB  = 0
     let PTR = 0
+    let TI = 0
     wlBind(fd, REG, compName, "wl_compositor", 4, COMP)
     wlBind(fd, REG, shmName, "wl_shm", 1, SHM)
     wlBind(fd, REG, xdgName, "xdg_wm_base", 1, WM)
@@ -116,6 +117,14 @@ func chocWindow(app, title, w, h) {
         wlBind(fd, REG, seatName, "wl_seat", 5, SEAT)
         wlGetKeyboard(fd, SEAT, KB)
         wlGetPointer(fd, SEAT, PTR)
+        // Bind the unstable text-input manager when the compositor exposes it
+        // (Hyprland does). Fall back to plain wl_keyboard ASCII typing.
+        let tiName = wlRegistryFind(rb, rn, "zwp_text_input_manager_v3")
+        if tiName >= 0 {
+            TI = nextId
+            nextId = nextId + 1
+            wlGetTextInput(fd, tiName, TI, SEAT)
+        }
     }
     let SURF = nextId
     nextId = nextId + 1
@@ -143,6 +152,13 @@ func chocWindow(app, title, w, h) {
     state = setField(state, "wm", WM)
     state = setField(state, "kb", KB)
     state = setField(state, "ptr", PTR)
+    state = setField(state, "ti", TI)
+    state = setField(state, "closed", 0)
+    state = setField(state, "lastText", "")
+    state = setField(state, "onText", 0)
+    state = setField(state, "pointerX", 0)
+    state = setField(state, "pointerY", 0)
+    state = setField(state, "scale", 1)
     state = setField(state, "smack", smack)
     state = setField(state, "font", font)
     state = setField(state, "nextId", nextId)
@@ -277,6 +293,17 @@ func _chocDispatchEvent(win, eb, off, obj, op, sizeB) {
         }
         win = setField(win, "dirty", 1)
     }
+    else if obj == getField(win, "top") && op == 1 {
+        // xdg_toplevel.close — the user closed the window.
+        win = setField(win, "closed", 1)
+    }
+    else if obj == getField(win, "ti") && op == 3 {
+        // zwp_text_input_v3.commit_string — deliver committed text.
+        let cb = getField(win, "onText")
+        let txt = wlTextInputEventText(eb, off)
+        win = setField(win, "lastText", txt)
+        if cb != 0 { callPtr(cb, txt) }
+    }
     else if obj == getField(win, "kb") && op == 3 {
         let st = wlU32(eb, off + 20)
         let cb = getField(win, "onKey")
@@ -287,6 +314,8 @@ func _chocDispatchEvent(win, eb, off, obj, op, sizeB) {
     else if obj == getField(win, "ptr") && op == 1 {
         let fx = wlU32(eb, off + 16)
         let fy = wlU32(eb, off + 24)
+        win = setField(win, "pointerX", fx / 256)
+        win = setField(win, "pointerY", fy / 256)
         let cb = getField(win, "onPointer")
         if cb != 0 { callPtr(cb, fx / 256, fy / 256) }
     }
@@ -302,6 +331,57 @@ func chocOnKey(win, fnPtr) {
 func chocOnPointer(win, fnPtr) {
     if win == "" { emit 0 }
     win = setField(win, "onPointer", toInt(fnPtr))
+    emit win
+}
+func chocOnText(win, fnPtr) {
+    if win == "" { emit 0 }
+    win = setField(win, "onText", toInt(fnPtr))
+    emit 1
+}
+func chocTextInputEnable(win) {
+    let ti = getField(win, "ti")
+    if ti != 0 {
+        wlTextInputEnable(getField(win, "fd"), ti)
+        emit 1
+    }
+    emit 0
+}
+func chocTextInputDisable(win) {
+    let ti = getField(win, "ti")
+    if ti != 0 {
+        wlTextInputDisable(getField(win, "fd"), ti)
+    }
+    emit 0
+}
+func chocSetScale(win, scale) {
+    if win == "" { emit win }
+    win = setField(win, "scale", toInt(scale))
+    emit win
+}
+
+// Partial present: damage_buffer per rect in damageText ("x,y,w,h,..."),
+// then attach+commit. damageText == "" → full damage (adapter fallback).
+// (AppKit parity shape: same attach/damage/commit contract, minus the
+// separate frame callback — v0 commits synchronously.)
+func chocPresentDamage(win, damageText) {
+    if win == "" { emit win }
+    let fd = getField(win, "fd")
+    let surf = getField(win, "surf")
+    if damageText == "" {
+        wlDamageBuffer(fd, surf, 0, 0, getField(win, "w"), getField(win, "h"))
+    } else {
+        let parts = count(damageText)
+        let i = 0
+        while i + 3 < parts {
+            let x = toInt(split(damageText, i))
+            let y = toInt(split(damageText, i + 1))
+            let w = toInt(split(damageText, i + 2))
+            let h = toInt(split(damageText, i + 3))
+            wlDamageBuffer(fd, surf, x, y, w, h)
+            i += 4
+        }
+    }
+    wlCommit(fd, surf)
     emit win
 }
 

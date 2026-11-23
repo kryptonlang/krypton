@@ -302,12 +302,39 @@ func wlSurfaceAttach(fd, surfId, bufId, x, y) {
     sockSend(fd, m, 20)
     emit 1
 }
-// wl_surface.damage (opcode 2): int x, y, w, h
+// wl_surface.damage (opcode 2): int x, y, w, h (surface coords).
 func wlDamage(fd, surfId, x, y, w, h) {
     let m = bufNew(24)
     _wlPutU32(m, 0, surfId)  _wlPutU16(m, 4, 2)  _wlPutU16(m, 6, 24)
     _wlPutU32(m, 8, x)  _wlPutU32(m, 12, y)  _wlPutU32(m, 16, w)  _wlPutU32(m, 20, h)
     sockSend(fd, m, 24)
+    emit 1
+}
+// wl_surface.damage_buffer (opcode 9, surface v4+): damage in BUFFER
+// coordinates — this is what Socam sends per coalesced snapshot rect x scale.
+func wlDamageBuffer(fd, surfId, x, y, w, h) {
+    let m = bufNew(24)
+    _wlPutU32(m, 0, surfId)  _wlPutU16(m, 4, 9)  _wlPutU16(m, 6, 24)
+    _wlPutU32(m, 8, toInt(x))  _wlPutU32(m, 12, toInt(y))
+    _wlPutU32(m, 16, toInt(w))  _wlPutU32(m, 20, toInt(h))
+    sockSend(fd, m, 24)
+    emit 1
+}
+// wl_surface.frame (opcode 3): new_id wl_callback — done fires at next
+// vsync (or next display round-trip).
+func wlSurfaceFrame(fd, surfId, cbId) {
+    let m = bufNew(12)
+    _wlPutU32(m, 0, surfId)  _wlPutU16(m, 4, 3)  _wlPutU16(m, 6, 12)
+    _wlPutU32(m, 8, toInt(cbId))
+    sockSend(fd, m, 12)
+    emit 1
+}
+// wl_surface.set_buffer_scale (opcode 8, surface v6+): integer scale.
+func wlSetBufferScale(fd, surfId, scale) {
+    let m = bufNew(12)
+    _wlPutU32(m, 0, surfId)  _wlPutU16(m, 4, 8)  _wlPutU16(m, 6, 12)
+    _wlPutU32(m, 8, toInt(scale))
+    sockSend(fd, m, 12)
     emit 1
 }
 
