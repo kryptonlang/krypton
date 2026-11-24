@@ -7,7 +7,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-ARCH=$(uname -m); [[ "$ARCH" == "amd64" ]] && ARCH=x86_64
+ARCH="${KRYPTON_ARCH:-$(uname -m)}"
+[[ "$ARCH" == "amd64" ]] && ARCH=x86_64
+[[ "$ARCH" == "x86_64" || "$ARCH" == "aarch64" ]] || {
+  echo "build_tarball_linux: unsupported target architecture '$ARCH'" >&2
+  exit 1
+}
 DRIVER="bootstrap/kcc_driver_linux_${ARCH}"
 [[ -x "$DRIVER" ]] || { echo "build_tarball_linux: missing $DRIVER (run build.sh)"; exit 1; }
 
@@ -69,7 +74,12 @@ set -euo pipefail
 PREFIX="${1:-/usr/local/krypton}"
 BIN="${BINDIR:-/usr/local/bin}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ARCH=$(uname -m); [[ "$ARCH" == "amd64" ]] && ARCH=x86_64
+ARCH="${KRYPTON_ARCH:-$(uname -m)}"
+[[ "$ARCH" == "amd64" ]] && ARCH=x86_64
+[[ "$ARCH" == "x86_64" || "$ARCH" == "aarch64" ]] || {
+  echo "install.sh: unsupported target architecture '$ARCH'" >&2
+  exit 1
+}
 SUDO=""; [[ -w "$(dirname "$PREFIX")" && -w "$(dirname "$BIN")" ]] || SUDO="sudo"
 echo "installing Krypton to $PREFIX ..."
 $SUDO rm -rf "$PREFIX"; $SUDO mkdir -p "$PREFIX"; $SUDO cp -R "$HERE"/. "$PREFIX"/

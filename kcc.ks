@@ -756,7 +756,11 @@ just run {
     if os == "Linux" {
         // Auto-route to the right backend by host arch unless the user
         // overrides with an explicit --arm64 (force cross to aarch64) or
-        // --x64 (force x86-64 even on an aarch64 host).
+        // --x64 (force the x86-64 backend).  On aarch64 hosts, --x64 is
+        // what Docker/Apple-Silicon Linux containers need, since both
+        // uname -m (kcc --print-arch) and k:arch's /proc/sys/kernel/arch
+        // report the shared kernel arch (aarch64) while the userland is
+        // x86_64.
         //   host x86_64 + no flags   -> x86_64 backend (legacy default)
         //   host arm64  + no flags   -> arm64 backend (NEW)
         //   --arm64                  -> arm64 backend regardless of host

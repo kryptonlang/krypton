@@ -1,15 +1,15 @@
 // Copyright 2026 The Krypton Authors.
-// Licensed under the Apache License, Version 2.0 (see LICENSE or
+// Licensed under the Apache License, Version 2.0 (see third_party/krypton/LICENSE or
 // http://www.apache.org/licenses/LICENSE-2.0).
+// Modified in libobjk to validate registered arity for three to six arguments.
 // Handles are IDs, not interior pointers: the native GC scans roots, not graphs.
 
 module objk_runtime
 
-// Linux (and possibly other) native backends ship bufSetQwordAt/bufGetQwordAt
-// as stubs — the store never lands and reads return garbage (verified on the
-// 2.4.6 Linux x86_64 backend, 2026-11-17). The Objective-K arena is built on
-// qwords, so the runtime packs/unpacks them byte-wise instead (LE), which
-// works everywhere. Handles and sizes stay far below 2^53.
+// Linux 2.4.6 shipped bufSetQwordAt/bufGetQwordAt as stubs (stores never land,
+// reads return garbage). Current backends implement them, but libobjk keeps a
+// byte-wise LE pack/unpack for compatibility with shipped KryptOS compilers.
+// Handles and sizes stay far below 2^53.
 func okKPutQ(b, off, v) {
     let i = 0
     let r = v
@@ -941,17 +941,15 @@ func okKFireFieldObservers(runtime, object, field, oldValue, newValue) {
 
 // ── Shared implicit runtime (milestone 1/2) ──────────────────────────────────
 // The objective-k bracket syntax `[obj sel:args]` has no explicit runtime
-// argument, so the lowering dispatches through ONE lazily-initialized shared
-// arena. Explicit `okKRuntime(...)` arenas remain available for tests and
+// argument, so the lowering dispatches through one module-level arena.
+// Explicit `okKRuntime(...)` arenas remain available for tests and
 // isolated runtimes; the two paths share the same object/class layout.
 let objkSharedRuntime = okKRuntime(1048576)
 
 func objkRuntime() { emit objkSharedRuntime }
 
-// Selector identity IS the interned selector text for now: the arena text
-// table (okKText) interns the string once and dispatch compares text handles,
-// so a separate integer ObjkSel table would add an indirection without a
-// lookup win. (Deferred: integer-id selectors + flat method tables.)
+// Each method stores an arena-owned copy of its selector. Lookup compares
+// the selector bytes against the method name.
 
 // ── Shared-runtime send family ───────────────────────────────────────────────
 // Arity-capped parallels of okKSend*/objkMethod so brackets work everywhere.
@@ -959,7 +957,7 @@ func okKInvoke3(runtime, object, klass, name, arity, a, b, c) {
     okKAlive(runtime, object)
     let method = okKFindMethod(runtime, klass, name)
     if method == 0 { okKFail("unknown method: " + name) }
-    if arity != 3 { okKFail("method argument count: " + name) }
+    if arity != 3 || okKRead(runtime, method, 24) != arity { okKFail("method argument count: " + name) }
     let fnPtr = okKRead(runtime, method, 32)
     emit callPtr(fnPtr, runtime, object, a, b, c)
 }
@@ -967,7 +965,7 @@ func okKInvoke4(runtime, object, klass, name, arity, a, b, c, d) {
     okKAlive(runtime, object)
     let method = okKFindMethod(runtime, klass, name)
     if method == 0 { okKFail("unknown method: " + name) }
-    if arity != 4 { okKFail("method argument count: " + name) }
+    if arity != 4 || okKRead(runtime, method, 24) != arity { okKFail("method argument count: " + name) }
     let fnPtr = okKRead(runtime, method, 32)
     emit callPtr(fnPtr, runtime, object, a, b, c, d)
 }
@@ -975,7 +973,7 @@ func okKInvoke5(runtime, object, klass, name, arity, a, b, c, d, e) {
     okKAlive(runtime, object)
     let method = okKFindMethod(runtime, klass, name)
     if method == 0 { okKFail("unknown method: " + name) }
-    if arity != 5 { okKFail("method argument count: " + name) }
+    if arity != 5 || okKRead(runtime, method, 24) != arity { okKFail("method argument count: " + name) }
     let fnPtr = okKRead(runtime, method, 32)
     emit callPtr(fnPtr, runtime, object, a, b, c, d, e)
 }
@@ -983,7 +981,7 @@ func okKInvoke6(runtime, object, klass, name, arity, a, b, c, d, e, f) {
     okKAlive(runtime, object)
     let method = okKFindMethod(runtime, klass, name)
     if method == 0 { okKFail("unknown method: " + name) }
-    if arity != 6 { okKFail("method argument count: " + name) }
+    if arity != 6 || okKRead(runtime, method, 24) != arity { okKFail("method argument count: " + name) }
     let fnPtr = okKRead(runtime, method, 32)
     emit callPtr(fnPtr, runtime, object, a, b, c, d, e, f)
 }
