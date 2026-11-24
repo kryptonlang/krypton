@@ -443,6 +443,7 @@ func cfCount(cname, argc) {
     if cname == "objc_msgSend_pd1" { emit 7 + kbi }
     if cname == "objc_msgSend_rounded" { emit 16 + kbi }
     if cname == "objc_msgSend_rgba" { emit 18 + kbi }
+    if cname == "objc_msgSend_fpret" { emit 5 + kbi }     // (self,sel): CGFloat d0 -> int x0
     if cname == "objc_msgSend_point_x" { emit 6 + kbi }   // (self,sel,obj): CGPoint d0 -> x0
     if cname == "objc_msgSend_point_y" { emit 6 + kbi }   // (self,sel,obj): CGPoint d1 -> x0
     if cname == "objc_msgSend_rect_w" { emit 5 + kbi }    // (self,sel): NSRect d2 -> x0
@@ -2265,6 +2266,8 @@ func parseFullIR(ir) {
                     else if cname == "bitShl" { curOps = sbAppend(curOps, "BUILTIN_BITSHL\n") }
                     else if cname == "bitNot" { curOps = sbAppend(curOps, "BUILTIN_BITNOT\n") }
                     else if cname == "writeBytes" { curOps = sbAppend(curOps, "BUILTIN_WRITEBYTES\n") }
+                    else if cname == "ptrAdd" { curOps = sbAppend(curOps, "BUILTIN_PTRADD\n") }
+                    else if cname == "ptrToInt" { curOps = sbAppend(curOps, "BUILTIN_PTRTOINT\n") }
                     else { curOps = sbAppend(curOps, "CALL_FUNC " + cname + " " + cargc + "\n") }
                     nOps += 1
                 } else if op == "RETURN" {
@@ -2682,6 +2685,10 @@ func parseFullIR(ir) {
                         curOps = sbAppend(curOps, "BUILTIN_BUFGETWORDAT\n")  nOps += 1
                     } else if bname == "bufGetDwordAt" {
                         curOps = sbAppend(curOps, "BUILTIN_BUFGETDWORDAT\n")  nOps += 1
+                    } else if bname == "ptrAdd" {
+                        curOps = sbAppend(curOps, "BUILTIN_PTRADD\n")  nOps += 1
+                    } else if bname == "ptrToInt" {
+                        curOps = sbAppend(curOps, "BUILTIN_PTRTOINT\n")  nOps += 1
                     } else if bname == "fformat" {
                         curOps = sbAppend(curOps, "BUILTIN_FFORMAT\n")  nOps += 1
                     } else if bname == "exit" {
@@ -3168,6 +3175,8 @@ func opInstrCount(opTok) {
     if opTok == "BUILTIN_BUFGETBYTE" { emit 5 }      // pop off/buf, add, ldrb, push
     if opTok == "BUILTIN_BUFGETWORDAT" { emit 5 }    // pop off/buf, add, ldrh (u16 LE), push
     if opTok == "BUILTIN_BUFGETDWORDAT" { emit 5 }   // pop off/buf, add, ldr w (u32 LE), push
+    if opTok == "BUILTIN_PTRADD" { emit 4 }          // pop off/buf, add, push ptr
+    if opTok == "BUILTIN_PTRTOINT" { emit 0 }         // identity: native values are already raw
     if opTok == "BUILTIN_FLOATTOINT" { emit 4 }  // pop,bl __f_load1,fcvtzs,push
     if opTok == "LOAD_SLOT"    { emit 2 }
     if opTok == "STORE_SLOT"   { emit 2 }
@@ -3789,6 +3798,13 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_strw_imm(2, 0, 0))                   // 4: dword [x0] = w2
             s = sbAppend(s, arm64_push(2))                             // 5: return val
             instrIdx = instrIdx + 6
+        } else if opTok == "BUILTIN_PTRADD" {
+            // ptrAdd(ptr, byteoff) -> ptr + byteoff. 4 instrs.
+            s = sbAppend(s, arm64_pop(1))                              // 0: x1 = byteoff
+            s = sbAppend(s, arm64_pop_x0())                            // 1: x0 = ptr
+            s = sbAppend(s, arm64_add_xxx(0, 0, 1))                    // 2: x0 = ptr + byteoff
+            s = sbAppend(s, arm64_push_x0())                           // 3
+            instrIdx = instrIdx + 4
         } else if opTok == "BUILTIN_BUFGETBYTE" {
             // bufGetByte(buf, byteoff) -> zero-extended byte at buf+off. 5.
             s = sbAppend(s, arm64_pop(1))                              // 0: x1 = byteoff
@@ -5756,6 +5772,10 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_strb_imm(31, 0, 1))
             s = sbAppend(s, arm64_push_x0())
             instrIdx = instrIdx + 26
+        } else if opTok == "BUILTIN_PTRTOINT" {
+            // macOS arm64 native values are already raw pointers or small ints;
+            // ptrToInt/intToPtr are identity casts (the old backend dropped them).
+            // Emit nothing — the operand is still on the eval stack.
         } else if opTok == "BUILTIN_TOSTR" {
             // toStr(x): pointer (already a string) passes through; otherwise
             // itoa into a 32-byte heap buffer, NUL-terminated, and return it.
@@ -6743,6 +6763,24 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
                     s = sbAppend(s, emitKbiReloadBump(instrIdx, textOff))
                     instrIdx = instrIdx + 2
                 }
+            } else if cname == "objc_msgSend_fpret" {
+                // (self,sel): CGFloat/double return in d0. Convert the
+                // integral part directly to a Krypton int (d0 was previously
+                // read from x0, producing garbage).
+                s = sbAppend(s, arm64_pop(1))  instrIdx += 1     // x1 = SEL
+                s = sbAppend(s, arm64_pop(0))  instrIdx += 1     // x0 = self
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiFlushBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
+                let fti = textSz / 4 + foreignIdx(cname) * 3
+                s = sbAppend(s, arm64_bl(fti - instrIdx))  instrIdx += 1
+                if g_KBI == "1" {
+                    s = sbAppend(s, emitKbiReloadBump(instrIdx, textOff))
+                    instrIdx = instrIdx + 2
+                }
+                s = sbAppend(s, arm64_fcvtzs_x_d(0, 0))  instrIdx += 1
+                s = sbAppend(s, arm64_push_x0())  instrIdx += 1
             } else if cname == "objc_msgSend_rect_w" || cname == "objc_msgSend_rect_h" {
                 // (self,sel): NSRect return in d0..d3, selected size -> x0.
                 s = sbAppend(s, arm64_pop(1))  instrIdx += 1
