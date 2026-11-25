@@ -4334,7 +4334,7 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
         } else if opTok == "BUILTIN_SBAPPEND" {
             // sbAppend(handle, str): append str to the handle's buffer, growing it
             // (doubling) if needed; on realloc, update handle[+0] so the handle
-            // stays valid. Returns handle. 84 instructions.
+            // stays valid. Returns handle. 86 instructions.
             // Regs: x6=str x7=handle x9=buf x4=cap x12=len x5=strlen x8=writepos
             //       x10=loopidx x11=byte/newdata x13=needed x3=oldbuf
             s = sbAppend(s, arm64_pop(6))  // 0: str
@@ -4370,7 +4370,7 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_str_imm(12, 9, 1))  // 24: buf.len
             s = sbAppend(s, arm64_strb_reg(31, 8, 5))  // 25: NUL
             s = sbAppend(s, arm64_push(7))  // 26: return handle
-            s = sbAppend(s, arm64_b(57))  // 27: → END @84
+            s = sbAppend(s, arm64_b(59))  // 27: → END @86
             instrIdx = instrIdx + 18
             // REALLOC @28:
             s = sbAppend(s, arm64_sub_imm(31, 31, 16))  // 28: reserve scratch
@@ -4420,7 +4420,7 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_strb_reg(31, 8, 5))  // 82: NUL
             s = sbAppend(s, arm64_push(7))  // 83: return handle
             instrIdx = instrIdx + 10
-            // END @84
+            // END @86
         } else if opTok == "BUILTIN_SBTOSTRING" {
             // Return an independent, base-addressed text allocation. The old
             // buf+16 view was neither an allocation root nor mutation-stable.
@@ -4692,7 +4692,7 @@ func emitOneFunction(parsed, fIdx, funcStartInstr, funcTable, strOffsets, textSz
             s = sbAppend(s, arm64_strb_reg(31, 20, 21))  // strb wzr, [buf, bytes_read]  (NUL)
             s = sbAppend(s, arm64_mov_xx(0, 20))  // return buf
             s = sbAppend(s, arm64_push_x0())
-            s = sbAppend(s, arm64_b(25))  // 43: b .exit (68 = 43 + 25)
+            s = sbAppend(s, arm64_b(27))  // 43: b .exit (70 = 43 + 27)
             instrIdx = instrIdx + 14        // 30..43 (instructions before .fail)
             s = sbAppend(s, arm64_movz_x_imm(4, 1))  // 44: .fail x4 = 1 (empty string)
             s = sbAppend(s, arm64_add_imm(4, 4, 7))
