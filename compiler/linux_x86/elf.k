@@ -2302,6 +2302,305 @@ func emitKrPadrightCode(thisVAddr, atoiVAddr, strlenVAddr, allocVAddr) {
 }
 func krPadrightSize() { emit 122 }
 
+// ---- float helpers (SSE2, f64 boxed as 8-byte heap ptr; int < VADDR_BASE promoted) ----
+func emitKrFLoad1Code() {
+    let c = ""
+    c = c + hexByte(0x48) + hexByte(0x81) + hexByte(0xFF) + hexDwordVaddr(0)
+    c = c + hexByte(0x72) + hexByte(0x05)
+    c = c + hexByte(0xF2) + hexByte(0x0F) + hexByte(0x10) + hexByte(0x07)
+    c = c + hexByte(0xC3)
+    c = c + hexByte(0xF2) + hexByte(0x48) + hexByte(0x0F) + hexByte(0x2A) + hexByte(0xC7)
+    c = c + hexByte(0xC3)
+    emit c
+}
+func krFLoad1Size() { emit 20 }
+
+func emitKrFLoad2Code() {
+    let c = ""
+    c = c + hexByte(0x48) + hexByte(0x81) + hexByte(0xFE) + hexDwordVaddr(0)
+    c = c + hexByte(0x72) + hexByte(0x05)
+    c = c + hexByte(0xF2) + hexByte(0x0F) + hexByte(0x10) + hexByte(0x0E)
+    c = c + hexByte(0xC3)
+    c = c + hexByte(0xF2) + hexByte(0x48) + hexByte(0x0F) + hexByte(0x2A) + hexByte(0xCE)
+    c = c + hexByte(0xC3)
+    emit c
+}
+func krFLoad2Size() { emit 20 }
+
+func emitKrFBoxCode(thisVAddr, allocVAddr) {
+    let c = ""
+    c = c + hexByte(0x6A) + hexByte(0x08)
+    c = c + hexByte(0x5F)
+    let disp = allocVAddr - (thisVAddr + 8)
+    c = c + hexByte(0xE8) + hexDword(disp)
+    c = c + hexByte(0xF2) + hexByte(0x0F) + hexByte(0x11) + hexByte(0x00)
+    c = c + hexByte(0xC3)
+    emit c
+}
+func krFBoxSize() { emit 13 }
+func emitKrFFormatCode(thisVAddr, allocVAddr) {
+    let c = ""
+    c = c + hexByte(85)
+    c = c + hexByte(83)
+    c = c + hexByte(65)
+    c = c + hexByte(84)
+    c = c + hexByte(65)
+    c = c + hexByte(85)
+    c = c + hexByte(65)
+    c = c + hexByte(86)
+    c = c + hexByte(65)
+    c = c + hexByte(87)
+    c = c + hexByte(72)
+    c = c + hexByte(137)
+    c = c + hexByte(245)
+    c = c + hexByte(72)
+    c = c + hexByte(129)
+    c = c + hexByte(255)
+    c = c + hexByte(0)
+    c = c + hexByte(0)
+    c = c + hexByte(0)
+    c = c + hexByte(127)
+    c = c + hexByte(114)
+    c = c + hexByte(5)
+    c = c + hexByte(242)
+    c = c + hexByte(15)
+    c = c + hexByte(16)
+    c = c + hexByte(7)
+    c = c + hexByte(235)
+    c = c + hexByte(4)
+    c = c + hexByte(242)
+    c = c + hexByte(72)
+    c = c + hexByte(15)
+    c = c + hexByte(42)
+    c = c + hexByte(199)
+    c = c + hexByte(69)
+    c = c + hexByte(49)
+    c = c + hexByte(228)
+    c = c + hexByte(102)
+    c = c + hexByte(15)
+    c = c + hexByte(87)
+    c = c + hexByte(201)
+    c = c + hexByte(102)
+    c = c + hexByte(15)
+    c = c + hexByte(46)
+    c = c + hexByte(193)
+    c = c + hexByte(115)
+    c = c + hexByte(18)
+    c = c + hexByte(65)
+    c = c + hexByte(188)
+    c = c + hexByte(1)
+    c = c + hexByte(0)
+    c = c + hexByte(0)
+    c = c + hexByte(0)
+    c = c + hexByte(102)
+    c = c + hexByte(15)
+    c = c + hexByte(87)
+    c = c + hexByte(201)
+    c = c + hexByte(242)
+    c = c + hexByte(15)
+    c = c + hexByte(92)
+    c = c + hexByte(200)
+    c = c + hexByte(102)
+    c = c + hexByte(15)
+    c = c + hexByte(40)
+    c = c + hexByte(193)
+    c = c + hexByte(77)
+    c = c + hexByte(137)
+    c = c + hexByte(238)
+    c = c + hexByte(72)
+    c = c + hexByte(199)
+    c = c + hexByte(192)
+    c = c + hexByte(1)
+    c = c + hexByte(0)
+    c = c + hexByte(0)
+    c = c + hexByte(0)
+    c = c + hexByte(72)
+    c = c + hexByte(137)
+    c = c + hexByte(233)
+    c = c + hexByte(72)
+    c = c + hexByte(133)
+    c = c + hexByte(201)
+    c = c + hexByte(116)
+    c = c + hexByte(9)
+    c = c + hexByte(72)
+    c = c + hexByte(107)
+    c = c + hexByte(192)
+    c = c + hexByte(10)
+    c = c + hexByte(72)
+    c = c + hexByte(255)
+    c = c + hexByte(201)
+    c = c + hexByte(235)
+    c = c + hexByte(242)
+    c = c + hexByte(73)
+    c = c + hexByte(137)
+    c = c + hexByte(199)
+    c = c + hexByte(242)
+    c = c + hexByte(72)
+    c = c + hexByte(15)
+    c = c + hexByte(42)
+    c = c + hexByte(200)
+    c = c + hexByte(242)
+    c = c + hexByte(15)
+    c = c + hexByte(89)
+    c = c + hexByte(193)
+    c = c + hexByte(72)
+    c = c + hexByte(184)
+    c = c + hexByte(0)
+    c = c + hexByte(0)
+    c = c + hexByte(0)
+    c = c + hexByte(0)
+    c = c + hexByte(0)
+    c = c + hexByte(0)
+    c = c + hexByte(224)
+    c = c + hexByte(63)
+    c = c + hexByte(102)
+    c = c + hexByte(72)
+    c = c + hexByte(15)
+    c = c + hexByte(110)
+    c = c + hexByte(200)
+    c = c + hexByte(242)
+    c = c + hexByte(15)
+    c = c + hexByte(88)
+    c = c + hexByte(193)
+    c = c + hexByte(242)
+    c = c + hexByte(72)
+    c = c + hexByte(15)
+    c = c + hexByte(44)
+    c = c + hexByte(192)
+    c = c + hexByte(73)
+    c = c + hexByte(137)
+    c = c + hexByte(197)
+    c = c + hexByte(106)
+    c = c + hexByte(48)
+    c = c + hexByte(95)
+    let disp = allocVAddr - (thisVAddr + 138)
+    c = c + hexByte(0xE8) + hexDword(disp)
+    c = c + hexByte(72)
+    c = c + hexByte(137)
+    c = c + hexByte(195)
+    c = c + hexByte(72)
+    c = c + hexByte(141)
+    c = c + hexByte(123)
+    c = c + hexByte(47)
+    c = c + hexByte(198)
+    c = c + hexByte(7)
+    c = c + hexByte(0)
+    c = c + hexByte(72)
+    c = c + hexByte(255)
+    c = c + hexByte(207)
+    c = c + hexByte(72)
+    c = c + hexByte(137)
+    c = c + hexByte(233)
+    c = c + hexByte(72)
+    c = c + hexByte(133)
+    c = c + hexByte(201)
+    c = c + hexByte(116)
+    c = c + hexByte(32)
+    c = c + hexByte(76)
+    c = c + hexByte(137)
+    c = c + hexByte(232)
+    c = c + hexByte(72)
+    c = c + hexByte(49)
+    c = c + hexByte(210)
+    c = c + hexByte(73)
+    c = c + hexByte(199)
+    c = c + hexByte(192)
+    c = c + hexByte(10)
+    c = c + hexByte(0)
+    c = c + hexByte(0)
+    c = c + hexByte(0)
+    c = c + hexByte(73)
+    c = c + hexByte(247)
+    c = c + hexByte(240)
+    c = c + hexByte(128)
+    c = c + hexByte(194)
+    c = c + hexByte(48)
+    c = c + hexByte(136)
+    c = c + hexByte(23)
+    c = c + hexByte(72)
+    c = c + hexByte(255)
+    c = c + hexByte(207)
+    c = c + hexByte(73)
+    c = c + hexByte(137)
+    c = c + hexByte(197)
+    c = c + hexByte(72)
+    c = c + hexByte(255)
+    c = c + hexByte(201)
+    c = c + hexByte(235)
+    c = c + hexByte(219)
+    c = c + hexByte(72)
+    c = c + hexByte(133)
+    c = c + hexByte(237)
+    c = c + hexByte(116)
+    c = c + hexByte(6)
+    c = c + hexByte(198)
+    c = c + hexByte(7)
+    c = c + hexByte(46)
+    c = c + hexByte(72)
+    c = c + hexByte(255)
+    c = c + hexByte(207)
+    c = c + hexByte(76)
+    c = c + hexByte(137)
+    c = c + hexByte(232)
+    c = c + hexByte(72)
+    c = c + hexByte(49)
+    c = c + hexByte(210)
+    c = c + hexByte(73)
+    c = c + hexByte(199)
+    c = c + hexByte(192)
+    c = c + hexByte(10)
+    c = c + hexByte(0)
+    c = c + hexByte(0)
+    c = c + hexByte(0)
+    c = c + hexByte(73)
+    c = c + hexByte(247)
+    c = c + hexByte(240)
+    c = c + hexByte(128)
+    c = c + hexByte(194)
+    c = c + hexByte(48)
+    c = c + hexByte(136)
+    c = c + hexByte(23)
+    c = c + hexByte(72)
+    c = c + hexByte(255)
+    c = c + hexByte(207)
+    c = c + hexByte(73)
+    c = c + hexByte(137)
+    c = c + hexByte(197)
+    c = c + hexByte(77)
+    c = c + hexByte(133)
+    c = c + hexByte(237)
+    c = c + hexByte(117)
+    c = c + hexByte(224)
+    c = c + hexByte(77)
+    c = c + hexByte(133)
+    c = c + hexByte(228)
+    c = c + hexByte(116)
+    c = c + hexByte(6)
+    c = c + hexByte(198)
+    c = c + hexByte(7)
+    c = c + hexByte(45)
+    c = c + hexByte(72)
+    c = c + hexByte(255)
+    c = c + hexByte(207)
+    c = c + hexByte(72)
+    c = c + hexByte(141)
+    c = c + hexByte(71)
+    c = c + hexByte(1)
+    c = c + hexByte(65)
+    c = c + hexByte(95)
+    c = c + hexByte(65)
+    c = c + hexByte(94)
+    c = c + hexByte(65)
+    c = c + hexByte(93)
+    c = c + hexByte(65)
+    c = c + hexByte(92)
+    c = c + hexByte(91)
+    c = c + hexByte(93)
+    c = c + hexByte(195)
+    emit c
+}
+func krFFormatSize() { emit 260 }
+
 // kr_repeat: build a string formed by concatenating s n times.
 //   In:  RDI = s (string ptr), RSI = n (small int OR string via kr_atoi)
 //   Out: RAX = pointer to fresh "ssss...s\0" of length slen*n
@@ -3461,6 +3760,7 @@ func funcVAddr(table, name) { emit labelOffset(table, name) }
 func opByteSize(op) {
     if op == "PUSH_STR"   { emit 11 }   // 48 BF imm64 (10) + 50/57 push (1)
     if op == "PUSH_INT"   { emit 11 }
+    if op == "PUSH_FLOAT" { emit 52 }  // mov rax,M; cvtsi2sd; mov rax,scale; cvtsi2sd; divsd; neg/nop(12); call box; push
     if op == "STORE_LOCAL"{ emit 8 }    // POP RAX (1) + MOV [RBP+d32], RAX (7)
     if op == "LOAD_LOCAL" { emit 8 }    // MOV RAX, [RBP+d32] (7) + PUSH RAX (1)
     if op == "LOAD_PARAM" { emit 8 }    // same encoding (positive disp32)
@@ -3600,11 +3900,26 @@ func opByteSize(op) {
     if op == "BUILTIN_PTYSLAVENAME"{ emit 73 }  // ioctl(TIOCGPTN); "/dev/pts/"+itoa(n)
     if op == "BUILTIN_PTYFORKEXEC" { emit 151 } // fork+setsid+open(slave)+TIOCSCTTY+dup2+execve
     if op == "BUILTIN_IOCTL"       { emit 11 }  // ioctl(fd,req,argp): generic — termios/winsz/VT later
+    if op == "BUILTIN_FADD"        { emit 22 }  // pop rsi,pop rdi,call load1,call load2,addsd,call box,push rax
+    if op == "BUILTIN_FSUB"        { emit 22 }
+    if op == "BUILTIN_FMUL"        { emit 22 }
+    if op == "BUILTIN_FDIV"        { emit 22 }
+    if op == "BUILTIN_FEQ"         { emit 23 }  // ucomisd; setcc al; movzx eax,al
+    if op == "BUILTIN_FLT"         { emit 23 }
+    if op == "BUILTIN_FGT"         { emit 23 }
+    if op == "BUILTIN_INTTOFLOAT"  { emit 12 }  // pop rdi, cvtsi2sd, call box, push
+    if op == "BUILTIN_FLOATTOINT"  { emit 12 }  // pop rdi, call load1, cvttsd2si, push
+    if op == "BUILTIN_FFORMAT"     { emit 8 }   // pop rsi,pop rdi,call fformat,push rax
+    if op == "BUILTIN_FFLOOR"      { emit 40 }
+    if op == "BUILTIN_FCEIL"       { emit 40 }
     if op == "POP"        { emit 1 }
     if op == "LABEL"      { emit 0 }
     if op == "JUMP"       { emit 5 }    // E9 + d32
     if op == "JUMPIFNOT"  { emit 10 }   // POP RAX (1) + TEST RAX,RAX (3) + JZ d32 (6)
     if op == "JUMPIF"     { emit 10 }   // POP RAX (1) + TEST RAX,RAX (3) + JNZ d32 (6)
+    if op == "TRY"        { emit 54 }   // catch record save (depth, addr, rsp, rbp)
+    if op == "ENDTRY"     { emit 19 }   // depth--
+    if op == "THROW"      { emit 49 }   // unwind to catch, restore rsp/rbp, jmp catchAddr
     if op == "END_FUNC"   { emit 8 }    // XOR RAX,RAX (3) + MOV RSP,RBP (3) + POP RBP (1) + RET (1)
     emit 0
 }
@@ -3864,8 +4179,15 @@ func parseIR(ir) {
                     opSb = sbAppend(opSb, "PUSH_STR " + idx)
                     opCount += 1
                 } else {
+                    let hasDot = 0
+                    let di = 0
+                    while di < len(rest) { if rest[di] == "." { hasDot = 1 }  di += 1 }
                     if opCount > 0 { opSb = sbAppend(opSb, "\n") }
-                    opSb = sbAppend(opSb, "PUSH_INT " + rest)
+                    if hasDot == 1 {
+                        opSb = sbAppend(opSb, "PUSH_FLOAT " + rest)
+                    } else {
+                        opSb = sbAppend(opSb, "PUSH_INT " + rest)
+                    }
                     opCount += 1
                 }
             } else if op == "CALL" {
@@ -4127,6 +4449,30 @@ func parseIR(ir) {
                     opSb = sbAppend(opSb, "BUILTIN_PTYFORKEXEC")
                 } else if bname == "ioctl" {
                     opSb = sbAppend(opSb, "BUILTIN_IOCTL")
+                } else if bname == "fadd" {
+                    opSb = sbAppend(opSb, "BUILTIN_FADD")
+                } else if bname == "fsub" {
+                    opSb = sbAppend(opSb, "BUILTIN_FSUB")
+                } else if bname == "fmul" {
+                    opSb = sbAppend(opSb, "BUILTIN_FMUL")
+                } else if bname == "fdiv" {
+                    opSb = sbAppend(opSb, "BUILTIN_FDIV")
+                } else if bname == "feq" {
+                    opSb = sbAppend(opSb, "BUILTIN_FEQ")
+                } else if bname == "flt" {
+                    opSb = sbAppend(opSb, "BUILTIN_FLT")
+                } else if bname == "fgt" {
+                    opSb = sbAppend(opSb, "BUILTIN_FGT")
+                } else if bname == "intToFloat" {
+                    opSb = sbAppend(opSb, "BUILTIN_INTTOFLOAT")
+                } else if bname == "floatToInt" {
+                    opSb = sbAppend(opSb, "BUILTIN_FLOATTOINT")
+                } else if bname == "fformat" {
+                    opSb = sbAppend(opSb, "BUILTIN_FFORMAT")
+                } else if bname == "ffloor" {
+                    opSb = sbAppend(opSb, "BUILTIN_FFLOOR")
+                } else if bname == "fceil" {
+                    opSb = sbAppend(opSb, "BUILTIN_FCEIL")
                 } else {
                     // Unknown builtin: emit a marker and leave the stack
                     // alone. Programs that hit this are already incorrect;
@@ -4138,11 +4484,11 @@ func parseIR(ir) {
             } else if op == "ADD" || op == "SUB" || op == "MUL" || op == "DIV" || op == "MOD"
                    || op == "EQ" || op == "NEQ" || op == "LT" || op == "GT" || op == "LTE" || op == "GTE"
                    || op == "CAT" || op == "INDEX" || op == "POP" || op == "RETURN"
-                   || op == "NEG" || op == "NOT" {
+                   || op == "NEG" || op == "NOT" || op == "ENDTRY" || op == "THROW" {
                 if opCount > 0 { opSb = sbAppend(opSb, "\n") }
                 opSb = sbAppend(opSb, op)
                 opCount += 1
-            } else if op == "LABEL" || op == "JUMP" || op == "JUMPIFNOT" || op == "JUMPIF" {
+            } else if op == "LABEL" || op == "JUMP" || op == "JUMPIFNOT" || op == "JUMPIF" || op == "TRY" {
                 if opCount > 0 { opSb = sbAppend(opSb, "\n") }
                 opSb = sbAppend(opSb, op + " " + rest)
                 opCount += 1
@@ -4232,7 +4578,7 @@ func computeLayout(opList, localCount) {
 // funcStartVAddr: virtual address of THIS function's first byte (for CALL disp calc)
 // krPrintVAddr/krStrIntVAddr: vaddrs of runtime helpers, used by BUILTIN_KP/BUILTIN_TOSTR
 
-func emitFuncCode(opList, strVAddrs, argcount, localCount, labels, funcVAddrs, funcStartVAddr, krPrintVAddr, krStrIntVAddr, krConcatVAddr, krAtoiVAddr, krLengthVAddr, krStrlenVAddr, krSplitVAddr, krRangeVAddr, krIndexVAddr, krArgVAddr, krArgcountVAddr, krSubstringVAddr, krAllocVAddr, krReadfileVAddr, krWritefileVAddr, krPrinterrVAddr, krCharcodeVAddr, krFromcharcodeVAddr, krExitVAddr, krIsdigitVAddr, krIsalphaVAddr, krAbsVAddr, krStartswithVAddr, krIstruthyVAddr, krLinecountVAddr, krGetlineVAddr, krTrimVAddr, krToupperVAddr, krTolowerVAddr, krPowVAddr, krRepeatVAddr, krPlusVAddr, krSubiVAddr, krMuliVAddr, krDiviVAddr, krModiVAddr, krCmpiVAddr, krContainsVAddr, krIndexofVAddr, krEndswithVAddr, krReplaceVAddr, krStrcmpVAddr, krReverseVAddr, krSbnewVAddr, krSbappendVAddr, krSbtostringVAddr, krMinVAddr, krMaxVAddr, krBitandVAddr, krBitorVAddr, krBitxorVAddr, krBitnotVAddr, krShlVAddr, krShrVAddr, krHexVAddr, krBinVAddr, krPadleftVAddr, krPadrightVAddr, globalsBase) {
+func emitFuncCode(opList, strVAddrs, argcount, localCount, labels, funcVAddrs, funcStartVAddr, krPrintVAddr, krStrIntVAddr, krConcatVAddr, krAtoiVAddr, krLengthVAddr, krStrlenVAddr, krSplitVAddr, krRangeVAddr, krIndexVAddr, krArgVAddr, krArgcountVAddr, krSubstringVAddr, krAllocVAddr, krReadfileVAddr, krWritefileVAddr, krPrinterrVAddr, krCharcodeVAddr, krFromcharcodeVAddr, krExitVAddr, krIsdigitVAddr, krIsalphaVAddr, krAbsVAddr, krStartswithVAddr, krIstruthyVAddr, krLinecountVAddr, krGetlineVAddr, krTrimVAddr, krToupperVAddr, krTolowerVAddr, krPowVAddr, krRepeatVAddr, krPlusVAddr, krSubiVAddr, krMuliVAddr, krDiviVAddr, krModiVAddr, krCmpiVAddr, krContainsVAddr, krIndexofVAddr, krEndswithVAddr, krReplaceVAddr, krStrcmpVAddr, krReverseVAddr, krSbnewVAddr, krSbappendVAddr, krSbtostringVAddr, krMinVAddr, krMaxVAddr, krBitandVAddr, krBitorVAddr, krBitxorVAddr, krBitnotVAddr, krShlVAddr, krShrVAddr, krHexVAddr, krBinVAddr, krPadleftVAddr, krPadrightVAddr, krFLoad1VAddr, krFLoad2VAddr, krFBoxVAddr, krFFormatVAddr, globalsBase, catchBase) {
     let c = sbNew()
     c = sbAppend(c, hexByte(0x55))  // [+0] PUSH RBP
     c = sbAppend(c, hexByte(0x48) + hexByte(0x89) + hexByte(0xE5))  // [+1] MOV RBP, RSP
@@ -4265,6 +4611,43 @@ func emitFuncCode(opList, strVAddrs, argcount, localCount, labels, funcVAddrs, f
             let n = toInt(rest)
             c = sbAppend(c, hexByte(0x48) + hexByte(0xBF) + hexQword(n))
             c = sbAppend(c, hexByte(0x57))
+        } else if op == "PUSH_FLOAT" {
+            // Materialize float literal as M/scale boxed f64. 52 bytes fixed.
+            let lit = rest
+            let neg = 0
+            let p = 0
+            if len(lit) > 0 && lit[0] == "-" { neg = 1  p = 1 }
+            let M = 0
+            let fracN = 0
+            let seenDot = 0
+            while p < len(lit) {
+                let ch = lit[p]
+                if ch == "." {
+                    seenDot = 1
+                } else {
+                    M = M * 10 + toInt(ch)
+                    if seenDot == 1 { fracN = fracN + 1 }
+                }
+                p += 1
+            }
+            let scale = 1
+            let si = 0
+            while si < fracN { scale = scale * 10  si += 1 }
+            c = sbAppend(c, hexByte(0x48) + hexByte(0xB8) + hexQword(M))      // mov rax, M (10)
+            c = sbAppend(c, hexByte(0xF2) + hexByte(0x48) + hexByte(0x0F) + hexByte(0x2A) + hexByte(0xC0)) // cvtsi2sd xmm0,rax (5)
+            c = sbAppend(c, hexByte(0x48) + hexByte(0xB8) + hexQword(scale))  // mov rax, scale (10)
+            c = sbAppend(c, hexByte(0xF2) + hexByte(0x48) + hexByte(0x0F) + hexByte(0x2A) + hexByte(0xC8)) // cvtsi2sd xmm1,rax (5)
+            c = sbAppend(c, hexByte(0xF2) + hexByte(0x0F) + hexByte(0x5E) + hexByte(0xC1)) // divsd xmm0,xmm1 (4)
+            if neg == 1 {
+                c = sbAppend(c, hexByte(0x66) + hexByte(0x0F) + hexByte(0x57) + hexByte(0xC9)) // xorpd xmm1,xmm1
+                c = sbAppend(c, hexByte(0xF2) + hexByte(0x0F) + hexByte(0x5C) + hexByte(0xC8)) // subsd xmm1,xmm0
+                c = sbAppend(c, hexByte(0x66) + hexByte(0x0F) + hexByte(0x28) + hexByte(0xC1)) // movapd xmm0,xmm1 (12)
+            } else {
+                c = sbAppend(c, hexByte(0x90)+hexByte(0x90)+hexByte(0x90)+hexByte(0x90)+hexByte(0x90)+hexByte(0x90)+hexByte(0x90)+hexByte(0x90)+hexByte(0x90)+hexByte(0x90)+hexByte(0x90)+hexByte(0x90)) // 12 nops
+            }
+            let d1 = krFBoxVAddr - (funcStartVAddr + off + 51)
+            c = sbAppend(c, hexByte(0xE8) + hexDword(d1))                      // call fBox (5)
+            c = sbAppend(c, hexByte(0x50))                                     // push rax (1)
         } else if op == "STORE_LOCAL" {
             let slot = toInt(rest)
             let dispVal = 0 - (slot * 8)
@@ -4597,6 +4980,43 @@ func emitFuncCode(opList, strVAddrs, argcount, localCount, labels, funcVAddrs, f
             c = sbAppend(c, hexByte(0x48) + hexByte(0x85) + hexByte(0xC0))  // TEST RAX, RAX
             let disp = target - (off + 10)
             c = sbAppend(c, hexByte(0x0F) + hexByte(0x85) + hexDword(disp))  // JNZ d32
+        } else if op == "TRY" {
+            // TRY <catchLabel>: push catch record {catchAddr, rsp, rbp} and depth++.
+            let targetStr = labelOffset(labels, rest)
+            let target = toInt(targetStr)
+            let catchAddrV = funcStartVAddr + target
+            c = sbAppend(c, hexByte(0x48) + hexByte(0xB8) + hexQwordVaddr(catchAddrV)) // movabs rax, catchAddr
+            c = sbAppend(c, hexByte(0x48) + hexByte(0xB9) + hexQwordVaddr(catchBase))  // movabs rcx, catchBase
+            c = sbAppend(c, hexByte(0x48) + hexByte(0x8B) + hexByte(0x11))              // mov rdx, [rcx]
+            c = sbAppend(c, hexByte(0x48) + hexByte(0xC1) + hexByte(0xE2) + hexByte(0x05)) // shl rdx,5
+            c = sbAppend(c, hexByte(0x48) + hexByte(0x01) + hexByte(0xCA))              // add rdx, rcx
+            c = sbAppend(c, hexByte(0x48) + hexByte(0x89) + hexByte(0x42) + hexByte(0x08)) // mov [rdx+8], rax
+            c = sbAppend(c, hexByte(0x48) + hexByte(0x89) + hexByte(0xE0))              // mov rax, rsp
+            c = sbAppend(c, hexByte(0x48) + hexByte(0x89) + hexByte(0x42) + hexByte(0x10)) // mov [rdx+16], rax
+            c = sbAppend(c, hexByte(0x48) + hexByte(0x89) + hexByte(0x6A) + hexByte(0x18)) // mov [rdx+24], rbp
+            c = sbAppend(c, hexByte(0x48) + hexByte(0x8B) + hexByte(0x01))              // mov rax, [rcx]
+            c = sbAppend(c, hexByte(0x48) + hexByte(0xFF) + hexByte(0xC0))              // inc rax
+            c = sbAppend(c, hexByte(0x48) + hexByte(0x89) + hexByte(0x01))              // mov [rcx], rax
+        } else if op == "ENDTRY" {
+            c = sbAppend(c, hexByte(0x48) + hexByte(0xB9) + hexQwordVaddr(catchBase))   // movabs rcx, catchBase
+            c = sbAppend(c, hexByte(0x48) + hexByte(0x8B) + hexByte(0x01))              // mov rax, [rcx]
+            c = sbAppend(c, hexByte(0x48) + hexByte(0xFF) + hexByte(0xC8))              // dec rax
+            c = sbAppend(c, hexByte(0x48) + hexByte(0x89) + hexByte(0x01))              // mov [rcx], rax
+        } else if op == "THROW" {
+            c = sbAppend(c, hexByte(0x58))                                               // pop rax
+            c = sbAppend(c, hexByte(0x49) + hexByte(0x89) + hexByte(0xC3))              // mov r11, rax
+            c = sbAppend(c, hexByte(0x48) + hexByte(0xB9) + hexQwordVaddr(catchBase))   // movabs rcx, catchBase
+            c = sbAppend(c, hexByte(0x48) + hexByte(0x8B) + hexByte(0x11))              // mov rdx, [rcx]
+            c = sbAppend(c, hexByte(0x48) + hexByte(0xFF) + hexByte(0xCA))              // dec rdx
+            c = sbAppend(c, hexByte(0x48) + hexByte(0x89) + hexByte(0x11))              // mov [rcx], rdx
+            c = sbAppend(c, hexByte(0x48) + hexByte(0xC1) + hexByte(0xE2) + hexByte(0x05)) // shl rdx,5
+            c = sbAppend(c, hexByte(0x48) + hexByte(0x01) + hexByte(0xCA))              // add rdx, rcx
+            c = sbAppend(c, hexByte(0x48) + hexByte(0x8B) + hexByte(0x42) + hexByte(0x08)) // mov rax, [rdx+8]
+            c = sbAppend(c, hexByte(0x4C) + hexByte(0x8B) + hexByte(0x52) + hexByte(0x10)) // mov r10, [rdx+16]
+            c = sbAppend(c, hexByte(0x48) + hexByte(0x8B) + hexByte(0x6A) + hexByte(0x18)) // mov rbp, [rdx+24]
+            c = sbAppend(c, hexByte(0x4C) + hexByte(0x89) + hexByte(0xD4))              // mov rsp, r10
+            c = sbAppend(c, hexByte(0x41) + hexByte(0x53))                              // push r11
+            c = sbAppend(c, hexByte(0xFF) + hexByte(0xE0))                              // jmp rax
         } else if op == "RETURN" {
             c = sbAppend(c, hexByte(0x58))
             c = sbAppend(c, hexByte(0x48) + hexByte(0x89) + hexByte(0xEC))
@@ -5968,6 +6388,79 @@ func emitFuncCode(opList, strVAddrs, argcount, localCount, labels, funcVAddrs, f
             let fpv = toInt(funcVAddr(funcVAddrs, rest))
             c = sbAppend(c, hexByte(0x48) + hexByte(0xBF) + hexQwordVaddr(fpv))  // MOV RDI, base+offset
             c = sbAppend(c, hexByte(0x57))                                       // PUSH RDI
+        } else if op == "BUILTIN_FADD" || op == "BUILTIN_FSUB" || op == "BUILTIN_FMUL" || op == "BUILTIN_FDIV" {
+            // pop b(rsi), pop a(rdi), load a->xmm0, load b->xmm1, op, box, push
+            c = sbAppend(c, hexByte(0x5E))                                     // 0: pop rsi (b)
+            c = sbAppend(c, hexByte(0x5F))                                     // 1: pop rdi (a)
+            let d1 = krFLoad1VAddr - (funcStartVAddr + off + 7)
+            c = sbAppend(c, hexByte(0xE8) + hexDword(d1))                      // 2: call fLoad1 (5)
+            let d2 = krFLoad2VAddr - (funcStartVAddr + off + 12)
+            c = sbAppend(c, hexByte(0xE8) + hexDword(d2))                      // 7: call fLoad2 (5)
+            if op == "BUILTIN_FADD"      { c = sbAppend(c, hexByte(0xF2) + hexByte(0x0F) + hexByte(0x58) + hexByte(0xC1)) } // addsd xmm0,xmm1
+            else if op == "BUILTIN_FSUB" { c = sbAppend(c, hexByte(0xF2) + hexByte(0x0F) + hexByte(0x5C) + hexByte(0xC1)) } // subsd
+            else if op == "BUILTIN_FMUL" { c = sbAppend(c, hexByte(0xF2) + hexByte(0x0F) + hexByte(0x59) + hexByte(0xC1)) } // mulsd
+            else                         { c = sbAppend(c, hexByte(0xF2) + hexByte(0x0F) + hexByte(0x5E) + hexByte(0xC1)) } // divsd
+            let d3 = krFBoxVAddr - (funcStartVAddr + off + 21)
+            c = sbAppend(c, hexByte(0xE8) + hexDword(d3))                      // 16: call fBox (5)
+            c = sbAppend(c, hexByte(0x50))                                     // 21? no wait - 0:pop rsi(1)=1,1:pop rdi(1)=2,2:call(5)=7,7:call(5)=12,12:op(4)=16,16:call(5)=21,21:push(1)=22 => total 22?
+            // wait let us count: 1+1+5+5+4+5+1 = 22 bytes. I said 21 in opByteSize. Need to fix.
+        } else if op == "BUILTIN_FEQ" || op == "BUILTIN_FLT" || op == "BUILTIN_FGT" {
+            c = sbAppend(c, hexByte(0x5E))                                     // pop rsi (b)
+            c = sbAppend(c, hexByte(0x5F))                                     // pop rdi (a)
+            let d1 = krFLoad1VAddr - (funcStartVAddr + off + 7)
+            c = sbAppend(c, hexByte(0xE8) + hexDword(d1))                      // call fLoad1
+            let d2 = krFLoad2VAddr - (funcStartVAddr + off + 12)
+            c = sbAppend(c, hexByte(0xE8) + hexDword(d2))                      // call fLoad2
+            c = sbAppend(c, hexByte(0x66) + hexByte(0x0F) + hexByte(0x2E) + hexByte(0xC1)) // ucomisd xmm0,xmm1
+            if op == "BUILTIN_FEQ"      { c = sbAppend(c, hexByte(0x0F) + hexByte(0x94) + hexByte(0xC0)) } // sete al
+            else if op == "BUILTIN_FLT" { c = sbAppend(c, hexByte(0x0F) + hexByte(0x92) + hexByte(0xC0)) } // setb al
+            else                        { c = sbAppend(c, hexByte(0x0F) + hexByte(0x97) + hexByte(0xC0)) } // seta al
+            c = sbAppend(c, hexByte(0x0F) + hexByte(0xB6) + hexByte(0xC0))   // movzx eax,al
+            c = sbAppend(c, hexByte(0x50))                                     // push rax
+            // 1+1+5+5+4+3+3+1 = 23 bytes
+        } else if op == "BUILTIN_INTTOFLOAT" {
+            c = sbAppend(c, hexByte(0x5F))                                     // pop rdi
+            c = sbAppend(c, hexByte(0xF2) + hexByte(0x48) + hexByte(0x0F) + hexByte(0x2A) + hexByte(0xC7)) // cvtsi2sd xmm0,rdi
+            let d1 = krFBoxVAddr - (funcStartVAddr + off + 11)
+            c = sbAppend(c, hexByte(0xE8) + hexDword(d1))                      // call fBox
+            c = sbAppend(c, hexByte(0x50))                                     // push rax
+            // 1+5+5+1 = 12 bytes
+        } else if op == "BUILTIN_FLOATTOINT" {
+            c = sbAppend(c, hexByte(0x5F))                                     // pop rdi
+            let d1 = krFLoad1VAddr - (funcStartVAddr + off + 6)
+            c = sbAppend(c, hexByte(0xE8) + hexDword(d1))                      // call fLoad1
+            c = sbAppend(c, hexByte(0xF2) + hexByte(0x48) + hexByte(0x0F) + hexByte(0x2C) + hexByte(0xC0)) // cvttsd2si rax,xmm0
+            c = sbAppend(c, hexByte(0x50))                                     // push rax
+            // 1+5+5+1 = 12 bytes
+        } else if op == "BUILTIN_FFLOOR" || op == "BUILTIN_FCEIL" {
+            c = sbAppend(c, hexByte(0x5F))                                     // pop rdi (1)
+            let d1 = krFLoad1VAddr - (funcStartVAddr + off + 6)
+            c = sbAppend(c, hexByte(0xE8) + hexDword(d1))                      // call fLoad1 (5) => 6
+            c = sbAppend(c, hexByte(0xF2) + hexByte(0x48) + hexByte(0x0F) + hexByte(0x2C) + hexByte(0xC0)) // cvttsd2si rax,xmm0 (5) => 11
+            c = sbAppend(c, hexByte(0xF2) + hexByte(0x48) + hexByte(0x0F) + hexByte(0x2A) + hexByte(0xC8)) // cvtsi2sd xmm1,rax (5) => 16
+            c = sbAppend(c, hexByte(0x66) + hexByte(0x0F) + hexByte(0x2E) + hexByte(0xC8)) // ucomisd xmm1,xmm0 (4) => 20
+            if op == "BUILTIN_FFLOOR" {
+                c = sbAppend(c, hexByte(0x76) + hexByte(0x08))                 // jbe +8 (2) => 22
+            } else {
+                c = sbAppend(c, hexByte(0x73) + hexByte(0x08))                 // jae +8 (2) => 22
+            }
+            if op == "BUILTIN_FFLOOR" {
+                c = sbAppend(c, hexByte(0x48) + hexByte(0xFF) + hexByte(0xC8)) // dec rax (3) => 25
+            } else {
+                c = sbAppend(c, hexByte(0x48) + hexByte(0xFF) + hexByte(0xC0)) // inc rax (3) => 25
+            }
+            c = sbAppend(c, hexByte(0xF2) + hexByte(0x48) + hexByte(0x0F) + hexByte(0x2A) + hexByte(0xC8)) // cvtsi2sd xmm1,rax (5) => 30
+            c = sbAppend(c, hexByte(0x66) + hexByte(0x0F) + hexByte(0x28) + hexByte(0xC1)) // movapd xmm0,xmm1 (4) => 34
+            let d2 = krFBoxVAddr - (funcStartVAddr + off + 39)
+            c = sbAppend(c, hexByte(0xE8) + hexDword(d2))                      // call fBox (5) => 39
+            c = sbAppend(c, hexByte(0x50))                                     // push rax (1) => 40
+        } else if op == "BUILTIN_FFORMAT" {
+            c = sbAppend(c, hexByte(0x5E))                                     // pop rsi (prec)
+            c = sbAppend(c, hexByte(0x5F))                                     // pop rdi (value)
+            let d1 = krFFormatVAddr - (funcStartVAddr + off + 7)
+            c = sbAppend(c, hexByte(0xE8) + hexDword(d1))                      // call fFormat
+            c = sbAppend(c, hexByte(0x50))                                     // push rax
+            // 1+1+5+1 = 8 bytes - wait, let us count carefully
         } else if op == "BUILTIN_CALLPTR" {
             // callPtr fnptr,arg0..argK — indirect call through a function pointer.
             // Stack at entry (top→bottom): argK-1, .., arg0, fnptr (fnptr deepest).
@@ -6322,6 +6815,10 @@ just run {
     let krBiSz = krBinSize()
     let krPlfSz = krPadleftSize()
     let krPrtSz = krPadrightSize()
+    let krFL1Sz = krFLoad1Size()
+    let krFL2Sz = krFLoad2Size()
+    let krFBxSz = krFBoxSize()
+    let krFFmtSz = krFFormatSize()
 
     let fIdx = 0
     while fIdx < funcCount {
@@ -6456,9 +6953,13 @@ just run {
     let krBinVAddr        = krHexVAddr + krHxSz
     let krPadleftVAddr    = krBinVAddr + krBiSz
     let krPadrightVAddr   = krPadleftVAddr + krPlfSz
+    let krFLoad1VAddr     = krPadrightVAddr + krPrtSz
+    let krFLoad2VAddr     = krFLoad1VAddr + krFL1Sz
+    let krFBoxVAddr       = krFLoad2VAddr + krFL2Sz
+    let krFFormatVAddr    = krFBoxVAddr + krFBxSz
 
     // String virtual addresses (after all runtime helpers)
-    let stringsBase = krPadrightVAddr + krPrtSz
+    let stringsBase = krFFormatVAddr + krFFmtSz
     let globalsBase = 0
     let strVAddrs = ""
     let strData = ""
@@ -6475,6 +6976,7 @@ just run {
     // Module-globals page: appended after rodata strings, zero-initialized,
     // read/written at runtime (PT_LOAD is RWX).
     globalsBase = stringsBase + curOff
+    let catchBase = globalsBase + nGlobals * 8
 
     // ── Emit pass: for each function in order, emit code with resolved CALL targets ──
     let allFuncCode = ""
@@ -6505,7 +7007,7 @@ just run {
         let nm2 = substring(hh, ss1 + 1, ss2)
         let funcStartV2 = toInt(funcVAddr(funcVAddrs, nm2))
 
-        let codeI = emitFuncCode(opStr2, strVAddrs, argc2, lcCount2, lab2, funcVAddrs, funcStartV2, krPrintVAddr, krStrIntVAddr, krConcatVAddr, krAtoiVAddr, krLengthVAddr, krStrlenVAddr, krSplitVAddr, krRangeVAddr, krIndexVAddr, krArgVAddr, krArgcountVAddr, krSubstringVAddr, krAllocVAddr, krReadfileVAddr, krWritefileVAddr, krPrinterrVAddr, krCharcodeVAddr, krFromcharcodeVAddr, krExitVAddr, krIsdigitVAddr, krIsalphaVAddr, krAbsVAddr, krStartswithVAddr, krIstruthyVAddr, krLinecountVAddr, krGetlineVAddr, krTrimVAddr, krToupperVAddr, krTolowerVAddr, krPowVAddr, krRepeatVAddr, krPlusVAddr, krSubiVAddr, krMuliVAddr, krDiviVAddr, krModiVAddr, krCmpiVAddr, krContainsVAddr, krIndexofVAddr, krEndswithVAddr, krReplaceVAddr, krStrcmpVAddr, krReverseVAddr, krSbnewVAddr, krSbappendVAddr, krSbtostringVAddr, krMinVAddr, krMaxVAddr, krBitandVAddr, krBitorVAddr, krBitxorVAddr, krBitnotVAddr, krShlVAddr, krShrVAddr, krHexVAddr, krBinVAddr, krPadleftVAddr, krPadrightVAddr, globalsBase)
+        let codeI = emitFuncCode(opStr2, strVAddrs, argc2, lcCount2, lab2, funcVAddrs, funcStartV2, krPrintVAddr, krStrIntVAddr, krConcatVAddr, krAtoiVAddr, krLengthVAddr, krStrlenVAddr, krSplitVAddr, krRangeVAddr, krIndexVAddr, krArgVAddr, krArgcountVAddr, krSubstringVAddr, krAllocVAddr, krReadfileVAddr, krWritefileVAddr, krPrinterrVAddr, krCharcodeVAddr, krFromcharcodeVAddr, krExitVAddr, krIsdigitVAddr, krIsalphaVAddr, krAbsVAddr, krStartswithVAddr, krIstruthyVAddr, krLinecountVAddr, krGetlineVAddr, krTrimVAddr, krToupperVAddr, krTolowerVAddr, krPowVAddr, krRepeatVAddr, krPlusVAddr, krSubiVAddr, krMuliVAddr, krDiviVAddr, krModiVAddr, krCmpiVAddr, krContainsVAddr, krIndexofVAddr, krEndswithVAddr, krReplaceVAddr, krStrcmpVAddr, krReverseVAddr, krSbnewVAddr, krSbappendVAddr, krSbtostringVAddr, krMinVAddr, krMaxVAddr, krBitandVAddr, krBitorVAddr, krBitxorVAddr, krBitnotVAddr, krShlVAddr, krShrVAddr, krHexVAddr, krBinVAddr, krPadleftVAddr, krPadrightVAddr, krFLoad1VAddr, krFLoad2VAddr, krFBoxVAddr, krFFormatVAddr, globalsBase, catchBase)
         allFuncCode = allFuncCode + codeI
         oIdx2 += 1
     }
@@ -6586,7 +7088,11 @@ just run {
     let krBinCode        = emitKrBinCode(krBinVAddr, krAllocVAddr, krAtoiVAddr)
     let krPadleftCode    = emitKrPadleftCode(krPadleftVAddr, krAtoiVAddr, krStrlenVAddr, krAllocVAddr)
     let krPadrightCode   = emitKrPadrightCode(krPadrightVAddr, krAtoiVAddr, krStrlenVAddr, krAllocVAddr)
-    let segment = startCode + allFuncCode + krPrintCode + krStrIntCode + krAllocCode + krStrlenCode + krConcatCode + krAtoiCode + krLengthCode + krSplitCode + krRangeCode + krIndexCode + krArgCode + krArgcountCode + krSubstringCode + krReadfileCode + krWritefileCode + krWritebytesCode + krSbnewCode + krSbappendCode + krSbtostringCode + krPrinterrCode + krCharcodeCode + krFromcharcodeCode + krExitCode + krIsdigitCode + krIsalphaCode + krAbsCode + krStartswithCode + krIstruthyCode + krLinecountCode + krGetlineCode + krTrimCode + krToupperCode + krTolowerCode + krPowCode + krRepeatCode + krIsnumCode + krPlusCode + krAtoi2Code + krSubiCode + krMuliCode + krDiviCode + krModiCode + krStrcmpCode + krCmpiCode + krStrstrCode + krContainsCode + krIndexofCode + krEndswithCode + krReplaceCode2 + krReverseCode + krMinCode + krMaxCode + krBitandCode + krBitorCode + krBitxorCode + krBitnotCode + krShlCode + krShrCode + krHexCode + krBinCode + krPadleftCode + krPadrightCode + strData + hexPad(nGlobals * 8)
+    let krFLoad1Code = emitKrFLoad1Code()
+    let krFLoad2Code = emitKrFLoad2Code()
+    let krFBoxCode   = emitKrFBoxCode(krFBoxVAddr, krAllocVAddr)
+    let krFFormatCode = emitKrFFormatCode(krFFormatVAddr, krAllocVAddr)
+    let segment = startCode + allFuncCode + krPrintCode + krStrIntCode + krAllocCode + krStrlenCode + krConcatCode + krAtoiCode + krLengthCode + krSplitCode + krRangeCode + krIndexCode + krArgCode + krArgcountCode + krSubstringCode + krReadfileCode + krWritefileCode + krWritebytesCode + krSbnewCode + krSbappendCode + krSbtostringCode + krPrinterrCode + krCharcodeCode + krFromcharcodeCode + krExitCode + krIsdigitCode + krIsalphaCode + krAbsCode + krStartswithCode + krIstruthyCode + krLinecountCode + krGetlineCode + krTrimCode + krToupperCode + krTolowerCode + krPowCode + krRepeatCode + krIsnumCode + krPlusCode + krAtoi2Code + krSubiCode + krMuliCode + krDiviCode + krModiCode + krStrcmpCode + krCmpiCode + krStrstrCode + krContainsCode + krIndexofCode + krEndswithCode + krReplaceCode2 + krReverseCode + krMinCode + krMaxCode + krBitandCode + krBitorCode + krBitxorCode + krBitnotCode + krShlCode + krShrCode + krHexCode + krBinCode + krPadleftCode + krPadrightCode + krFLoad1Code + krFLoad2Code + krFBoxCode + krFFormatCode + strData + hexPad(nGlobals * 8 + 8224)
     let segSize = hexBytesLen(segment)
     let fileSize = HDR_SIZE + segSize
 
