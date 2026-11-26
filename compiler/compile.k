@@ -4604,7 +4604,7 @@ just run {
         file = arg(argIdx + "")
     }
 
-    if target != "" && target != "ios-sim-arm64" && target != "ios-device-arm64" {
+    if target != "" && target != "ios-sim-arm64" && target != "ios-device-arm64" && target != "linux_x86_64" && target != "linux_aarch64" && target != "macos_arm64" {
         printErr("kcc: unsupported target '" + target + "'")
         emit 1
     }

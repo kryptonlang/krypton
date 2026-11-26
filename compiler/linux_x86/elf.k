@@ -1445,12 +1445,6 @@ func emitKrSbtostringCode() {
 }
 func krSbtostringSize() { emit 5 }
 
-// kr_printerr: like kr_print, but writes to stderr (fd 2) instead of stdout.
-// Also appends a trailing newline to match printf("%s\n", s) parity.
-//   In:  RDI = string ptr (NUL-terminated)
-//   Out: nothing
-//
-// Identical to kr_print except every fd is 2 instead of 1. Layout 60 bytes.
 func emitKrPrinterrCode() {
     let c = ""
     c = c + hexByte(0x53)
@@ -6592,7 +6586,6 @@ just run {
     let krBinCode        = emitKrBinCode(krBinVAddr, krAllocVAddr, krAtoiVAddr)
     let krPadleftCode    = emitKrPadleftCode(krPadleftVAddr, krAtoiVAddr, krStrlenVAddr, krAllocVAddr)
     let krPadrightCode   = emitKrPadrightCode(krPadrightVAddr, krAtoiVAddr, krStrlenVAddr, krAllocVAddr)
-
     let segment = startCode + allFuncCode + krPrintCode + krStrIntCode + krAllocCode + krStrlenCode + krConcatCode + krAtoiCode + krLengthCode + krSplitCode + krRangeCode + krIndexCode + krArgCode + krArgcountCode + krSubstringCode + krReadfileCode + krWritefileCode + krWritebytesCode + krSbnewCode + krSbappendCode + krSbtostringCode + krPrinterrCode + krCharcodeCode + krFromcharcodeCode + krExitCode + krIsdigitCode + krIsalphaCode + krAbsCode + krStartswithCode + krIstruthyCode + krLinecountCode + krGetlineCode + krTrimCode + krToupperCode + krTolowerCode + krPowCode + krRepeatCode + krIsnumCode + krPlusCode + krAtoi2Code + krSubiCode + krMuliCode + krDiviCode + krModiCode + krStrcmpCode + krCmpiCode + krStrstrCode + krContainsCode + krIndexofCode + krEndswithCode + krReplaceCode2 + krReverseCode + krMinCode + krMaxCode + krBitandCode + krBitorCode + krBitxorCode + krBitnotCode + krShlCode + krShrCode + krHexCode + krBinCode + krPadleftCode + krPadrightCode + strData + hexPad(nGlobals * 8)
     let segSize = hexBytesLen(segment)
     let fileSize = HDR_SIZE + segSize

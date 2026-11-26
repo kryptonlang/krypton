@@ -78,6 +78,7 @@ func e_svc() { emit wordHL(54272, 1) }
 // branches: off = target - this instruction, in bytes (multiple of 4)
 func e_b(dsp)  { let q = dsp / 4  if q < 0 { q = q + 67108864 }  emit wordHL(5120 + q / 65536, q % 65536) }
 func e_bl(dsp) { let q = dsp / 4  if q < 0 { q = q + 67108864 }  emit wordHL(37888 + q / 65536, q % 65536) }
+func e_blr(rm) { emit wordHL(54847, rm * 32) }                 // blr Xm
 func e_cbz(rt, dsp)  { let q = dsp / 4  if q < 0 { q = q + 524288 }  let p = q * 32 + rt  emit wordHL(46080 + p / 65536, p % 65536) }
 func e_cbnz(rt, dsp) { let q = dsp / 4  if q < 0 { q = q + 524288 }  let p = q * 32 + rt  emit wordHL(46336 + p / 65536, p % 65536) }
 func e_bhs(dsp) { let q = dsp / 4  if q < 0 { q = q + 524288 }  let p = q * 32 + 2  emit wordHL(21504 + p / 65536, p % 65536) }
@@ -625,6 +626,26 @@ func emitReadFile(allocOff, thisOff) {
     c = c + e_movr(30, 26) + e_ret()                           // [112,116]
     emit c
 }
+func emitReadProc(allocOff, thisOff) {
+    let c = e_movr(23, 30) + e_movr(1, 0) + e_movn(0, 99)       // [0,4,8] lr; path; AT_FDCWD
+    c = c + e_movz(2, 0) + e_movz(3, 0)                         // [12,16] O_RDONLY; mode 0
+    c = c + e_movz(8, 56) + e_svc()                                  // [20,24] openat
+    c = c + e_cmpi0(0) + e_blt(100)                                  // [28,32] fd<0 -> .err(132)
+    c = c + e_movr(24, 0) + e_movz(0, 0) + e_movk16(0, 4)      // [36,40,44] fd; size=256KB
+    c = c + e_bl(allocOff - (thisOff + 48)) + e_movr(25, 0)     // [48,52] buf=alloc(size)
+    c = c + e_movr(26, 0) + e_movz(27, 65535)                   // [56,60] cursor=buf; remaining
+    c = c + e_movr(0, 24) + e_movr(1, 26) + e_movr(2, 27)       // [64,68,72] .loop: read(fd,cursor,remaining)
+    c = c + e_movz(8, 63) + e_svc()                                  // [76,80] read
+    c = c + e_cmpi0(0) + e_ble(16)                                    // [84,88] nread<=0 -> .done(104)
+    c = c + e_addr(26, 26, 0) + e_subr(27, 27, 0)               // [92,96] cursor+=nread; remaining-=nread
+    c = c + e_cbnz(27, 0 - 36)                                  // [100] remaining!=0 -> .loop(64)
+    c = c + e_strb(31, 26) + e_movr(0, 24)                      // [104,108] .done: *cursor=0; fd
+    c = c + e_movz(8, 57) + e_svc() + e_movr(0, 25)             // [112,116,120] close; return buf
+    c = c + e_movr(30, 23) + e_ret()                            // [124,128]
+    c = c + e_movz(0, 1) + e_bl(allocOff - (thisOff + 136))      // [132,136] .err: alloc(1)
+    c = c + e_strb(31, 0) + e_movr(30, 23) + e_ret()            // [140,144,148] return ""
+    emit c
+}
 // kr_writefile(x1=path, x0=content) -> 0. 96 bytes. openat(WRONLY|CREAT|TRUNC=577,
 // mode 0644=420), write, close.
 // NB: <=3 terms per line (x86-backend miscompile drops terms from long chains).
@@ -1115,6 +1136,7 @@ func buildSlots(ir, fStart) {
 func opSize(ln) {
     let op = opcode(ln)
     if op == "PUSH"    { emit 16 }
+    if op == "FUNCPTR" { emit 16 }
     if op == "STORE"   { emit 12 }
     if op == "LOAD"    { emit 12 }
     if op == "ADD"     { emit 28 }
@@ -1191,6 +1213,8 @@ func opSize(ln) {
         if startsWith(b, "isDigit")    { emit 20 }  // 1-arg: pop + bl kr_isdigit + push
         if startsWith(b, "replace")    { emit 36 }  // 3-arg: pop x2/x1/x0 + bl kr_replace + push
         if startsWith(b, "environ")    { emit 20 }  // 1-arg: pop + bl kr_environ + push
+        if startsWith(b, "readProc")   { emit 20 }  // 1-arg: pop + bl kr_readproc + push
+        if startsWith(b, "callPtr")    { emit 28 }  // load fp, blr, replace fp slot with callee result
         if startsWith(b, "shellRun")   { emit 20 }  // 1-arg: pop + bl kr_shellrun + push
         if startsWith(b, "gcCollect")    { emit 12 }  // no-op (bump allocator): push 0
         if startsWith(b, "gcAllocCount") { emit 20 }  // load gcGlobals[count]
@@ -1296,7 +1320,8 @@ just run {
     let replaceOff = strlenOff + 32        // kr_strlen is 32 bytes
     let environOff = replaceOff + 228      // kr_replace is 228 bytes
     let shellrunOff = environOff + 120     // kr_environ is 120 bytes
-    let nlOff = shellrunOff + 188          // kr_shellrun is 188 bytes
+    let readprocOff = shellrunOff + 188    // kr_shellrun is 188 bytes
+    let nlOff = readprocOff + 152          // kr_readproc is 152 bytes
     let dataOff = nlOff + 1
     // Load base = 0x7F000000 (= 32512<<16) so the int/pointer threshold is high
     // enough for real ints (matches the x86 backend). The backend itself can't hold
@@ -1371,6 +1396,11 @@ just run {
             } else {
                 code = sbAppend(code, c_loadImm(toInt(operand(ln))) + c_push())
             }
+            off = off + 16
+        }
+        if op == "FUNCPTR" {
+            let fpOff = toInt(funcVaddrOf(funcTab, operand(ln)))
+            code = sbAppend(code, e_movz(0, fpOff % 65536) + e_movk16(0, 32512 + fpOff / 65536) + c_push())
             off = off + 16
         }
         if op == "STORE" { code = sbAppend(code, c_pop0() + e_strIdx(0, 19, toInt(tabLookup(curSlots, operand(ln)))))  off = off + 12 }
@@ -1555,6 +1585,18 @@ just run {
             // replace(s, find, rep): pop rep->x2, find->x1, s->x0; kr_replace; push.
             if startsWith(b, "replace")    { code = sbAppend(code, e_ldr0(2, 20) + e_addi(20, 20, 16) + e_ldr0(1, 20) + e_addi(20, 20, 16) + e_ldr0(0, 20) + e_addi(20, 20, 16) + e_bl(replaceOff - (off + 24)) + c_push())  off = off + 36 }
             if startsWith(b, "environ")    { code = sbAppend(code, c_pop0() + e_bl(environOff - (off + 8)) + c_push())  off = off + 20 }
+            if startsWith(b, "readProc")   { code = sbAppend(code, c_pop0() + e_bl(readprocOff - (off + 8)) + c_push())  off = off + 20 }
+            if startsWith(b, "callPtr") {
+                let csp = toInt(indexOf(b, " "))
+                let cargc = toInt(substring(b, csp + 1, len(b)))
+                let kc = sbNew()
+                kc = sbAppend(kc, e_addi(17, 20, (cargc - 1) * 16))
+                kc = sbAppend(kc, e_ldr0(16, 17) + e_blr(16))
+                kc = sbAppend(kc, e_ldr0(0, 20) + e_addi(20, 20, 32))
+                kc = sbAppend(kc, c_push())
+                code = sbAppend(code, sbToString(kc))
+                off = off + 28
+            }
             if startsWith(b, "shellRun")   { code = sbAppend(code, c_pop0() + e_bl(shellrunOff - (off + 8)) + c_push())  off = off + 20 }
             // writeFile(path, content): pop0->x0=content, pop1->x1=path; kr_writefile. 28 bytes.
             if startsWith(b, "writeFile")  { code = sbAppend(code, c_pop0() + c_pop1() + e_bl(writefileOff - (off + 16)) + c_push())  off = off + 28 }
@@ -1729,6 +1771,7 @@ just run {
     bb = sbAppend(bb, emitReplace(strlenOff, allocOff, replaceOff))
     bb = sbAppend(bb, emitEnviron(opOff, allocOff, environOff))
     bb = sbAppend(bb, emitShellrun(opOff, shellrunOff))
+    bb = sbAppend(bb, emitReadProc(allocOff, readprocOff))
     bb = sbAppend(bb, "")     // guards: x86 backend drops trailing sbAppends (scales w/ chain len)
     bb = sbAppend(bb, "")
     bb = sbAppend(bb, "")
