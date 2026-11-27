@@ -44,6 +44,9 @@ mkdir -p "$WORK"
 # kcc.sh was removed (commit 0c0dc57b); the driver is the compiled kcc.ks seed.
 # Prefer the committed repo seed (tests THIS tree), else fall back to `kcc` on PATH.
 KCC="$REPO/bootstrap/kcc_driver_linux_x86_64"
+case "$(uname -m)" in
+    aarch64|arm64) KCC="$REPO/bootstrap/kcc_driver_linux_aarch64" ;;
+esac
 if [[ ! -x "$KCC" ]]; then
     if command -v kcc >/dev/null 2>&1; then
         KCC="$(command -v kcc)"

@@ -114,8 +114,8 @@ next public release rolls them up.
   restore).
 
 For the full 2.0 plan including the C-style low-level memory layer,
-lambdas in native, concurrency, ARM64 Linux backend, and LSP, see
-[`docs/v20_plan.md`](v20_plan.md).
+lambdas in native, concurrency, the original ARM64 Linux proposal, and LSP, see
+[`docs/v20_plan.md`](v20_plan.md). Linux aarch64 has since shipped natively.
 
 ## Carried-over items (not on the GC track)
 

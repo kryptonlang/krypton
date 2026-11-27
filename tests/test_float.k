@@ -1,13 +1,12 @@
-// A1 floating point — boxed-f64 arithmetic + comparisons (macOS arm64).
+// A1 floating point — boxed-f64 arithmetic + comparisons (macOS arm64, Linux).
 //
 // Representation: a float is a pointer to an 8-byte f64 box (literals via runtime
 // M/scale materialization; results via an 8-byte GC alloc). Float builtins know
 // their operands are floats statically, so no runtime type tag — and they
-// auto-promote int operands (value < 1<<32 → scvtf), e.g. fadd(5, 2.5).
+// auto-promote int operands (values below the ELF pointer tag), e.g. fadd(5, 2.5).
 //
-// Printing (fformat) lands in F2; until then values are validated via feq/flt/fgt.
-// macOS-only: the fp builtins have macho codegen; the ELF/PE backends don't
-// implement them yet. build.sh skips this off macOS.
+// Printing uses fformat; comparisons use feq/flt/fgt.
+// Linux x86_64 still skips float NEG/fsqrt; native aarch64 runs the full test.
 just run {
     if feq(fadd(1.5, 2.25), 3.75) == 0 { print("[FAIL] fadd"); exit("1") }
     if feq(fsub(5.0, 1.25), 3.75) == 0 { print("[FAIL] fsub"); exit("1") }
@@ -19,6 +18,12 @@ just run {
     if feq(fceil(3.2), 4.0)       == 0 { print("[FAIL] fceil"); exit("1") }
     if feq(fround(3.5), 4.0)      == 0 { print("[FAIL] fround"); exit("1") }
     if feq(fadd(5, 2.5), 7.5)     == 0 { print("[FAIL] int-promote"); exit("1") }
+    if feq(fadd(-2, 2.5), 0.5)    == 0 { print("[FAIL] negative int-promote"); exit("1") }
+    if feq(-(1.5 + 2.25), -3.75)  == 0 { print("[FAIL] float NEG"); exit("1") }
+    if feq(fsqrt(9.0), 3.0)       == 0 { print("[FAIL] fsqrt"); exit("1") }
+    if feq(fsqrt(9), 3.0)         == 0 { print("[FAIL] fsqrt int-promote"); exit("1") }
+    if feq(fround(2.5), 3.0)      == 0 { print("[FAIL] fround positive tie"); exit("1") }
+    if feq(fround(-2.5), -3.0)    == 0 { print("[FAIL] fround negative tie"); exit("1") }
     // fformat (F2): double -> decimal string.
     if fformat(3.14159, 2)        != "3.14"     { print("[FAIL] fformat round-down"); exit("1") }
     if fformat(3.14159, 4)        != "3.1416"   { print("[FAIL] fformat round-up"); exit("1") }

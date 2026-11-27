@@ -18,6 +18,13 @@ DRIVER="bootstrap/kcc_driver_linux_${ARCH}"
 
 VERSION=$(KRYPTON_ROOT="$PWD" "./$DRIVER" --version 2>&1 | sed -E 's/^kcc version //;s/[[:space:]].*$//')
 [[ -n "$VERSION" ]] || { echo "build_tarball_linux: could not detect version"; exit 1; }
+if [[ "$ARCH" == "aarch64" ]]; then
+  FE_VERSION=$(KRYPTON_ROOT="$PWD" compiler/linux_aarch64/kcc-aarch64 --version 2>&1 | sed -E 's/^kcc version //;s/[[:space:]].*$//')
+  [[ "$FE_VERSION" == "$VERSION" ]] || {
+    echo "build_tarball_linux: driver/frontend version mismatch ($VERSION != $FE_VERSION)" >&2
+    exit 1
+  }
+fi
 
 NAME="krypton-${VERSION}-linux-${ARCH}"
 STAGE=$(mktemp -d); ROOT="$STAGE/$NAME"
@@ -29,6 +36,7 @@ echo "staging payload for $NAME ..."
 install -D -m0755 "$DRIVER"                          "$ROOT/$DRIVER"
 install -D -m0755 "bootstrap/kcc_seed_linux_${ARCH}" "$ROOT/bootstrap/kcc_seed_linux_${ARCH}"
 [[ -f bootstrap/elf_host_linux_${ARCH} ]] && install -D -m0755 "bootstrap/elf_host_linux_${ARCH}" "$ROOT/bootstrap/elf_host_linux_${ARCH}"
+[[ -f bootstrap/optimize_host_linux_${ARCH} ]] && install -D -m0755 "bootstrap/optimize_host_linux_${ARCH}" "$ROOT/bootstrap/optimize_host_linux_${ARCH}"
 # x86 backend + FE (driver resolves root via compiler/linux_x86/kcc-x64)
 install -D -m0755 compiler/linux_x86/kcc-x64   "$ROOT/compiler/linux_x86/kcc-x64"
 install -D -m0755 compiler/linux_x86/elf_host  "$ROOT/compiler/linux_x86/elf_host"
@@ -121,8 +129,8 @@ RME
 
 # Make every prebuilt binary NEWER than the .k sources so the driver never
 # triggers its (slow) elf_host self-host rebuild on first run after extract.
-find "$ROOT" -type f \( -name elf_host -o -name "kcc-*" -o -name "kcc_*" \) -exec touch {} +
-sleep 1; find "$ROOT" -type f \( -name elf_host -o -name "kcc-*" -o -name "kcc_*" \) -exec touch {} +
+find "$ROOT" -type f \( -name elf_host -o -name "kcc-*" -o -name "kcc_*" -o -name "optimize_host*" \) -exec touch {} +
+sleep 1; find "$ROOT" -type f \( -name elf_host -o -name "kcc-*" -o -name "kcc_*" -o -name "optimize_host*" \) -exec touch {} +
 
 OUT="releases/${NAME}.tar.gz"
 mkdir -p releases

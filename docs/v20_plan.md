@@ -7,7 +7,8 @@ landed; items 4 (concurrency), 5 (ARM64), 6 (LSP native build) deferred
 to 2.1.
 
 For users: `docs/gc_user_guide.md` covers the runtime GC API; this
-doc is a historical record of the planning trade-offs.
+doc is a historical record of the planning trade-offs. Linux aarch64
+subsequently shipped as a native self-hosted toolchain; see `README.md`.
 
 Primary tension Krypton hits in 1.x: the bump-only arena. Every string
 concat allocates fresh; nothing is ever reclaimed. The compiler is a

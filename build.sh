@@ -176,10 +176,19 @@ if [[ "$MODE" == "test" ]]; then
                 SKIPPED=$((SKIPPED + 1))
                 continue
                 ;;
-            test_float.k:linux|test_float.k:windows)
-                # A1 float (fadd/fsub/.../flt) has macho codegen only so far;
-                # the ELF/PE backends don't implement the fp builtins yet.
-                echo -e "${CYAN}SKIP${RESET}  $NAME (macOS-only until A1 mirrors)"
+            test_float.k:linux)
+                # The aarch64 backend implements the full f64 smoke test. The
+                # x86 ELF backend still lacks float NEG/fsqrt, so keep its skip.
+                if [[ "$ARCH" != "aarch64" ]]; then
+                    echo -e "${CYAN}SKIP${RESET}  $NAME (x86 float NEG/fsqrt pending)"
+                    SKIPPED=$((SKIPPED + 1))
+                    continue
+                fi
+                ;;
+            test_float.k:windows)
+                # A1 float (fadd/fsub/.../flt) is implemented on macOS and Linux;
+                # the Windows PE backend does not emit the fp builtins yet.
+                echo -e "${CYAN}SKIP${RESET}  $NAME (Windows float backend pending)"
                 SKIPPED=$((SKIPPED + 1))
                 continue
                 ;;
@@ -285,6 +294,11 @@ if [[ -f "$SEED_BIN" ]]; then
             chmod +x "compiler/linux_aarch64/elf_host"
             ok "compiler/linux_aarch64/elf_host ready"
         fi
+        if [[ -x "bootstrap/optimize_host_linux_aarch64" ]]; then
+            cp "bootstrap/optimize_host_linux_aarch64" "compiler/linux_aarch64/optimize_host"
+            chmod +x "compiler/linux_aarch64/optimize_host"
+            ok "compiler/linux_aarch64/optimize_host ready"
+        fi
     fi
     if native_pipeline_available && [[ ! -x "$KCC_DRIVER" ]]; then
         fail "missing native driver $KCC_DRIVER"
@@ -311,7 +325,7 @@ if [[ -f "$SEED_BIN" ]]; then
     else
         info "no native pipeline for $OSNAME/$ARCH and gcc not present — skipping smoke test"
     fi
-    VERSION=$("$KCC" --version 2>&1 | head -1)
+    VERSION=$("$KCC_DRIVER" --version 2>&1 | head -1)
     echo ""
     echo "════════════════════════════════════════════════════"
     echo "  Build complete: $VERSION (gcc-free bootstrap)"

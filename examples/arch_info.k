@@ -13,8 +13,7 @@
 //
 // Behaviour by host:
 //     Linux x86_64  -> arch=x86_64, isX86=1
-//     Linux aarch64 -> arch=arm64,  isArm=1  (when the aarch64 backend
-//                                              ships M4 string-concat)
+//     Linux aarch64 -> arch=arm64,  isArm=1  (native self-hosted backend)
 //     macOS arm64   -> arch=arm64,  isArm=1
 //     Windows x86_64-> arch=x86_64, isX86=1
 //     Windows arm64 -> arch=arm64,  isArm=1  (once a Windows-on-ARM

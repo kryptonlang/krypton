@@ -584,7 +584,7 @@ func pagePrograms() {
         htP("A system-information fetch tool. Reads user, OS, CPU, RAM/disk with bar graphs, GPU, shell, terminal, resolution, uptime, and theme " + DASH() + " rendered next to a coloured ASCII logo.") +
         htP("Windows port (~600 lines, 7 modules) talks to Win32 directly " + DASH() + " registry, GlobalMemoryStatusEx, DXGI. Linux port reads /proc, /sys, /etc/os-release via native readProc syscalls. No WMI, no PowerShell, no Python.") +
         htP(htA("https://github.com/t3m3d/kryofetch", "View on GitHub")) +
-        htP(htEm("Windows 10/11 (native PE/COFF) " + DOT() + " Linux x86_64 (static syscall-only ELF, no gcc at runtime). aarch64 follows when its Milestone 4 ships string-concat.")) +
+        htP(htEm("Windows 10/11 (native PE/COFF) " + DOT() + " Linux x86_64 (static syscall-only ELF, no gcc at runtime). Linux aarch64 has a native self-hosted toolchain; app validation is separate.")) +
         "</div>" +
         "<div class=" + DQ() + "card" + DQ() + " style=" + DQ() + "margin:24px 0" + DQ() + ">" +
                 "<a id=" + DQ() + "kmon" + DQ() + "></a>" +
@@ -601,7 +601,7 @@ func pagePrograms() {
         htP("A YubiKey detector and OATH/TOTP authenticator written entirely in KryptScript. Detects a plugged-in key, shows model + interfaces, and (with ykman installed) renders live TOTP codes with a 30-second countdown.") +
         htP("Single self-contained .ks file. macOS frontend reused verbatim on Linux " + DASH() + " same .ks, same builtins, just a different native backend underneath.") +
         htP(htA("https://github.com/t3m3d/yubikrypt", "View on GitHub")) +
-        htP(htEm("macOS arm64 " + DOT() + " Linux x86_64 " + DOT() + " no C, no clang. (Linux aarch64 follows when that backend reaches string-concat support.)")) +
+        htP(htEm("macOS arm64 " + DOT() + " Linux x86_64 " + DOT() + " no C, no clang. Linux aarch64 toolchain available; app validation pending.")) +
         "</div>" +
         "<div class=" + DQ() + "card" + DQ() + " style=" + DQ() + "margin:24px 0" + DQ() + ">" +
         "<span class=" + DQ() + "tag" + DQ() + ">New</span>" +
@@ -807,11 +807,11 @@ func pageDownloads() {
                      "kcc hello.k -o hello && ./hello")) +
         htP("Custom location: " + htCode("./install.sh /opt/krypton") + ", then add " + htCode("/opt/krypton/bin") + " to PATH. Uninstall: " + htCode("rm /usr/local/bin/kcc") + " plus the install dir.") +
         htP(dlBtn(LINUX_TAR, "Download Linux tarball")) +
-        htH3("aarch64 (cross-compile target)") +
-        htP("Linux aarch64 ships as a " + htStrong("cross target") + " in 2.4.4, not a native install. On an x86-64 box:") +
+        htH3("aarch64 (native + cross target)") +
+        htP("Linux aarch64 has a native self-hosted frontend, ELF backend, driver, and optimizer. x86-64 hosts can cross-compile:") +
         htPre(htCode("kcc --aarch64 prog.k -o prog   # static aarch64 ELF" + NL() +
                      "qemu-aarch64-static prog       # or run on real arm64 hardware")) +
-        htP("Native aarch64-hosted toolchain is roadmap for the next release.") +
+        htP("Native aarch64 release packaging follows the same seed-based install flow as x86-64.") +
         htH3("Or build from source (any Linux distro)") +
         htPre(htCode("git clone https://github.com/t3m3d/krypton" + NL() +
                      "cd krypton" + NL() +

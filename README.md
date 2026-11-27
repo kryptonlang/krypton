@@ -6,13 +6,15 @@
 
 **A self-hosting programming language that emits native machine code.**
 
-> **Current macOS version: 2.4.9** - Objective-K/AppKit and compiler hardening.
+> **Current checkout: 2.5.0-alpha** — native Linux aarch64 toolchain and parity work.
+> Latest stable macOS release: **2.4.9**.
 > See [`CHANGELOG.md`](CHANGELOG.md) for the full history.
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-2.4.9-brightgreen)
+![Version](https://img.shields.io/badge/source-2.5.0--alpha-blue)
 ![macOS](https://img.shields.io/badge/macOS-arm64%202.4.9-success)
-![Linux](https://img.shields.io/badge/Linux-x86__64%202.4.6-yellow)
+![Linux](https://img.shields.io/badge/Linux-x86__64%20source%202.5.0--alpha-yellow)
+![Linux aarch64](https://img.shields.io/badge/Linux-aarch64%20source%202.5.0--alpha-yellow)
 ![Windows](https://img.shields.io/badge/Windows-x86__64%202.3.0-orange)
   
 ## Objective-K On macOS 2.4.9
@@ -234,17 +236,19 @@ run, imports, and self-host on macOS (arm64), Linux (x86-64), and Windows
   Winsock + POSIX `cfunc`) is still around for the Windows / `--gcc`
   path; new macOS code should `import "k:server_native"`.
 
-**Platform release status (2026-10-17):**
+**Platform release status (2026-11-27):**
 
 | Platform | Shipped version | Notes |
 |----------|-----------------|-------|
 | macOS arm64 | **2.4.9** | `.pkg`, tarball, or Homebrew. Includes `kweb`, `/usr/local/bin/kweb`, and `/Applications/Krypton/kweb.app`. |
-| Linux x86_64 | **2.4.6** | Prebuilt tarball -> `./install.sh`, or build from source. No C compiler. Self-hosting. Includes rebuilt `kcc` seed, driver, kweb, and aarch64 via `kcc --aarch64` cross-compile. |
+| Linux x86_64 | **2.5.0-alpha source** | Build from source. No C compiler. Self-hosting. The last tagged Linux x86_64 release remains 2.4.4. |
+| Linux aarch64 | **2.5.0-alpha source** | Native self-hosted frontend, ELF backend, optimizer, and driver; x86_64 hosts can cross-compile with `kcc --aarch64`. |
 | Windows x86_64 | **2.3.0** | Inno Setup installer: `kcc.exe`/`kcc-bin.exe` driver/backend split, native `krypton_rt.dll`, `kr.exe` REPL, kweb, WASM, .k/.ks associations. |
 | **brain / VS Code / Antigravity ext.** | **2.4.8** | `krypton-language-2.4.8.vsix` on the 2.4.8 release. Objective-K highlighting, `print` snippets/completions, diagnostics, and outline. Bundles macOS arm64 `kls`; other platforms use an installed server. |
 
 macOS is on [`2.4.9`](https://github.com/t3m3d/krypton/releases/tag/v2.4.9).
-Linux carries [`2.4.6`](https://github.com/t3m3d/krypton/releases/tag/2.4.4) in-tree (last tagged release remains `2.4.4`).
+Linux source is 2.5.0-alpha; the last tagged Linux x86_64 release remains
+[`2.4.4`](https://github.com/t3m3d/krypton/releases/tag/2.4.4).
 Windows stays on [`2.3.0`](https://github.com/t3m3d/krypton/releases/tag/2.3.0).
 The editor extension remains [2.4.8](https://github.com/t3m3d/krypton/releases/tag/v2.4.8),
 separate from the macOS compiler version.
@@ -290,6 +294,7 @@ The **default** compilation pipeline produces a native executable on every suppo
 | Platform | Backend | Output |
 |----------|---------|--------|
 | **Linux x86_64** | `compiler/linux_x86/elf.k` | Static ELF, direct syscalls, no libc |
+| **Linux aarch64** | `compiler/linux_aarch64/elf.k` | Static ELF, direct syscalls, no libc; native self-hosted toolchain |
 | **FreeBSD x86_64** | `compiler/freebsd_x86/elf.k` | Static ELF scaffold, direct syscalls, no libc; seed pass pending |
 | **Windows x86_64** | `compiler/windows_x86/x64.k` | PE/COFF, kernel32-only via `runtime/krypton_rt.dll` |
 | **macOS arm64** | `compiler/macos_arm64/macho_arm64_self.k` | Mach-O with in-Krypton SHA-256 ad-hoc code signing |
@@ -326,7 +331,7 @@ just run {
 | FreeBSD x86_64 | `kcc_seed_freebsd_x86_64`, `kcc_driver_freebsd_x86_64`, `elf_host_freebsd_x86_64`, `optimize_host_freebsd_x86_64` | pending first seed; no C fallback wired |
 | Windows x86_64 | `kcc_seed_windows_x86_64.exe`, `x64_host_windows_x86_64.exe`, `optimize_host_windows_x86_64.exe` | none (pure copy) |
 | macOS arm64 | `kcc_seed_macos_aarch64`, `kcc_driver_macos_aarch64`, `macho_host_macos_aarch64` | none; backend self-hosts from the native seed without C tools |
-| Linux aarch64 | `kcc_seed_linux_aarch64`, `kcc_driver_linux_aarch64`, `elf_host_linux_aarch64` | none (pure copy); native self-hosted frontend + ELF backend, no C path |
+| Linux aarch64 | `kcc_seed_linux_aarch64`, `kcc_driver_linux_aarch64`, `elf_host_linux_aarch64`, `optimize_host_linux_aarch64` | none (pure copy); native self-hosted frontend + ELF backend + optimizer, no C path |
 
 **Optional, for development only (end users never need a C compiler):**
 - A matching native seed is required to rebuild a backend emitter. macOS
@@ -364,7 +369,10 @@ kcc hello.k                          # default native pipeline (no gcc)
 ./hello                                  # static ELF, direct syscalls, no libc
 ```
 
-The pipeline is `compile.k → .kir → optimize.k → compiler/linux_x86/elf.k → ELF binary`.
+The x86-64 pipeline is `compile.k → .kir → optimize.k → compiler/linux_x86/elf.k → ELF binary`.
+Linux aarch64 uses the same architecture-neutral IR and optimizer, then
+`compiler/linux_aarch64/elf.k` emits the native aarch64 ELF. x86-64 hosts can
+cross-compile with `kcc --aarch64`.
 
 ### Windows x86_64
 
@@ -750,8 +758,8 @@ built against this Krypton checkout via `KRYPTON_ROOT/kcc`.
 Each app's repo ships its own `build_linux.sh` + `PKGBUILD` (where applicable).
 Arch users: `git clone <repo> && cd <repo> && makepkg -si`.
 
-> Linux aarch64 support for the Krypton-language apps lands once the aarch64
-> backend reaches Milestone 4 (string concat). See [`LINUX_RELEASE_TODO.md`](LINUX_RELEASE_TODO.md).
+> Linux aarch64 has a native self-hosted Krypton toolchain. Sibling apps
+> still need their own aarch64 validation before they can claim support.
 
 ---
 
@@ -765,6 +773,7 @@ krypton/
 │   ├── llvm.k                          # LLVM IR backend (optional)
 │   ├── run.k                           # Interpreter
 │   ├── linux_x86/elf.k                 # Linux x86_64 ELF emitter
+│   ├── linux_aarch64/elf.k             # Linux aarch64 ELF emitter (native self-hosted)
 │   ├── freebsd_x86/elf.k               # FreeBSD x86_64 ELF emitter scaffold
 │   ├── windows_x86/x64.k               # Windows x86_64 PE/COFF emitter
 │   └── macos_arm64/macho_arm64_self.k  # macOS arm64 Mach-O emitter (with signing)
@@ -782,6 +791,7 @@ krypton/
 │   ├── kcc_seed_linux_aarch64                # Linux aarch64 kcc ELF (native frontend)
 │   ├── kcc_driver_linux_aarch64              # Linux aarch64 kcc.ks driver
 │   ├── elf_host_linux_aarch64                # Linux aarch64 ELF emitter (native)
+│   ├── optimize_host_linux_aarch64           # Linux aarch64 IR optimizer (native)
 │   ├── kcc_seed_windows_x86_64.exe           # Windows kcc PE
 │   ├── x64_host_windows_x86_64.exe           # Windows PE/COFF emitter
 │   ├── optimize_host_windows_x86_64.exe      # Windows IR optimizer
@@ -793,7 +803,7 @@ krypton/
 ├── tutorial/              # 34 core lessons plus platform-specific tutorials
 ├── tools/                 # Single-file CLI utilities written in Krypton (cat, grep, head, fmt, …)
 ├── headers/               # .krh module headers (Win32, libc bindings)
-├── tests/                 # Test suite (38 tests, run via ./build.sh test)
+├── tests/                 # Native, syscall, PTY, socket, optimizer, and scaling tests
 ├── docs/                  # Roadmap + EBNF/types/functions specs
 ├── grammar/               # Single-source EBNF (krypton.ebnf)
 ├── extensions/            # Prebuilt VS Code extension (.vsix)
@@ -824,6 +834,7 @@ Krypton solves the self-hosting chicken-and-egg problem by shipping prebuilt see
 | Platform | Install command | What it does |
 |----------|-----------------|--------------|
 | Linux x86_64 | `./build.sh` | `cp bootstrap/kcc_seed_linux_x86_64 ./kcc-x64`, copies elf_host + optimize_host into place, smoke-tests fibonacci |
+| Linux aarch64 | `./build.sh` | copies the native aarch64 frontend, driver, ELF backend, and optimizer seeds; smoke-tests fibonacci |
 | FreeBSD x86_64 | `./build.sh` | pending first seed; expects `bootstrap/kcc_seed_freebsd_x86_64`, `bootstrap/kcc_driver_freebsd_x86_64`, and `bootstrap/elf_host_freebsd_x86_64` |
 | Windows x86_64 | `bootstrap.bat` | copies `kcc_seed_*.exe`, `x64_host_*.exe`, `optimize_host_*.exe` |
 | macOS arm64 | `./build.sh` | `cp bootstrap/kcc_seed_macos_aarch64 ./kcc-arm64` (M1/M2/M3) |

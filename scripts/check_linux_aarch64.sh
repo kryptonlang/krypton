@@ -15,12 +15,16 @@ need_exec bootstrap/kcc_seed_linux_aarch64
 need_exec compiler/linux_aarch64/kcc-aarch64
 need_exec compiler/linux_aarch64/elf_host
 need_exec compiler/linux_aarch64/elf_host_x86
+need_exec bootstrap/optimize_host_linux_aarch64
+need_exec compiler/linux_aarch64/optimize_host
 
 if command -v file >/dev/null 2>&1; then
     file bootstrap/kcc_seed_linux_aarch64 \
          compiler/linux_aarch64/kcc-aarch64 \
          compiler/linux_aarch64/elf_host \
-         compiler/linux_aarch64/elf_host_x86
+         compiler/linux_aarch64/elf_host_x86 \
+         bootstrap/optimize_host_linux_aarch64 \
+         compiler/linux_aarch64/optimize_host
 fi
 
 case "$(uname -s)/$(uname -m)" in
@@ -31,13 +35,21 @@ case "$(uname -s)/$(uname -m)" in
         KRYPTON_ROOT="$ROOT" compiler/linux_aarch64/elf_host --version 2>/dev/null || true
         if [ -x bootstrap/kcc_driver_linux_aarch64 ]; then
             KRYPTON_ROOT="$ROOT" bootstrap/kcc_driver_linux_aarch64 --version
+            seed_ver="$(KRYPTON_ROOT="$ROOT" compiler/linux_aarch64/kcc-aarch64 --version 2>&1 | sed -E 's/^kcc version //')"
+            driver_ver="$(KRYPTON_ROOT="$ROOT" bootstrap/kcc_driver_linux_aarch64 --version 2>&1 | sed -E 's/^kcc version //')"
+            [[ "$seed_ver" == "$driver_ver" ]] || { echo "version mismatch: $seed_ver != $driver_ver" >&2; exit 1; }
             tmpdir="$(mktemp -d)"
             trap 'rm -rf "$tmpdir"' EXIT
             printf 'just run { print("aarch64 ok") }\n' > "$tmpdir/hello.k"
             KRYPTON_ROOT="$ROOT" bootstrap/kcc_driver_linux_aarch64 \
                 --native "$tmpdir/hello.k" -o "$tmpdir/hello"
             "$tmpdir/hello" | grep -q '^aarch64 ok$'
-            echo "native driver pipeline ok"
+            KRYPTON_ROOT="$ROOT" compiler/linux_aarch64/kcc-aarch64 --ir "$tmpdir/hello.k" > "$tmpdir/hello.kir"
+            KRYPTON_ROOT="$ROOT" compiler/linux_aarch64/optimize_host "$tmpdir/hello.kir" > "$tmpdir/hello_opt.kir"
+            KRYPTON_ROOT="$ROOT" compiler/linux_aarch64/elf_host "$tmpdir/hello_opt.kir" "$tmpdir/hello_opt"
+            chmod +x "$tmpdir/hello_opt"
+            "$tmpdir/hello_opt" | grep -q '^aarch64 ok$'
+            echo "native driver and optimizer pipelines ok"
         fi
         ;;
     *)

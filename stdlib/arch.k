@@ -24,9 +24,7 @@
 //
 // Status as of 2026-06-03:
 //   Linux x86_64 ✓     macOS arm64 ✓
-//   Linux aarch64 ✓ (detection works; the elf.k aarch64 backend is at
-//                    M3 — no string concat yet — so most programs that
-//                    USE arch() can't run on aarch64 until M4 lands)
+//   Linux aarch64 ✓ (native self-hosted ELF backend and toolchain)
 //   macOS x86_64 ✓     Windows x86_64 ✓
 //   Windows arm64 — detection ready; no compiler backend yet (the
 //                   point of shipping this now is to be ready for

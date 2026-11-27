@@ -1794,7 +1794,7 @@ func irPostfix(tokens, pos, ntoks, lc, types) {
                         if ftype == "u8"  || ftype == "i8"  { fop = "BUILTIN bufGetByte 2\n" }
                         if ftype == "u16" || ftype == "i16" { fop = "BUILTIN bufGetWordAt 2\n" }
                         if ftype == "u32" || ftype == "i32" { fop = "BUILTIN bufGetDwordAt 2\n" }
-                        if ftype == "u64" || ftype == "i64" { fop = "BUILTIN bufGetQwordAt 2\n" }
+                        if ftype == "u64" || ftype == "i64" || ftype == "f64" || ftype == "f32" { fop = "BUILTIN bufGetQwordAt 2\n" }
                         if len(fop) > 0 {
                             code = code + "PUSH " + (accumOff + fOff) + "\n" + fop
                             didTypedField = 1
@@ -2435,7 +2435,7 @@ func irCall(tokens, pos, ntoks, lc, types) {
     // The previous substring-only check silently routed user functions named
     // add/sub/mul/div/pos/etc. through the BUILTIN path → backends emitted
     // UNSUPPORTED markers → stack corruption at runtime. Bug found 2026-05-03.
-    let builtins = "print,kp,printErr,readLine,input,readFile,writeFile,arg,argCount,len,count,substring,charAt,indexOf,contains,startsWith,endsWith,replace,trim,lstrip,rstrip,center,toLower,toUpper,padLeft,padRight,charCode,fromCharCode,format,strReverse,isAlpha,isDigit,isSpace,toInt,parseInt,abs,min,max,pow,sqrt,sign,clamp,bin,floor,ceil,round,split,length,first,last,head,tail,append,join,reverse,sort,unique,fill,zip,slice,listIndexOf,every,some,countOf,sumList,maxList,minList,range,words,lines,keys,values,hasKey,structNew,getField,setField,hasField,structFields,random,timestamp,environ,exit,assert,type,isTruthy,toStr,throw,mapDel,exec,shellRun,fadd,fsub,fmul,fdiv,fsqrt,ffloor,fceil,fround,fformat,flt,fgt,feq,intToFloat,floatToInt,sbNew,sbAppend,sbToString,bufNew,bufStr,bufGetDword,bufSetDword,bufGetWord,bufGetQword,bufGetDwordAt,bufGetQwordAt,bufSetByte,bufGetByte,bufSetDwordAt,bufSetQwordAt,bufGetWordAt,bufSetWordAt,bufGetWordAtBE,bufGetDwordAtBE,bufGetQwordAtBE,handleOut,handleGet,handleInt,toHandle,ptrDeref,ptrIndex,callPtr,getLine,lineCount,envNew,envSet,envGet,makeResult,getResultTag,getResultVal,getResultEnv,getResultPos,gcAllocated,gcAllocCount,gcShadowCount,gcShadowPop,gcShadowPush,gcWalkAllocs,gcMark,gcSweep,gcFreelistCount,rdtsc,pause,mfence,lfence,sfence,gcLimit,gcSetLimit,gcSetThreshold,gcCollect,gcReset,gcCheckpoint,gcRestore,gcSlabCount,gcSlabBytes,sockMake,sockBind,sockListen,sockAccept,sockRecv,sockSend,sockClose,sockRecvStr,sockConnect,fdRead,fdReadN,fdWrite,fdClose,fdSetNonblock,sleepUs,ptyMaster,ptySlaveName,ptyForkExec,ptySetSize,procAlive,waitChild,unixConnect,memfdCreate,mmapShared,sockSendFd,readProc"
+    let builtins = "print,kp,printErr,readLine,input,readFile,writeFile,arg,argCount,len,count,substring,charAt,indexOf,contains,startsWith,endsWith,replace,trim,lstrip,rstrip,center,toLower,toUpper,padLeft,padRight,charCode,fromCharCode,format,strReverse,isAlpha,isDigit,isSpace,toInt,parseInt,abs,min,max,pow,sqrt,sign,clamp,bin,floor,ceil,round,split,length,first,last,head,tail,append,join,reverse,sort,unique,fill,zip,slice,listIndexOf,every,some,countOf,sumList,maxList,minList,range,words,lines,keys,values,hasKey,structNew,getField,setField,hasField,structFields,random,timestamp,environ,exit,assert,type,isTruthy,toStr,throw,mapDel,exec,shellRun,fadd,fsub,fmul,fdiv,fsqrt,ffloor,fceil,fround,fformat,flt,fgt,feq,intToFloat,floatToInt,sbNew,sbAppend,sbToString,bufNew,bufStr,bufGetDword,bufSetDword,bufGetWord,bufGetQword,bufGetDwordAt,bufGetQwordAt,bufSetByte,bufGetByte,bufSetDwordAt,bufSetQwordAt,bufGetWordAt,bufSetWordAt,bufGetWordAtBE,bufGetDwordAtBE,bufGetQwordAtBE,handleOut,handleGet,handleInt,toHandle,ptrDeref,ptrIndex,callPtr,getLine,lineCount,envNew,envSet,envGet,makeResult,getResultTag,getResultVal,getResultEnv,getResultPos,gcAllocated,gcAllocCount,gcShadowCount,gcShadowPop,gcShadowPush,gcWalkAllocs,gcMark,gcSweep,gcFreelistCount,rdtsc,pause,mfence,lfence,sfence,gcLimit,gcSetLimit,gcSetThreshold,gcCollect,gcReset,gcCheckpoint,gcRestore,gcSlabCount,gcSlabBytes,sockMake,sockBind,sockListen,sockAccept,sockRecv,sockSend,sockClose,sockRecvStr,sockConnect,fdRead,fdReadN,fdWrite,fdClose,fdSetNonblock,ioctl,sleepUs,ptyMaster,ptySlaveName,ptyForkExec,ptySetSize,procAlive,waitChild,unixConnect,memfdCreate,mmapShared,sockSendFd,readProc"
     if contains("," + builtins + ",", "," + fname + ",") {
         // `print` becomes THE newline print (Brian's ask). Route it to kp's
         // proven newline op (BUILTIN_KP) right here in the shared frontend, so
@@ -2444,7 +2444,9 @@ func irCall(tokens, pos, ntoks, lc, types) {
         let bname = fname
         if bname == "print" { bname = "kp" }
         if bname == "gcSetThreshold" { bname = "gcSetLimit" }
-        emit code + "BUILTIN " + bname + " " + argc + "\n," + (p + 1)
+        let fresult = ""
+        if contains(",fadd,fsub,fmul,fdiv,fsqrt,ffloor,fceil,fround,intToFloat,", "," + bname + ",") == 1 { fresult = ";f64" }
+        emit code + "BUILTIN " + bname + " " + argc + "\n," + (p + 1) + fresult
     }
     emit code + "CALL " + fname + " " + argc + "\n," + (p + 1)
 }
@@ -2676,7 +2678,7 @@ func irStmt(tokens, pos, ntoks, lc, inFunc, types) {
                             if leafType == "u8"  || leafType == "i8"  { setOp = "BUILTIN bufSetByte 3\n" }
                             if leafType == "u16" || leafType == "i16" { setOp = "BUILTIN bufSetWordAt 3\n" }
                             if leafType == "u32" || leafType == "i32" { setOp = "BUILTIN bufSetDwordAt 3\n" }
-                            if leafType == "u64" || leafType == "i64" { setOp = "BUILTIN bufSetQwordAt 3\n" }
+                            if leafType == "u64" || leafType == "i64" || leafType == "f64" || leafType == "f32" { setOp = "BUILTIN bufSetQwordAt 3\n" }
                             if len(setOp) > 0 {
                                 let valp = irExpr(tokens, chainEnd + 2, ntoks, lc, types)
                                 let p2 = pairPos(valp)
@@ -2745,7 +2747,8 @@ func irStmt(tokens, pos, ntoks, lc, inFunc, types) {
         let p = pos + 2
         if tokAt(tokens, p) == "SEMI" { p += 1 }
         let op = "ADD\n"
-        if tok == "MINUSMINUS" { op = "SUB\n" }
+        if irTypeOf(types, resolveStatic(types, name)) == "f64" { op = "BUILTIN fadd 2\n" }
+        if tok == "MINUSMINUS" { op = "SUB\n"  if irTypeOf(types, resolveStatic(types, name)) == "f64" { op = "BUILTIN fsub 2\n" } }
         emit "LOAD " + name + "\nPUSH 1\n" + op + "STORE " + name + "\n," + p
     }
 
@@ -3978,7 +3981,7 @@ func irScanStructTypesOnce(tokens, ntoks, sizeHints) {
                                 if ftype == "u8"  || ftype == "i8"  { fsize = 1  falign = 1 }
                                 if ftype == "u16" || ftype == "i16" { fsize = 2  falign = 2 }
                                 if ftype == "u32" || ftype == "i32" { fsize = 4  falign = 4 }
-                                if ftype == "u64" || ftype == "i64" { fsize = 8  falign = 8 }
+                                if ftype == "u64" || ftype == "i64" || ftype == "f64" || ftype == "f32" { fsize = 8  falign = 8 }
                                 // Nested struct: ftype names a struct.
                                 // Look up size + alignment in pass-1
                                 // hints. Empty on first pass → falls
@@ -4138,6 +4141,11 @@ func irScanFuncTypes(tokens, bodyStart, ntoks) {
             let nameTk = tokAt(tokens, p + 1)
             if startsWith(nameTk, "ID:") == "1" {
                 let nameStr = substring(nameTk, 3, len(nameTk))
+                let initTk = tokAt(tokens, p + 3)
+                if startsWith(initTk, "INT:") == "1" {
+                    let initNum = substring(initTk, 4, len(initTk))
+                    if indexOf(initNum, ".") >= 0 { sb = sbAppend(sb, nameStr + "|f64\n") }
+                }
                 // Phase C 1.8.9: `let local TYPE name` — record name as `*TYPE`.
                 if nameStr == "local" {
                     let typeTk = tokAt(tokens, p + 2)
@@ -4513,7 +4521,7 @@ func emitPortWarnings(tokens, ntoks, fname) {
 
 
 just run {
-    let kccVer = "2.4.9"
+    let kccVer = "2.5.0-alpha"
 
     // Parse flags: --version, --ir, -o OUTFILE, --target TARGET, --port-1to2
     // 1.8.4: removed --headers. Install root is fixed at C:\krypton;

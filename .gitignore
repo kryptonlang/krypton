@@ -41,7 +41,8 @@ compiler/wasm32/wasm_self
 kcc-native
 
 # Linux Windows and MacOS
-compiler/linux_arm64/elf_host
+compiler/linux_aarch64/optimize_host
+tests/.work-linux/
 qemu_*.core
 *.core
 dist/

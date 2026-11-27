@@ -4,29 +4,32 @@ name: linux native tests
 # stdlib, or the tests themselves. Catches regressions in elf.k / linux_x86
 # codegen and Linux-side stdlib changes before they reach main.
 #
-# Bootstrap: build.sh prefers a prebuilt seed (gcc-free); CI runner needs gcc
-# only for the source-seed fallback. ubuntu-latest images ship gcc by default.
+# Bootstrap uses the committed prebuilt seeds; no C compiler is required.
 
 on:
   push:
     branches: [main]
     paths:
       - 'compiler/linux_x86/**'
+      - 'compiler/linux_aarch64/**'
       - 'compiler/compile.k'
+      - 'compiler/optimize.k'
       - 'stdlib/**'
       - 'tests/**'
       - 'build.sh'
-      - 'kcc.sh'
+      - 'kcc.ks'
       - 'bootstrap/**'
       - '.github/workflows/linux.yml'
   pull_request:
     paths:
       - 'compiler/linux_x86/**'
+      - 'compiler/linux_aarch64/**'
       - 'compiler/compile.k'
+      - 'compiler/optimize.k'
       - 'stdlib/**'
       - 'tests/**'
       - 'build.sh'
-      - 'kcc.sh'
+      - 'kcc.ks'
       - 'bootstrap/**'
       - '.github/workflows/linux.yml'
   workflow_dispatch:
@@ -40,15 +43,44 @@ jobs:
         uses: actions/checkout@v4
 
       - name: bootstrap kcc
-        # build.sh self-selects prebuilt seed (gcc-free path) if present,
-        # else compiles bootstrap/kcc_seed.c with gcc (already on ubuntu-latest).
+        # build.sh self-selects the committed prebuilt seed (gcc-free path).
         run: bash build.sh
 
       - name: verify kcc works
-        run: ./kcc.sh --version || true
+        run: KRYPTON_ROOT="$PWD" bootstrap/kcc_driver_linux_x86_64 --version || true
 
       - name: run linux native tests
         run: bash tests/run_linux.sh
+
+      - name: dump test work-dir on failure
+        if: failure()
+        run: |
+          echo "===== compile logs ====="
+          find tests/.work-linux -name '*.compile' -print -exec tail -20 {} \; 2>/dev/null || true
+          echo "===== run logs ====="
+          find tests/.work-linux -name '*.log' -print -exec tail -20 {} \; 2>/dev/null || true
+
+  linux-aarch64-native:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: bootstrap native aarch64 kcc
+        run: bash build.sh
+
+      - name: verify aarch64 payload
+        run: bash scripts/check_linux_aarch64.sh
+
+      - name: run linux native tests
+        run: bash build.sh test
+
+      - name: large IR regression
+        run: bash tests/run_aarch64_scaling.sh
+
+      - name: optimizer differential
+        run: bash tests/run_aarch64_optimizer.sh
 
       - name: dump test work-dir on failure
         if: failure()

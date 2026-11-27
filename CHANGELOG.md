@@ -4,8 +4,14 @@ All notable changes to the Krypton language and compiler.
 
 ## [Unreleased]
 
-- Linux x86_64: rebuilt the driver from current source and promoted the
-  Linux driver version constant to 2.4.6. macOS stays 2.5.0-alpha; Windows stays 2.3.0.
+- Synchronize the current source version on 2.5.0-alpha; 2.4.9 remains the
+  latest stable macOS release.
+- Add native Linux aarch64 boxed-f64 arithmetic, comparisons, conversions,
+  formatting, floor/ceil/round, and sqrt.
+- Add native Linux system builtins for file descriptors, ioctl, memfd/mmap,
+  sockets, PTYs, sleep, and process control.
+- Add a native aarch64 optimizer seed and wire optimization into both native
+  and x86-hosted aarch64 compilation.
 
 - Check Objective-K callback arity, explicit annotations and known value
   types in returns, assignments and direct calls during frontend compilation.

@@ -534,8 +534,43 @@ func ensureAarch64Host(root) {
     emit "0"
 }
 
-// Native aarch64 compile: native frontend IR -> native aarch64 backend.
-// (No optimizer pass yet — the aarch64 backend consumes the raw IR.) "1"/"0".
+// Ensure the native aarch64 optimizer host exists / is current. Best-effort:
+// returns "1" if usable, "0" to skip optimization. NO C compiler.
+func ensureAarch64OptHost(root) {
+    if _fast() == "1" { emit "1" }
+    let host = root + "/compiler/linux_aarch64/optimize_host"
+    let src  = root + "/compiler/optimize.k"
+    let fe   = root + "/compiler/linux_aarch64/kcc-aarch64"
+    let elf  = root + "/compiler/linux_aarch64/elf_host"
+    let seed = root + "/bootstrap/optimize_host_linux_aarch64"
+    let need = "1"
+    if exists(host) == "1" {
+        if sh("test " + q(src) + " -nt " + q(host) + " && echo 1 || echo 0") == "0" { need = "0" }
+    }
+    if need == "0" { emit "1" }
+    if exists(seed) == "1" {
+        if sh("test " + q(src) + " -nt " + q(seed) + " && echo 1 || echo 0") == "0" {
+            exec("cp " + q(seed) + " " + q(host))
+            exec("chmod +x " + q(host))
+            emit "1"
+        }
+    }
+    if exists(elf) == "0" || exists(fe) == "0" { emit "0" }
+    let tmpir = tmpPath("_kcca64opt", ".kir")
+    let tmpout = tmpPath("_kcca64optbin", "")
+    exec("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir " + q(src) + " > " + q(tmpir))
+    let rc = shellRun(q(elf) + " " + q(tmpir) + " " + q(tmpout))
+    rm(tmpir)
+    if rc == "0" && size(tmpout) > 0 {
+        exec("chmod +x " + q(tmpout))
+        exec("mv -f -- " + q(tmpout) + " " + q(host))
+        emit "1"
+    }
+    rm(tmpout)
+    emit "0"
+}
+
+// Native aarch64 compile: native frontend IR -> optimizer -> native backend.
 func compileAarch64Native(root, src, out) {
     let fe = root + "/compiler/linux_aarch64/kcc-aarch64"
     let host = root + "/compiler/linux_aarch64/elf_host"
@@ -547,6 +582,12 @@ func compileAarch64Native(root, src, out) {
         rm(tmpir)
         emit "0"
     }
+    if ensureAarch64OptHost(root) == "1" {
+        let tmpopt = tmpPath("_kcca64nopt", ".kir")
+        let orc = shellRun(q(root + "/compiler/linux_aarch64/optimize_host") + " " + q(tmpir) + " > " + q(tmpopt) + " 2>/dev/null")
+        if orc == "0" && size(tmpopt) > 0 { exec("mv " + q(tmpopt) + " " + q(tmpir)) }
+        else { rm(tmpopt) }
+    }
     exec(q(host) + " " + q(tmpir) + " " + q(out))
     rm(tmpir)
     if exists(out) == "0" {
@@ -557,8 +598,7 @@ func compileAarch64Native(root, src, out) {
     emit "1"
 }
 
-// Cross-compile to a static aarch64 ELF: x86 front-end IR -> aarch64 backend.
-// (No optimizer pass yet — the aarch64 backend consumes the raw IR.) "1"/"0".
+// Cross-compile to aarch64: x86 frontend IR -> x86 optimizer -> aarch64 backend.
 func compileAarch64Cross(root, src, out) {
     let fe = root + "/compiler/linux_x86/kcc-x64"
     let host = root + "/compiler/linux_aarch64/elf_host_x86"
@@ -569,6 +609,12 @@ func compileAarch64Cross(root, src, out) {
         print("kcc: IR emission failed for " + src)
         rm(tmpir)
         emit "0"
+    }
+    if ensureOptHost(root) == "1" {
+        let tmpopt = tmpPath("_kcca64xopt", ".kir")
+        let orc = shellRun(q(root + "/compiler/linux_x86/optimize_host") + " " + q(tmpir) + " > " + q(tmpopt) + " 2>/dev/null")
+        if orc == "0" && size(tmpopt) > 0 { exec("mv " + q(tmpopt) + " " + q(tmpir)) }
+        else { rm(tmpopt) }
     }
     exec(q(host) + " " + q(tmpir) + " " + q(out))
     rm(tmpir)
@@ -783,7 +829,7 @@ just run {
     let first = arg(0)
     if first == "--version" || first == "-v" { print(VERSION())  exit("0") }
     if first == "--help" || first == "-h" {
-        print("kcc — Krypton compiler driver (2.4.9)")
+        print("kcc — Krypton compiler driver")
         print("")
         print("Usage: kcc <source.k|source.ks> [flags]")
         print("  --native    (default) emit native binary at ./<basename>")
