@@ -48,9 +48,9 @@ if [[ -x "$KCC_DRIVER" ]]; then
 else
     echo "install: no native kcc driver for ${_OS}_${_ARCH} (expected $KCC_DRIVER)." >&2
     if [[ "$_OS" == "linux" && "$_ARCH" == "aarch64" ]]; then
-        echo "  Linux aarch64 is supported via cross-compile from an x86_64 host:" >&2
-        echo "    on x86_64:  ./kcc --arm64 prog.k -o prog   # produces an aarch64 ELF" >&2
-        echo "  A native aarch64-hosted driver seed is not yet shipped." >&2
+        echo "  Linux aarch64 is supported natively (self-hosted frontend + ELF backend)." >&2
+        echo "  Build the driver seed with: ./build.sh" >&2
+        echo "  From x86_64, cross-compile with: ./kcc --aarch64 prog.k -o prog" >&2
     fi
     exit 1
 fi

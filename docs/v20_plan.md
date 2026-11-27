@@ -298,11 +298,11 @@ Estimated: 3-4 sessions on top of GC.
 
 - Linux x86_64: `compiler/linux_x86/elf.k`
 - macOS arm64: `compiler/macos_arm64/macho_arm64_self.k`
-- Linux ARM64: falls back to C path
+- Linux aarch64: native ELF backend (no C path)
 
 ### Plan
 
-`compiler/linux_arm64/elf_arm64.k` modeled on the x86_64 version's
+`compiler/linux_aarch64/elf.k` modeled on the x86_64 version's
 ELF emission, with macOS arm64's instruction encoding. The two
 existing backends already cover both halves of what's needed; this is
 mostly assembly.

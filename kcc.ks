@@ -11,7 +11,7 @@
 //     ./kcc-native hello.k -o hello
 //
 // SCOPE: macOS arm64 + Linux x86-64 native, FreeBSD x86-64 native,
-// + Linux aarch64 cross-compile (--arm64).
+// + Linux aarch64 native (self-hosted) and cross-compile (--aarch64).
 // Modes: --version/--ir/-o/-r/-e/--c. (Windows not yet wired.) One KryptScript
 // driver, no bash, no .bat.
 //
@@ -70,6 +70,7 @@ func _kbi() {
 func hasFrontend(root) {
     if exists(root + "/compiler/macos_arm64/kcc-arm64") == "1" { emit "1" }
     if exists(root + "/compiler/linux_x86/kcc-x64") == "1" { emit "1" }
+    if exists(root + "/compiler/linux_aarch64/kcc-aarch64") == "1" { emit "1" }
     if exists(root + "/compiler/freebsd_x86/kcc-x64") == "1" { emit "1" }
     // Windows: the install layout puts the compile.k-built compiler at
     // <root>/kcc.exe and the backends at <root>/bin/x64_host_new.exe.
@@ -447,7 +448,8 @@ func ensureOptHost(root) {
 }
 
 // First non-flag source arg, skipping -o and its value. (positional() wrongly
-// treats valueless flags like --arm64/--ir/--c/-r as consuming the next token.)
+// treats valueless flags like --aarch64/--arm64/--ir/--c/-r as consuming the
+// next token.)
 func linuxSrc() {
     let i = 0
     while i < argCount() {
@@ -461,25 +463,25 @@ func linuxSrc() {
     emit ""
 }
 
-// Ensure the aarch64 backend host (an x86 binary that EMITS arm64) is built from
-// compiler/linux_arm64/elf.k. "1" ok / "0" fail.
-func ensureArm64Host(root) {
+// Ensure the x86-hosted aarch64 cross backend (an x86 binary that EMITS
+// aarch64) is built from compiler/linux_aarch64/elf.k. "1" ok / "0" fail.
+func ensureAarch64CrossHost(root) {
     if _fast() == "1" { emit "1" }
-    let host = root + "/compiler/linux_arm64/elf_host"
-    let bsrc = root + "/compiler/linux_arm64/elf.k"
+    let host = root + "/compiler/linux_aarch64/elf_host_x86"
+    let bsrc = root + "/compiler/linux_aarch64/elf.k"
     let fe   = root + "/compiler/linux_x86/kcc-x64"
     let need = "1"
     if exists(host) == "1" {
         if sh("test " + q(bsrc) + " -nt " + q(host) + " && echo 1 || echo 0") == "0" { need = "0" }
     }
     if need == "0" { emit "1" }
-    // The arm64 backend host is an x86 binary that EMITS arm64, so the x86
-    // NATIVE pipeline builds it — no gcc. Ensure the x86 elf_host exists, then
-    // it compiles linux_arm64/elf.k's IR into the arm64-emitter host.
+    // The cross host is an x86 binary that EMITS aarch64, so the x86 NATIVE
+    // pipeline builds it — no gcc. Ensure the x86 elf_host exists, then it
+    // compiles linux_aarch64/elf.k's IR into the aarch64-emitter host.
     if ensureElfHost(root) == "0" { emit "0" }
     let elf = root + "/compiler/linux_x86/elf_host"
-    print("kcc: building arm64 backend host natively (self-host, no C)...")
-    let tmpir = tmpPath("_kccarm", ".kir")
+    print("kcc: building aarch64 cross backend natively (self-host, no C)...")
+    let tmpir = tmpPath("_kcca64x", ".kir")
     exec("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir " + q(bsrc) + " > " + q(tmpir))
     exec(q(elf) + " " + q(tmpir) + " " + q(host))
     rm(tmpir)
@@ -488,13 +490,57 @@ func ensureArm64Host(root) {
     emit "0"
 }
 
-// Cross-compile to a static aarch64 ELF: x86 front-end IR -> arm64 backend.
-// (No optimizer pass yet — the arm64 backend consumes the raw IR.) "1"/"0".
-func compileArm64(root, src, out) {
-    let fe = root + "/compiler/linux_x86/kcc-x64"
-    let host = root + "/compiler/linux_arm64/elf_host"
-    if ensureArm64Host(root) == "0" { emit "0" }
-    let tmpir = tmpPath("_kcka", ".kir")
+// Ensure the NATIVE aarch64 backend host exists / is current. NO C compiler:
+//   - user path:        cp the committed native seed (no build)
+//   - backend-edit path: self-host — the native seed compiles the edited
+//                        elf.k's IR into a fresh native elf_host.
+// "1" ok / "0" fail.
+func ensureAarch64Host(root) {
+    if _fast() == "1" { emit "1" }
+    let host = root + "/compiler/linux_aarch64/elf_host"
+    let src  = root + "/compiler/linux_aarch64/elf.k"
+    let fe   = root + "/compiler/linux_aarch64/kcc-aarch64"
+    let seed = root + "/bootstrap/elf_host_linux_aarch64"
+    let need = "0"
+    if exists(host) == "0" { need = "1" }
+    else {
+        if sh("test " + q(src) + " -nt " + q(host) + " && echo 1 || echo 0") == "1" { need = "1" }
+    }
+    if need == "0" { emit "1" }
+    if exists(seed) == "1" {
+        if sh("test " + q(src) + " -nt " + q(seed) + " && echo 1 || echo 0") == "0" {
+            exec("cp " + q(seed) + " " + q(host))
+            exec("chmod +x " + q(host))
+            emit "1"
+        }
+    }
+    let boot = seed
+    if exists(boot) == "0" { boot = host }
+    if exists(boot) == "0" {
+        print("kcc: no aarch64 elf_host seed to self-host from")
+        emit "0"
+    }
+    if exists(fe) == "0" {
+        print("kcc: missing native aarch64 frontend " + fe)
+        emit "0"
+    }
+    print("kcc: rebuilding aarch64 elf_host natively (self-host, no C)...")
+    let tmpir = tmpPath("_kcca64", ".kir")
+    exec("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir " + q(src) + " > " + q(tmpir))
+    exec(q(boot) + " " + q(tmpir) + " " + q(host))
+    rm(tmpir)
+    exec("chmod +x " + q(host))
+    if exists(host) == "1" { emit "1" }
+    emit "0"
+}
+
+// Native aarch64 compile: native frontend IR -> native aarch64 backend.
+// (No optimizer pass yet — the aarch64 backend consumes the raw IR.) "1"/"0".
+func compileAarch64Native(root, src, out) {
+    let fe = root + "/compiler/linux_aarch64/kcc-aarch64"
+    let host = root + "/compiler/linux_aarch64/elf_host"
+    if ensureAarch64Host(root) == "0" { emit "0" }
+    let tmpir = tmpPath("_kcca64n", ".kir")
     exec("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir " + q(src) + " > " + q(tmpir))
     if size(tmpir) == 0 {
         print("kcc: IR emission failed for " + src)
@@ -504,7 +550,30 @@ func compileArm64(root, src, out) {
     exec(q(host) + " " + q(tmpir) + " " + q(out))
     rm(tmpir)
     if exists(out) == "0" {
-        print("kcc: arm64 codegen failed")
+        print("kcc: aarch64 codegen failed")
+        emit "0"
+    }
+    exec("chmod +x " + q(out))
+    emit "1"
+}
+
+// Cross-compile to a static aarch64 ELF: x86 front-end IR -> aarch64 backend.
+// (No optimizer pass yet — the aarch64 backend consumes the raw IR.) "1"/"0".
+func compileAarch64Cross(root, src, out) {
+    let fe = root + "/compiler/linux_x86/kcc-x64"
+    let host = root + "/compiler/linux_aarch64/elf_host_x86"
+    if ensureAarch64CrossHost(root) == "0" { emit "0" }
+    let tmpir = tmpPath("_kcca64x", ".kir")
+    exec("KRYPTON_ROOT=" + q(root) + " " + q(fe) + " --ir " + q(src) + " > " + q(tmpir))
+    if size(tmpir) == 0 {
+        print("kcc: IR emission failed for " + src)
+        rm(tmpir)
+        emit "0"
+    }
+    exec(q(host) + " " + q(tmpir) + " " + q(out))
+    rm(tmpir)
+    if exists(out) == "0" {
+        print("kcc: aarch64 codegen failed")
         emit "0"
     }
     exec("chmod +x " + q(out))
@@ -597,6 +666,13 @@ func compileLinux(root, src, out) {
     }
     exec("chmod +x " + q(out))
     emit "1"
+}
+
+// Linux dispatch: native aarch64, x86-hosted aarch64 cross, or x86-64 native.
+func compileLinuxAny(root, src, out, nativeArm, toArm) {
+    if nativeArm == "1" { emit compileAarch64Native(root, src, out) }
+    if toArm == "1" { emit compileAarch64Cross(root, src, out) }
+    emit compileLinux(root, src, out)
 }
 
 // Ensure the FreeBSD elf_host backend exists / is current. NO C compiler.
@@ -715,7 +791,9 @@ just run {
         print("  --bootstrap alias for --fast")
         print("  --ir        emit Krypton IR to stdout")
         print("  --kbi       opt in to the KBI fast ABI (macOS arm64 only)")
-        print("  --arm64     cross-compile to a static aarch64 ELF")
+        print("  --aarch64   target a static aarch64 ELF (native on aarch64,")
+        print("              cross-compile on x86-64); --arm64 is an alias")
+        print("  --x64       force the x86-64 backend (Linux)")
         print("  --target T  ios-sim-arm64|ios-device-arm64 (macOS), windows-x86_64 (Windows)")
         print("  --subsystem console|windows (Windows)")
         print("  -o FILE     output path")
@@ -752,23 +830,30 @@ just run {
         exit("1")
     }
 
-    // ── Linux native pipeline (x86-64 native, or --arm64 cross to aarch64) ────
+    // ── Linux native pipeline (x86-64, native aarch64, or aarch64 cross) ─────
     if os == "Linux" {
         // Auto-route to the right backend by host arch unless the user
-        // overrides with an explicit --arm64 (force cross to aarch64) or
-        // --x64 (force the x86-64 backend).  On aarch64 hosts, --x64 is
-        // what Docker/Apple-Silicon Linux containers need, since both
-        // uname -m (kcc --print-arch) and k:arch's /proc/sys/kernel/arch
-        // report the shared kernel arch (aarch64) while the userland is
-        // x86_64.
+        // overrides with an explicit --aarch64 (force aarch64) or --x64
+        // (force the x86-64 backend). On aarch64 hosts, --x64 is what
+        // Docker/Apple-Silicon Linux containers need, since both uname -m
+        // (kcc --print-arch) and k:arch's /proc/sys/kernel/arch report the
+        // shared kernel arch (aarch64) while the userland is x86_64.
         //   host x86_64 + no flags   -> x86_64 backend (legacy default)
-        //   host arm64  + no flags   -> arm64 backend (NEW)
-        //   --arm64                  -> arm64 backend regardless of host
+        //   host aarch64 + no flags  -> native aarch64 backend
+        //   --aarch64 (--arm64)      -> aarch64 native on aarch64, else cross
         //   --x64                    -> x86_64 backend regardless of host
+        let wantAarch64 = "0"
+        if hasFlag("--aarch64") == "1" { wantAarch64 = "1" }
+        if hasFlag("--arm64")   == "1" { wantAarch64 = "1" }   // legacy alias
+        let hostAarch64 = "0"
+        if arch() == "arm64" { hostAarch64 = "1" }
+        let nativeArm = "0"
+        if hostAarch64 == "1" && hasFlag("--x64") == "0" { nativeArm = "1" }
         let toArm = "0"
-        if hasFlag("--arm64") == "1" { toArm = "1" }
-        else { if hasFlag("--x64") == "0" { if arch() == "arm64" { toArm = "1" } } }
+        if wantAarch64 == "1" { toArm = "1" }
+        else { if hasFlag("--x64") == "0" { if hostAarch64 == "1" { toArm = "1" } } }
         let fe = root + "/compiler/linux_x86/kcc-x64"   // x86 front-end emits arch-agnostic IR
+        if nativeArm == "1" { fe = root + "/compiler/linux_aarch64/kcc-aarch64" }
 
         // --ir: stream IR (arch-agnostic).
         if hasFlag("--ir") {
@@ -786,35 +871,32 @@ just run {
         if hasFlag("--llvm") { print("kcc: --llvm was removed (Krypton is C-free; native pipeline only).") exit("1") }
         if hasFlag("--wasm") { print("kcc: --wasm is not wired into the Krypton-native driver yet.")        exit("1") }
 
-        // -e CODE: wrap in `just run { ... }`, compile (x86 or arm64), run, delete.
+        // -e CODE: wrap in `just run { ... }`, compile, run, delete.
         if first == "-e" {
             if argCount() < 2 { print("kcc: -e needs code")  exit("1") }
             let ek = tmpPath("_kcceval", ".ks")
             writeText(ek, "just run {\n" + arg(1) + "\n}\n")
             let ebin = sh("mktemp " + q(tmpRoot() + "/_kcceval_XXXXXX"))
-            let oke = "0"
-            if toArm == "1" { oke = compileArm64(root, ek, ebin) } else { oke = compileLinux(root, ek, ebin) }
+            let oke = compileLinuxAny(root, ek, ebin, nativeArm, toArm)
             if oke == "0" { rm(ek)  exit("1") }
-            print(sh(q(ebin)))                      // arm64 runs via qemu binfmt
+            print(sh(q(ebin)))
             rm(ek)  rm(ebin)
             exit("0")
         }
 
-        // -r (compile+run) or default (compile to -o). --arm64 selects the backend.
+        // -r (compile+run) or default (compile to -o).
         let s = linuxSrc()
         if s == "" { print("kcc: no source file")  exit("1") }
         if hasFlag("-r") {
             let tmpbin = sh("mktemp " + q(tmpRoot() + "/_kcckrun_XXXXXX"))
-            let okr = "0"
-            if toArm == "1" { okr = compileArm64(root, s, tmpbin) } else { okr = compileLinux(root, s, tmpbin) }
+            let okr = compileLinuxAny(root, s, tmpbin, nativeArm, toArm)
             if okr == "0" { exit("1") }
-            print(sh(q(tmpbin)))                    // arm64 runs via qemu binfmt
+            print(sh(q(tmpbin)))
             rm(tmpbin)
             exit("0")
         }
         let out = optValue("-o", baseName(s))
-        let okc = "0"
-        if toArm == "1" { okc = compileArm64(root, s, out) } else { okc = compileLinux(root, s, out) }
+        let okc = compileLinuxAny(root, s, out, nativeArm, toArm)
         if okc == "0" { exit("1") }
         exit("0")
     }
@@ -833,7 +915,7 @@ just run {
         if hasFlag("--gcc")  { print("kcc: --gcc was removed (Krypton is C-free; native pipeline only).")  exit("1") }
         if hasFlag("--llvm") { print("kcc: --llvm was removed (Krypton is C-free; native pipeline only).") exit("1") }
         if hasFlag("--wasm") { print("kcc: --wasm is not wired into the Krypton-native driver yet.")        exit("1") }
-        if hasFlag("--arm64") { print("kcc: --arm64 is Linux-only right now.") exit("1") }
+        if hasFlag("--aarch64") || hasFlag("--arm64") { print("kcc: --aarch64 is Linux-only right now.") exit("1") }
 
         if first == "-e" {
             if argCount() < 2 { print("kcc: -e needs code")  exit("1") }

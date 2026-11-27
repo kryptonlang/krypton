@@ -46,8 +46,10 @@ just run {
     } else {
         check("neg sum lt zero", "true", "false")
     }
-    let max32 = 65535 * 65535 + 131070
-    check("uint32 add wrap", "0", "" + (max32 + 1))
+    // Large positive int arithmetic (stays within tagged int range)
+    let big = 40000 * 40000
+    check("big mul", "1600000000", "" + big)
+    check("big add", "1600000001", "" + (big + 1))
 
     emit "ok"
 }

@@ -189,8 +189,10 @@ run, imports, and self-host on macOS (arm64), Linux (x86-64), and Windows
   append; append-heavy code goes from minutes to seconds, self-host RAM drops sharply.
 - **Krypton-native `kcc.ks` driver** replaces the bash `kcc.sh`.
 - **Linux backend parity** — first-class functions/closures (`FUNCPTR`/`callPtr`,
-  `k:fp`), int-arg builtins, library-file + GC-diagnostic fixes, `--aarch64`
-  cross-compile (`--arm64` alias kept).
+  `k:fp`), int-arg builtins, library-file + GC-diagnostic fixes, and a
+  self-hosted native **aarch64** frontend + ELF backend (`--aarch64`, with
+  `--arm64` kept as an alias). x86-64 hosts cross-compile with the same
+  aarch64 backend; aarch64 hosts compile natively with no C tools.
 - **Windows** — `kcc.exe`/`kcc-bin.exe` driver/backend split, native
   `krypton_rt.dll` StringBuilder, `kr.exe` Swift-like auto-wrap + REPL.
 - **macOS** — Mach-O self-host crash fixed; fresh-clone build/install fixed.
@@ -324,7 +326,7 @@ just run {
 | FreeBSD x86_64 | `kcc_seed_freebsd_x86_64`, `kcc_driver_freebsd_x86_64`, `elf_host_freebsd_x86_64`, `optimize_host_freebsd_x86_64` | pending first seed; no C fallback wired |
 | Windows x86_64 | `kcc_seed_windows_x86_64.exe`, `x64_host_windows_x86_64.exe`, `optimize_host_windows_x86_64.exe` | none (pure copy) |
 | macOS arm64 | `kcc_seed_macos_aarch64`, `kcc_driver_macos_aarch64`, `macho_host_macos_aarch64` | none; backend self-hosts from the native seed without C tools |
-| Linux ARM64 | `kcc_seed_linux_aarch64` | none (pure copy); **C path only** — no native ELF aarch64 backend yet, `kcc --native` falls back to gcc/clang |
+| Linux aarch64 | `kcc_seed_linux_aarch64`, `kcc_driver_linux_aarch64`, `elf_host_linux_aarch64` | none (pure copy); native self-hosted frontend + ELF backend, no C path |
 
 **Optional, for development only (end users never need a C compiler):**
 - A matching native seed is required to rebuild a backend emitter. macOS
@@ -777,7 +779,9 @@ krypton/
 │   ├── kcc_seed_freebsd_x86_64               # FreeBSD x86_64 kcc ELF (pending seed)
 │   ├── elf_host_freebsd_x86_64               # FreeBSD x86_64 ELF emitter (pending seed)
 │   ├── optimize_host_freebsd_x86_64          # FreeBSD x86_64 IR optimizer (pending seed)
-│   ├── kcc_seed_linux_aarch64                # Linux ARM64 kcc ELF (C path only — no ARM64 ELF emitter yet)
+│   ├── kcc_seed_linux_aarch64                # Linux aarch64 kcc ELF (native frontend)
+│   ├── kcc_driver_linux_aarch64              # Linux aarch64 kcc.ks driver
+│   ├── elf_host_linux_aarch64                # Linux aarch64 ELF emitter (native)
 │   ├── kcc_seed_windows_x86_64.exe           # Windows kcc PE
 │   ├── x64_host_windows_x86_64.exe           # Windows PE/COFF emitter
 │   ├── optimize_host_windows_x86_64.exe      # Windows IR optimizer

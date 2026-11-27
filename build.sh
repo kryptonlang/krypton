@@ -68,7 +68,7 @@ KCC_DRIVER="$SCRIPT_DIR/bootstrap/kcc_driver_${OSNAME}_${ARCH}"
 # matches the dispatcher's case in ./kcc.
 case "$OSNAME/$ARCH" in
     macos/aarch64)    KCC="./compiler/macos_arm64/kcc-arm64" ;;
-    linux/aarch64)    KCC="./compiler/linux_arm64/kcc-linux-arm64" ;;
+    linux/aarch64)    KCC="./compiler/linux_aarch64/kcc-aarch64" ;;
     linux/x86_64)     KCC="./compiler/linux_x86/kcc-x64" ;;
     freebsd/x86_64)   KCC="./compiler/freebsd_x86/kcc-x64" ;;
     macos/x86_64)     KCC="./compiler/linux_x86/kcc-x64" ;;  # Intel Mac fallback (legacy macho.k path)
@@ -86,6 +86,7 @@ MODE="${1:-build}"
 native_pipeline_available() {
     case "$OSNAME/$ARCH" in
         linux/x86_64)   return 0 ;;
+        linux/aarch64)  return 0 ;;
         freebsd/x86_64) return 0 ;;
         windows/x86_64) return 0 ;;
         macos/aarch64)  return 0 ;;
@@ -265,6 +266,13 @@ if [[ -f "$SEED_BIN" ]]; then
             cp "bootstrap/optimize_host_linux_x86_64" "compiler/linux_x86/optimize_host"
             chmod +x "compiler/linux_x86/optimize_host"
             ok "compiler/linux_x86/optimize_host ready"
+        fi
+    fi
+    if [[ "$OSNAME/$ARCH" == "linux/aarch64" ]]; then
+        if [[ -x "bootstrap/elf_host_linux_aarch64" ]]; then
+            cp "bootstrap/elf_host_linux_aarch64" "compiler/linux_aarch64/elf_host"
+            chmod +x "compiler/linux_aarch64/elf_host"
+            ok "compiler/linux_aarch64/elf_host ready"
         fi
     fi
     if native_pipeline_available && [[ ! -x "$KCC_DRIVER" ]]; then
