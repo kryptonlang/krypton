@@ -2495,7 +2495,7 @@ func emitKrFFormatCode(thisVAddr, allocVAddr) {
     c = c + hexByte(133)
     c = c + hexByte(201)
     c = c + hexByte(116)
-    c = c + hexByte(34)
+    c = c + hexByte(32)
     c = c + hexByte(76)
     c = c + hexByte(137)
     c = c + hexByte(232)
@@ -6474,9 +6474,9 @@ func emitFuncCode(opList, strVAddrs, argcount, localCount, labels, funcVAddrs, f
             c = sbAppend(c, hexByte(0xF2) + hexByte(0x48) + hexByte(0x0F) + hexByte(0x2A) + hexByte(0xC8)) // cvtsi2sd xmm1,rax (5) => 16
             c = sbAppend(c, hexByte(0x66) + hexByte(0x0F) + hexByte(0x2E) + hexByte(0xC8)) // ucomisd xmm1,xmm0 (4) => 20
             if op == "BUILTIN_FFLOOR" {
-                c = sbAppend(c, hexByte(0x76) + hexByte(0x08))                 // jbe +8 (2) => 22
+                c = sbAppend(c, hexByte(0x76) + hexByte(0x03))                 // jbe +3 (2) => 22, skip dec
             } else {
-                c = sbAppend(c, hexByte(0x73) + hexByte(0x08))                 // jae +8 (2) => 22
+                c = sbAppend(c, hexByte(0x73) + hexByte(0x03))                 // jae +3 (2) => 22, skip inc
             }
             if op == "BUILTIN_FFLOOR" {
                 c = sbAppend(c, hexByte(0x48) + hexByte(0xFF) + hexByte(0xC8)) // dec rax (3) => 25
