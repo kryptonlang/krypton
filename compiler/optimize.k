@@ -111,10 +111,13 @@ func passFold(ir) {
                     let av = toInt(a)
                     let bv = toInt(b)
                     let folded = ""
-                    if arithOp == "ADD" { folded = av + bv + "" }
-                    if arithOp == "SUB" { folded = av - bv + "" }
-                    if arithOp == "MUL" { folded = av * bv + "" }
-                    if arithOp == "DIV" && bv != 0 { folded = av / bv + "" }
+                    let value = 0
+                    let valid = 0
+                    if arithOp == "ADD" { value = av + bv  valid = 1 }
+                    if arithOp == "SUB" { value = av - bv  valid = 1 }
+                    if arithOp == "MUL" { value = av * bv  valid = 1 }
+                    if arithOp == "DIV" && bv != 0 { value = av / bv  valid = 1 }
+                    if valid == 1 && value <= 2130706431 && value >= -2000000000 { folded = value + "" }
                     if len(folded) > 0 {
                         if wrote { out = sbAppend(out, "\n") }
                         out = sbAppend(out, "PUSH ")

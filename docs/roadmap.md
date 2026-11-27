@@ -115,7 +115,8 @@ next public release rolls them up.
 
 For the full 2.0 plan including the C-style low-level memory layer,
 lambdas in native, concurrency, the original ARM64 Linux proposal, and LSP, see
-[`docs/v20_plan.md`](v20_plan.md). Linux aarch64 has since shipped natively.
+[`docs/v20_plan.md`](v20_plan.md). Linux aarch64 has since shipped natively
+in the 2.5.0-alpha source line, with test-suite parity against Linux x86-64.
 
 ## Carried-over items (not on the GC track)
 

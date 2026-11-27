@@ -12,6 +12,14 @@ All notable changes to the Krypton language and compiler.
   sockets, PTYs, sleep, and process control.
 - Add a native aarch64 optimizer seed and wire optimization into both native
   and x86-hosted aarch64 compilation.
+- Close Linux aarch64 runtime parity gaps: signed/numeric-string coercion,
+  forced interpolation concatenation, exception unwinding, line input, pointer
+  and handle interop, big-endian buffer loads, barriers, entropy, and timestamps.
+- Keep the Linux ELF GC surface stack-safe on aarch64 and preserve
+  `gcSetThreshold`/`gcLiveCount` names in the frontend. Both Linux ELF backends
+  still use non-collecting bump allocation rather than a mark/sweep runtime.
+- Add aarch64 parity, optimizer-differential, exception/input/exit-status,
+  fd/socket/PTY, and large-IR regression coverage.
 
 - Check Objective-K callback arity, explicit annotations and known value
   types in returns, assignments and direct calls during frontend compilation.

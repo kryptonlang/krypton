@@ -301,14 +301,18 @@ Estimated: 3-4 sessions on top of GC.
 - macOS arm64: `compiler/macos_arm64/macho_arm64_self.k`
 - Linux aarch64: native ELF backend (no C path)
 
-### Plan
+### Delivered in 2.5.0-alpha source
 
-`compiler/linux_aarch64/elf.k` modeled on the x86_64 version's
-ELF emission, with macOS arm64's instruction encoding. The two
-existing backends already cover both halves of what's needed; this is
-mostly assembly.
+`compiler/linux_aarch64/elf.k` is now a native self-hosted backend with an
+x86-hosted cross emitter. Frontend, backend, and optimizer artifacts reach
+byte-stable fixpoints. Native aarch64 and Linux x86-64 report the same broad
+`tests/run_linux.sh` results, and the aarch64 backend passes its dedicated
+float, syscall, exception, input, optimizer-differential, and 40k-operation
+scaling gates.
 
-Estimated: 3-4 sessions.
+The Linux ELF GC API remains a stack-safe compatibility surface over bump
+allocation on both architectures; mark/sweep, root scanning, and slab
+reclamation are still future GC work rather than an aarch64-only gap.
 
 ---
 

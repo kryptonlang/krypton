@@ -49,7 +49,41 @@ case "$(uname -s)/$(uname -m)" in
             KRYPTON_ROOT="$ROOT" compiler/linux_aarch64/elf_host "$tmpdir/hello_opt.kir" "$tmpdir/hello_opt"
             chmod +x "$tmpdir/hello_opt"
             "$tmpdir/hello_opt" | grep -q '^aarch64 ok$'
-            echo "native driver and optimizer pipelines ok"
+
+            KRYPTON_ROOT="$ROOT" compiler/linux_aarch64/kcc-aarch64 --ir tests/test_try_catch.k > "$tmpdir/try.kir"
+            compiler/linux_aarch64/elf_host "$tmpdir/try.kir" "$tmpdir/try"
+            chmod +x "$tmpdir/try"
+            "$tmpdir/try" | grep -q '^try/catch tests done$'
+
+            printf 'just run { print("line=[" + readLine() + "]") }\n' > "$tmpdir/readline.k"
+            KRYPTON_ROOT="$ROOT" compiler/linux_aarch64/kcc-aarch64 --ir "$tmpdir/readline.k" > "$tmpdir/readline.kir"
+            compiler/linux_aarch64/elf_host "$tmpdir/readline.kir" "$tmpdir/readline"
+            chmod +x "$tmpdir/readline"
+            printf 'native input\n' | "$tmpdir/readline" | grep -q '^line=\[native input\]$'
+
+            printf 'FUNC __main__ 0\nPUSH "unhandled"\nTHROW\nEND\n' > "$tmpdir/unhandled.kir"
+            compiler/linux_aarch64/elf_host "$tmpdir/unhandled.kir" "$tmpdir/unhandled"
+            chmod +x "$tmpdir/unhandled"
+            set +e
+            "$tmpdir/unhandled" >/dev/null 2>&1
+            unhandled_rc=$?
+            set -e
+            [[ "$unhandled_rc" -eq 1 ]] || { echo "unhandled throw exited $unhandled_rc, expected 1" >&2; exit 1; }
+
+            printf 'FUNC __main__ 0\nPUSH 7\nRETURN\nEND\n' > "$tmpdir/status.kir"
+            compiler/linux_aarch64/elf_host "$tmpdir/status.kir" "$tmpdir/status"
+            chmod +x "$tmpdir/status"
+            set +e
+            "$tmpdir/status"
+            status_rc=$?
+            set -e
+            [[ "$status_rc" -eq 7 ]] || { echo "main returned $status_rc, expected 7" >&2; exit 1; }
+
+            printf 'FUNC library 0\nPUSH 1\nRETURN\nEND\n' > "$tmpdir/library.kir"
+            compiler/linux_aarch64/elf_host "$tmpdir/library.kir" "$tmpdir/library"
+            chmod +x "$tmpdir/library"
+            "$tmpdir/library"
+            echo "native driver, optimizer, exception, input, and exit-status pipelines ok"
         fi
         ;;
     *)

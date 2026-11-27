@@ -16,6 +16,7 @@ on:
       - 'compiler/optimize.k'
       - 'stdlib/**'
       - 'tests/**'
+      - 'scripts/**'
       - 'build.sh'
       - 'kcc.ks'
       - 'bootstrap/**'
@@ -28,6 +29,7 @@ on:
       - 'compiler/optimize.k'
       - 'stdlib/**'
       - 'tests/**'
+      - 'scripts/**'
       - 'build.sh'
       - 'kcc.ks'
       - 'bootstrap/**'
@@ -48,6 +50,12 @@ jobs:
 
       - name: verify kcc works
         run: KRYPTON_ROOT="$PWD" bootstrap/kcc_driver_linux_x86_64 --version || true
+
+      - name: verify aarch64 cross emitter
+        run: |
+          printf 'just run { print("cross ok") }\n' > /tmp/krypton-cross.ks
+          KRYPTON_ROOT="$PWD" bootstrap/kcc_driver_linux_x86_64 --aarch64 /tmp/krypton-cross.ks -o /tmp/krypton-cross
+          file /tmp/krypton-cross | grep -q 'ARM aarch64'
 
       - name: run linux native tests
         run: bash tests/run_linux.sh

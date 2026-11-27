@@ -40,6 +40,7 @@ install -D -m0755 "bootstrap/kcc_seed_linux_${ARCH}" "$ROOT/bootstrap/kcc_seed_l
 # x86 backend + FE (driver resolves root via compiler/linux_x86/kcc-x64)
 install -D -m0755 compiler/linux_x86/kcc-x64   "$ROOT/compiler/linux_x86/kcc-x64"
 install -D -m0755 compiler/linux_x86/elf_host  "$ROOT/compiler/linux_x86/elf_host"
+install -D -m0755 compiler/linux_x86/optimize_host "$ROOT/compiler/linux_x86/optimize_host"
 install -D -m0644 compiler/linux_x86/elf.k     "$ROOT/compiler/linux_x86/elf.k"
 # aarch64 frontend + backend, and the x86-hosted cross emitter so
 # `kcc --aarch64` works out of the box from either tarball.
@@ -47,6 +48,7 @@ if [[ -d compiler/linux_aarch64 ]]; then
   install -D -m0755 compiler/linux_aarch64/kcc-aarch64   "$ROOT/compiler/linux_aarch64/kcc-aarch64"
   install -D -m0755 compiler/linux_aarch64/elf_host      "$ROOT/compiler/linux_aarch64/elf_host"
   install -D -m0755 compiler/linux_aarch64/elf_host_x86  "$ROOT/compiler/linux_aarch64/elf_host_x86"
+  install -D -m0755 compiler/linux_aarch64/optimize_host "$ROOT/compiler/linux_aarch64/optimize_host"
   install -D -m0644 compiler/linux_aarch64/elf.k         "$ROOT/compiler/linux_aarch64/elf.k"
 fi
 # Compiler sources

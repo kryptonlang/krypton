@@ -176,6 +176,13 @@ if [[ "$MODE" == "test" ]]; then
                 SKIPPED=$((SKIPPED + 1))
                 continue
                 ;;
+            test_linux_aarch64_parity.k:linux)
+                if [[ "$ARCH" != "aarch64" ]]; then
+                    echo -e "${CYAN}SKIP${RESET}  $NAME (AArch64-only)"
+                    SKIPPED=$((SKIPPED + 1))
+                    continue
+                fi
+                ;;
             test_float.k:linux)
                 # The aarch64 backend implements the full f64 smoke test. The
                 # x86 ELF backend still lacks float NEG/fsqrt, so keep its skip.

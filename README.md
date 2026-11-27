@@ -194,7 +194,11 @@ run, imports, and self-host on macOS (arm64), Linux (x86-64), and Windows
   `k:fp`), int-arg builtins, library-file + GC-diagnostic fixes, and a
   self-hosted native **aarch64** frontend + ELF backend (`--aarch64`, with
   `--arm64` kept as an alias). x86-64 hosts cross-compile with the same
-  aarch64 backend; aarch64 hosts compile natively with no C tools.
+  aarch64 backend; aarch64 hosts compile natively with no C tools. The broad
+  `tests/run_linux.sh` suite now has identical results on Linux x86-64 and
+  aarch64 (124 passed, 8 shared failures, 15 skipped). Both Linux ELF backends
+  still use non-collecting bump allocation; the GC builtin surface is
+  stack-safe but is not a mark/sweep runtime.
 - **Windows** — `kcc.exe`/`kcc-bin.exe` driver/backend split, native
   `krypton_rt.dll` StringBuilder, `kr.exe` Swift-like auto-wrap + REPL.
 - **macOS** — Mach-O self-host crash fixed; fresh-clone build/install fixed.
