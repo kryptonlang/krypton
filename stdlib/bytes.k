@@ -178,19 +178,25 @@ func bytesReadI16LE(b, off) {
     emit v
 }
 func bytesReadI32LE(b, off) {
-    let v = toInt(bytesReadU32LE(b, off))
+    if !_bytesCanRead(b, off, 4) { emit "0" }
+    let v = bytesReadU32LE(b, off)
     let signBit = 1073741824 * 2
     let fullRange = signBit * 2
-    if v >= signBit { emit v - fullRange }
+    // Inspect the high byte instead of comparing v: u32 values with bit 31 set
+    // exceed the native smart-int pointer threshold on the ELF backends.
+    if bufGetByte(bytesRaw(b), toInt(off) + 3) >= 128 { emit v - fullRange }
     emit v
 }
 func bytesReadI64LE(b, off) {
     if !_bytesCanRead(b, off, 8) { emit "0" }
-    let low = toInt(bytesReadU32LE(b, off))
-    let high = toInt(bytesReadU32LE(b, toInt(off) + 4))
-    let wordRange = 1073741824 * 4
-    if high >= 1073741824 * 2 { high -= wordRange }
-    emit high * wordRange + low
+    let low = bytesReadU32LE(b, off)
+    let high = bytesReadU32LE(b, toInt(off) + 4)
+    // Assemble the raw 64-bit pattern without smart-int arithmetic on the two
+    // u32 halves (high-bit u32 values overlap the ELF pointer tag range).
+    let raw = bufNew(8)
+    bufSetDwordAt(raw, 0, low)
+    bufSetDwordAt(raw, 4, high)
+    emit bufGetQwordAt(raw, 0)
 }
 
 func bytesWriteU8(b, off, value) { emit bytesSet(b, off, value) }
@@ -228,9 +234,9 @@ func bytesWriteI16LE(b, off, value) {
 func bytesWriteI32LE(b, off, value) {
     let v = toInt(value)
     let signBit = 1073741824 * 2
-    let fullRange = signBit * 2
-    if v < 0 - signBit || v >= signBit { emit "0" }
-    if v < 0 { v += fullRange }
+    if v < 0 - signBit { emit "0" }
+    // bufSetDwordAt stores the low 32 bits, so negative values need no unsigned
+    // promotion (which would cross the native smart-int pointer threshold).
     emit bytesWriteU32LE(b, off, v)
 }
 func bytesWriteI64LE(b, off, value) {
@@ -435,7 +441,7 @@ func utf16leDecode(b, stopAtNul) {
     let i = 0
     while i + 1 < bytesLen(b) {
         let u = toInt(bytesReadU16LE(b, i))
-        if u == 0 && (stopAtNul == "1" || stopAtNul == 1) { break }
+        if u == 0 && (stopAtNul == "1" || stopAtNul == 1) { i = bytesLen(b)  break }
         let cp = u
         let used = 2
         if u >= 55296 && u <= 56319 {

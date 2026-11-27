@@ -49,11 +49,18 @@ install -D -m0644 compiler/compile.k  "$ROOT/compiler/compile.k"
 # in; stdlib + headers are bundled below for any runtime import.
 if [[ -f kweb/kweb.htk ]]; then
   echo "building kweb (kweb/kweb.htk -> native ELF) ..."
+  if [[ "$ARCH" == "aarch64" ]]; then
+    KWEB_KCC="compiler/linux_aarch64/kcc-aarch64"
+    KWEB_ELF="compiler/linux_aarch64/elf_host"
+  else
+    KWEB_KCC="compiler/linux_x86/kcc-x64"
+    KWEB_ELF="compiler/linux_x86/elf_host"
+  fi
   mkdir -p "$ROOT/web"
   KWIR=$(mktemp /tmp/_kweb_XXXXXX.ir)
-  if KRYPTON_ROOT="$PWD" compiler/linux_x86/kcc-x64 --ir kweb/kweb.htk > "$KWIR" 2>/dev/null \
+  if KRYPTON_ROOT="$PWD" "$KWEB_KCC" --ir kweb/kweb.htk > "$KWIR" 2>/dev/null \
      && [[ -s "$KWIR" ]] \
-     && compiler/linux_x86/elf_host "$KWIR" "$ROOT/web/kweb" 2>/dev/null; then
+     && "$KWEB_ELF" "$KWIR" "$ROOT/web/kweb" 2>/dev/null; then
     chmod 0755 "$ROOT/web/kweb"
     install -D -m0644 kweb/kweb.htk "$ROOT/web/kweb.htk"
     echo "  bundled web/kweb ($(wc -c < "$ROOT/web/kweb") bytes)"

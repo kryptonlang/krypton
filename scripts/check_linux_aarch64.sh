@@ -16,10 +16,12 @@ need_exec compiler/linux_aarch64/kcc-aarch64
 need_exec compiler/linux_aarch64/elf_host
 need_exec compiler/linux_aarch64/elf_host_x86
 
-file bootstrap/kcc_seed_linux_aarch64 \
-     compiler/linux_aarch64/kcc-aarch64 \
-     compiler/linux_aarch64/elf_host \
-     compiler/linux_aarch64/elf_host_x86
+if command -v file >/dev/null 2>&1; then
+    file bootstrap/kcc_seed_linux_aarch64 \
+         compiler/linux_aarch64/kcc-aarch64 \
+         compiler/linux_aarch64/elf_host \
+         compiler/linux_aarch64/elf_host_x86
+fi
 
 case "$(uname -s)/$(uname -m)" in
     Linux/aarch64|Linux/arm64)

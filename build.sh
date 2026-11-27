@@ -79,7 +79,7 @@ esac
 MODE="${1:-build}"
 
 # ── Native-pipeline availability ────────────────────────────────────────────
-# Linux/Windows x86_64 ship native codegen hosts (elf_host / x64_host) so
+# Linux/Windows x86_64 and Linux aarch64 ship native codegen hosts so
 # `kcc --native` produces a binary directly — no gcc, no clang. macOS uses
 # macho_arm64_self.k (Krypton-only) on arm64. We treat the native pipeline as
 # available whenever the dispatcher will pick a Krypton-only backend.
@@ -158,10 +158,21 @@ if [[ "$MODE" == "test" ]]; then
                 SKIPPED=$((SKIPPED + 1))
                 continue
                 ;;
-            test_objc_smoke.k:linux|test_objc_smoke.k:windows)
+            test_objc_smoke.k:linux|test_objc_smoke.k:windows|test_objk_full.k:linux|test_objk_full.k:windows)
                 # objc FFI binds /usr/lib/libobjc.A.dylib via macho dyld chained
                 # fixups — macOS-only; no libobjc on ELF/PE targets.
                 echo -e "${CYAN}SKIP${RESET}  $NAME (macOS-only)"
+                SKIPPED=$((SKIPPED + 1))
+                continue
+                ;;
+            test_vulkan_probe.k:linux|test_vulkan_probe.k:windows)
+                # Vulkan loader probe is a macOS-only native integration test.
+                echo -e "${CYAN}SKIP${RESET}  $NAME (macOS-only)"
+                SKIPPED=$((SKIPPED + 1))
+                continue
+                ;;
+            test_process_win_argv.k:linux|test_process_win_argv.k:macos)
+                echo -e "${CYAN}SKIP${RESET}  $NAME (Windows-only)"
                 SKIPPED=$((SKIPPED + 1))
                 continue
                 ;;
@@ -315,8 +326,12 @@ if [[ -f "$SEED_BIN" ]]; then
         echo "    ./build.sh test               run the test suite (needs $CC)"
     fi
     if [[ "$OSNAME" == "linux" ]]; then
-        echo "    ./kcc --native hello.k -o hello      gcc-free native ELF (x86_64)"
-        echo "    ./kcc --arm64  hello.k -o hello      cross-compile to aarch64 ELF"
+        if [[ "$ARCH" == "aarch64" ]]; then
+            echo "    ./kcc --native hello.k -o hello      gcc-free native ELF (aarch64)"
+        else
+            echo "    ./kcc --native hello.k -o hello      gcc-free native ELF (x86_64)"
+            echo "    ./kcc --aarch64 hello.k -o hello     cross-compile to aarch64 ELF"
+        fi
     elif [[ "$OSNAME" == "freebsd" ]]; then
         echo "    ./kcc --native hello.k -o hello      gcc-free native FreeBSD ELF (x86_64)"
     elif [[ "$OSNAME" == "macos" ]]; then

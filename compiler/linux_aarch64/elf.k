@@ -1,7 +1,7 @@
 // Copyright 2026 The Krypton Authors.
 // Licensed under the Apache License, Version 2.0 (see LICENSE or
 // http://www.apache.org/licenses/LICENSE-2.0).
-// compiler/linux_arm64/elf.k — native aarch64 Linux ELF backend (WIP).
+// compiler/linux_aarch64/elf.k — native aarch64 Linux ELF backend (WIP).
 //
 // Cross backend: built by the x86 kcc, runs on x86, emits aarch64. Reads Krypton
 // IR (arg 0), writes a static syscall-only aarch64 ELF (arg 1). Test under qemu.
@@ -72,6 +72,7 @@ func e_ldrwO(wt, xn, xm) { let p = 26624 + xn * 32 + wt  emit wordHL(47200 + xm 
 func e_ldrb0(wt, xn) { let p = xn * 32 + wt  emit wordHL(14656, p) }                 // ldrb Wt,[Xn]
 func e_strbO(wt, xn, off) { let p = off * 1024 + xn * 32 + wt  emit wordHL(14592 + p / 65536, p % 65536) } // strb Wt,[Xn,#off]
 func e_strbR(wt, xn, xm) { let p = 26624 + xn * 32 + wt  emit wordHL(14368 + xm + p / 65536, p % 65536) } // strb Wt,[Xn,Xm]
+func e_strw0(wt, xn)  { let p = xn * 32 + wt  emit wordHL(47360, p) }                 // str Wt,[Xn]
 func e_strhR(wt, xn, xm) { let p = 26624 + xn * 32 + wt  emit wordHL(30752 + xm + p / 65536, p % 65536) } // strh Wt,[Xn,Xm] (u16)
 func e_str8(rt, rn, off8) { let p = off8 * 1024 + rn * 32 + rt  emit wordHL(63744 + p / 65536, p % 65536) } // str Xt,[Xn,#off8*8]
 func e_ldr8(rt, rn, off8) { let p = off8 * 1024 + rn * 32 + rt  emit wordHL(63808 + p / 65536, p % 65536) } // ldr Xt,[Xn,#off8*8]
@@ -742,21 +743,21 @@ func emitHasField() {
     emit c
 }
 // kr_structfields(x0=env) -> "name,name,..." (head-first, trailing comma). 104 bytes.
-// Builds via kr_plus. x24=cur x25=result x10="," x26=lr (survive kr_plus/kr_alloc).
+// Builds via kr_plus. x26=cur x27=result x28="," x29=lr (all survive kr_plus/kr_alloc).
 func emitStructFields(allocOff, plusOff, thisOff) {
-    let c = e_movr(26, 30) + e_movr(24, 0)                        // [0,4] lr; cur=env
+    let c = e_movr(29, 30) + e_movr(26, 0)                        // [0,4] lr; cur=env
     c = c + e_movz(0, 2) + e_bl(allocOff - (thisOff + 12))        // [8,12] alloc(2) for ","
     c = c + e_movz(1, 44) + e_strb(1, 0)                          // [16,20] comma[0]=','
-    c = c + e_strbO(31, 0, 1) + e_movr(10, 0)                     // [24,28] comma[1]=0; x10=comma
+    c = c + e_strbO(31, 0, 1) + e_movr(28, 0)                     // [24,28] comma[1]=0; x28=comma
     c = c + e_movz(0, 1) + e_bl(allocOff - (thisOff + 36))        // [32,36] alloc(1) empty result
-    c = c + e_strb(31, 0) + e_movr(25, 0)                         // [40,44] result[0]=0; result=""
-    c = c + e_cbz(24, 44)                                         // [48] .loop: cur==0 -> .done (92)
-    c = c + e_movr(0, 25) + e_ldr0(1, 24)                         // [52,56] a=result; b=cur.name
-    c = c + e_bl(plusOff - (thisOff + 60)) + e_movr(25, 0)        // [60,64] result = result+name
-    c = c + e_movr(0, 25) + e_movr(1, 10)                         // [68,72] a=result; b=","
-    c = c + e_bl(plusOff - (thisOff + 76)) + e_movr(25, 0)        // [76,80] result = result+","
-    c = c + e_ldr8(24, 24, 2) + e_b(0 - 40)                       // [84,88] cur=cur.prev; -> .loop (48)
-    c = c + e_movr(0, 25) + e_movr(30, 26) + e_ret()             // [92,96,100] .done: return result
+    c = c + e_strb(31, 0) + e_movr(27, 0)                         // [40,44] result[0]=0; result=""
+    c = c + e_cbz(26, 44)                                         // [48] .loop: cur==0 -> .done (92)
+    c = c + e_movr(0, 27) + e_ldr0(1, 26)                         // [52,56] a=result; b=cur.name
+    c = c + e_bl(plusOff - (thisOff + 60)) + e_movr(27, 0)        // [60,64] result = result+name
+    c = c + e_movr(0, 27) + e_movr(1, 28)                         // [68,72] a=result; b=","
+    c = c + e_bl(plusOff - (thisOff + 76)) + e_movr(27, 0)        // [76,80] result = result+","
+    c = c + e_ldr8(26, 26, 2) + e_b(0 - 40)                       // [84,88] cur=cur.prev; -> .loop (48)
+    c = c + e_movr(0, 27) + e_movr(30, 29) + e_ret()             // [92,96,100] .done: return result
     emit c
 }
 // kr_plus(a=x0, b=x1) -> x0. Polymorphic +: both ints -> a+b; else convert each
@@ -975,7 +976,7 @@ func emitEnviron(opOff, allocOff, thisOff) {
 }
 // kr_exec(x0=cmd) -> child stdout as a NUL-terminated heap string. pipe2 +
 // clone(SIGCHLD) + dup3 + execve(/bin/sh -c cmd, envp); parent read-loops into
-// a 64 KiB buffer, closes both ends, reaps with wait4. 352 bytes. (syscalls:
+// a 64 KiB buffer, closes both ends, reaps with wait4. 364 bytes. (syscalls:
 // read=63, close=57, pipe2=59, dup3=24, clone=220, execve=221, wait4=260,
 // exit=93)
 func emitExec(opOff, allocOff, thisOff) {
@@ -991,16 +992,16 @@ func emitExec(opOff, allocOff, thisOff) {
     c = c + e_cbz(0, 160)                                   // [116] x0==0 -> .child (276)
     // parent: close write end, alloc 64K+1, read-loop, close read end, wait4
     c = c + e_str8(0, 31, 7)                                // [120] [sp+56]=pid
-    c = c + e_addi(1, 31, 48) + e_ldrwO(0, 31, 1)           // [124,128] w0=pipefd[0] (read)
+    c = c + e_movz(1, 48) + e_ldrwO(0, 31, 1)           // [124,128] w0=pipefd[0] (read)
     c = c + e_movr(27, 0)                                   // [132] x27=read fd
-    c = c + e_addi(1, 31, 52) + e_ldrwO(0, 31, 1)           // [136,140] w0=pipefd[1] (write)
+    c = c + e_movz(1, 52) + e_ldrwO(0, 31, 1)           // [136,140] w0=pipefd[1] (write)
     c = c + e_movz(8, 57) + e_svc()                         // [144,148] close(write)
     c = c + e_movz(0, 1) + e_movk16(0, 1)                   // [152,156] x0=65537
     c = c + e_bl(allocOff - (thisOff + 160))                // [160] x0=buf
     c = c + e_movr(23, 0) + e_movr(24, 0)                   // [164,168] x23=buf base; x24=cursor
     c = c + e_movz(25, 0) + e_movk16(25, 1)                 // [172,176] x25=65536 (remaining)
     // .loop (180): read(fd, cursor, remaining)
-    c = c + e_movz(0, 63) + e_movr(1, 27) + e_movr(2, 24) + e_movr(3, 25) + e_svc()  // [180..196]
+    c = c + e_movr(0, 27) + e_movr(1, 24) + e_movr(2, 25) + e_movz(8, 63) + e_svc()  // [180..196]
     c = c + e_cmpi0(0) + e_ble(16)                          // [200,204] n<=0 -> .done (220)
     c = c + e_addr(24, 24, 0) + e_subr(25, 25, 0)           // [208,212] cursor+=n; remaining-=n
     c = c + e_b(0 - 36)                                     // [216] -> .loop (180)
@@ -1012,11 +1013,11 @@ func emitExec(opOff, allocOff, thisOff) {
     c = c + e_movr(0, 23)                                   // [260] return buf
     c = c + e_addi(31, 31, 96) + e_movr(30, 21) + e_ret()   // [264,268,272] restore; ret
     // .child (276): dup3(write,1,0); close both; execve; exit(127)
-    c = c + e_addi(1, 31, 48) + e_ldrwO(0, 31, 1)           // [276,280] w0=pipefd[0]
+    c = c + e_movz(1, 48) + e_ldrwO(0, 31, 1)           // [276,280] w0=pipefd[0]
     c = c + e_movz(8, 57) + e_svc()                         // [284,288] close(read)
-    c = c + e_addi(1, 31, 52) + e_ldrwO(0, 31, 1)           // [292,296] w0=pipefd[1]
+    c = c + e_movz(1, 52) + e_ldrwO(0, 31, 1)           // [292,296] w0=pipefd[1]
     c = c + e_movz(1, 1) + e_movz(2, 0) + e_movz(8, 24) + e_svc()  // [300..312] dup3(write,1,0)
-    c = c + e_addi(1, 31, 52) + e_ldrwO(0, 31, 1)           // [316,320] w0=pipefd[1]
+    c = c + e_movz(1, 52) + e_ldrwO(0, 31, 1)           // [316,320] w0=pipefd[1]
     c = c + e_movz(8, 57) + e_svc()                         // [324,328] close(write)
     c = c + e_addi(0, 31, 0) + e_addi(1, 31, 16) + e_movr(2, 9) + e_movz(8, 221) + e_svc()  // [332..348] execve
     c = c + e_movz(0, 127) + e_movz(8, 93) + e_svc()        // [352,356,360] execve failed -> exit(127)
@@ -1111,16 +1112,27 @@ func funcArgc(ln) {
     emit substring(rest, toInt(p) + 1, len(rest))
 }
 // count PARAM+LOCAL slots of the function starting at line fStart.
-func countLocals(ir, fStart) {
+func countLocals(ir, fStart, globalTab, isMain) {
     let n = toInt(lineCount(ir))
     let i = fStart + 1
     let c = 0
+    let seen = ""
+    let declared = ""
     while i < n {
-        let op = opcode(getLine(ir, i))
+        let ln = getLine(ir, i)
+        let op = opcode(ln)
         if op == "FUNC" { emit c + "" }
         if op == "END"  { emit c + "" }
-        if op == "PARAM" { c = c + 1 }
-        if op == "LOCAL" { c = c + 1 }
+        if op == "PARAM" || op == "LOCAL" || op == "LOAD" || op == "STORE" {
+            let nm = operand(ln)
+            if op == "PARAM" || op == "LOCAL" { declared = declared + "\n" + nm + " " }
+            let add = "1"
+            if isMain == "0" && (op == "LOAD" || op == "STORE") && tabHas(globalTab, nm) == "1" && indexOf(declared, "\n" + nm + " ") < 0 { add = "0" }
+            if add == "1" && indexOf(seen, "\n" + nm + " ") < 0 {
+                seen = seen + "\n" + nm + " "
+                c = c + 1
+            }
+        }
         i = i + 1
     }
     emit c + ""
@@ -1175,6 +1187,25 @@ func opBytes(ir, i) {
     }
     emit toInt(opSize(ln)) + ""
 }
+// Context-aware size: top-level lets live in __main__'s frame and are shared
+// with other functions via GB+88, so their LOAD/STORE sequences are 24 bytes.
+func opBytesScoped(ir, i, scope, globalTab, declared) {
+    let ln = getLine(ir, i)
+    let op = opcode(ln)
+    if op == "FUNC" {
+        let extra = 0
+        if headName(ln) == "__main__" { extra = 12 }
+        emit ((5 + 3 * toInt(funcArgc(ln))) * 4 + extra) + ""
+    }
+    if op == "LOAD" || op == "STORE" {
+        if scope != "__main__" && tabHas(globalTab, operand(ln)) == "1" && indexOf(declared, "\n" + operand(ln) + " ") < 0 { emit "24" }
+    }
+    emit opBytes(ir, i)
+}
+func tabHas(tab, name) {
+    if indexOf(tab, "\n" + name + " ") >= 0 { emit "1" }
+    emit "0"
+}
 // Look up `name` in a "\nNAME VAL\nNAME VAL..." table. Uses indexOf (NOT getLine)
 // so it does NOT touch / evict the kr_getline pointer cache — critical: these
 // lookups interleave with the main codegen IR walk, and a single-entry getLine
@@ -1201,19 +1232,29 @@ func funcVaddrOf(tab, name) { emit tabLookup(tab, name) }
 // Built ONCE per function at its FUNC line (forward walk, getLine-cache friendly);
 // STORE/LOAD then resolve slots via tabLookup (indexOf, no getLine) instead of
 // re-walking the IR per access (localSlotIn was O(funcLen) getLine per LOAD/STORE).
-func buildSlots(ir, fStart) {
-    let n = toInt(lineCount(ir))
+func buildSlots(ir, fStart, globalTab, isMain) {
     let i = fStart + 1
     let slot = 0
     let out = sbNew()
+    let seen = ""
+    let declared = ""
     let keep = 1
-    while i < n && keep == 1 {
+    while keep == 1 {
         let ln = getLine(ir, i)
         let op = opcode(ln)
         if op == "FUNC" { keep = 0 }
         else if op == "END" { keep = 0 }
-        else if op == "PARAM" { out = sbAppend(out, "\n" + operand(ln) + " " + (slot + ""))  slot = slot + 1 }
-        else if op == "LOCAL" { out = sbAppend(out, "\n" + operand(ln) + " " + (slot + ""))  slot = slot + 1 }
+        else if op == "PARAM" || op == "LOCAL" || op == "LOAD" || op == "STORE" {
+            let nm = operand(ln)
+            if op == "PARAM" || op == "LOCAL" { declared = declared + "\n" + nm + " " }
+            let add = "1"
+            if isMain == "0" && (op == "LOAD" || op == "STORE") && tabHas(globalTab, nm) == "1" && indexOf(declared, "\n" + nm + " ") < 0 { add = "0" }
+            if add == "1" && indexOf(seen, "\n" + nm + " ") < 0 {
+                out = sbAppend(out, "\n" + nm + " " + (slot + ""))
+                seen = seen + "\n" + nm + " "
+                slot = slot + 1
+            }
+        }
         i = i + 1
     }
     emit sbToString(out)
@@ -1244,6 +1285,7 @@ func opSize(ln) {
     if op == "INDEX" { emit 28 }   // list[idx] -> kr_split (pop0+pop1+bl+push)
     if op == "SETFIELD" { emit 36 }  // p.x=v: pop val/env, name imm -> kr_setfield
     if op == "GETFIELD" { emit 28 }  // p.x: pop env, name imm -> kr_getfield
+    if op == "STRUCTNEW" { emit 12 } // empty struct/env sentinel
     if op == "BUILTIN" {
         let b = operand(ln)
         if startsWith(b, "kp") { emit 20 }   // pop + bl kpDisp + push (no movz between bl and push)
@@ -1284,9 +1326,13 @@ func opSize(ln) {
         if startsWith(b, "sbNew")      { emit 12 }  // 0-arg: bl + push
         if startsWith(b, "sbAppend")   { emit 28 }  // 2-arg (handle, s)
         if startsWith(b, "sbToString") { emit 20 }  // 1-arg (handle)
-        if startsWith(b, "exit")       { emit 24 }  // inline: pop x0 + movz x8,93 + svc + push
+        if startsWith(b, "exit")       { emit 28 }  // pop + atoi + movz x8,93 + svc + push
         if startsWith(b, "bufNew ")    { emit 20 }  // alloc(size): pop+bl alloc+push
+        if startsWith(b, "bufSetQwordAt ") { emit 44 } // [buf+off]=val (64-bit)
+        if startsWith(b, "bufSetWordAt ")  { emit 44 } // [buf+off]=val (16-bit)
+        if startsWith(b, "bufSetDwordAt ") { emit 44 } // [buf+off]=val (32-bit)
         if startsWith(b, "bufSetByte ") { emit 36 } // [buf+off]=val: 3 pops + strb + push
+        if startsWith(b, "bufGetQwordAt ") { emit 32 } // 64-bit load via addr+ldr
         if startsWith(b, "bufGetByte ") { emit 28 } // buf[off]: 2 pops + ldrb + push
         if startsWith(b, "bufGetWordAt ") { emit 28 }  // u16 LE: 2 pops + ldrh + push
         if startsWith(b, "bufGetDwordAt ") { emit 28 } // u32 LE: 2 pops + ldrw + push
@@ -1300,8 +1346,11 @@ func opSize(ln) {
         if startsWith(b, "replace")    { emit 36 }  // 3-arg: pop x2/x1/x0 + bl kr_replace + push
         if startsWith(b, "environ")    { emit 20 }  // 1-arg: pop + bl kr_environ + push
         if startsWith(b, "readProc")   { emit 20 }  // 1-arg: pop + bl kr_readproc + push
+        if startsWith(b, "ptrToInt")   { emit 20 }  // raw pointer -> decimal string
+        if startsWith(b, "intToPtr")   { emit 20 }  // decimal string/int -> raw pointer
         if startsWith(b, "callPtr")    { emit 28 }  // load fp, blr, replace fp slot with callee result
         if startsWith(b, "shellRun")   { emit 20 }  // 1-arg: pop + bl kr_shellrun + push
+        if startsWith(b, "exec ")      { emit 20 }  // 1-arg: pop + bl kr_exec + push
         if startsWith(b, "gcCollect")    { emit 12 }  // no-op (bump allocator): push 0
         if startsWith(b, "gcAllocCount") { emit 20 }  // load gcGlobals[count]
         if startsWith(b, "gcAllocated")  { emit 20 }  // load gcGlobals[bytes]
@@ -1332,6 +1381,18 @@ just run {
     let HDR = 120
     let START = 76                       // _start: argc/argv/envp capture (11) + x20/x22 (4) + bl + 3 exit = 19 instr
 
+    // Top-level lets are stored in __main__'s frame. Build their slot table once
+    // so other functions can share them through the saved main-frame pointer.
+    let mainStart = 0 - 1
+    i = 0
+    while i < nlines {
+        let ml = getLine(ir, i)
+        if opcode(ml) == "FUNC" && headName(ml) == "__main__" { mainStart = i }
+        i = i + 1
+    }
+    let globalTab = ""
+    if mainStart >= 0 { globalTab = buildSlots(ir, mainStart, "", "1") }
+
     // ONE O(n) pass: total code size + precomputed LABEL/FUNC offset tables
     // ("name off\n" per entry). Replaces the old per-jump full-IR re-walk in
     // labelAbsOffset/funcVaddrOf (J jumps * n lines * opBytes = O(n^2), which
@@ -1341,13 +1402,17 @@ just run {
     let labelTabB = sbNew()
     let funcTabB = sbNew()
     let aoff = HDR + START               // first code byte after HDR + _start (was 152 @ START=32)
+    let scope = ""
+    let declared = ""
     let i = 0
     while i < nlines {
         let ln0 = getLine(ir, i)
         let op0 = opcode(ln0)
-        if op0 == "LABEL" { labelTabB = sbAppend(labelTabB, "\n" + operand(ln0) + " " + (aoff + "")) }
+        if op0 == "FUNC" { scope = headName(ln0)  declared = "" }
+        if op0 == "PARAM" || op0 == "LOCAL" { declared = declared + "\n" + operand(ln0) + " " }
+        if op0 == "LABEL" { labelTabB = sbAppend(labelTabB, "\n" + scope + ":" + operand(ln0) + " " + (aoff + "")) }
         if op0 == "FUNC"  { funcTabB = sbAppend(funcTabB, "\n" + headName(ln0) + " " + (aoff + "")) }
-        let bs = toInt(opBytes(ir, i))
+        let bs = toInt(opBytesScoped(ir, i, scope, globalTab, declared))
         aoff = aoff + bs
         codeSize = codeSize + bs
         i = i + 1
@@ -1454,6 +1519,8 @@ just run {
 
     // ── functions: each gets a frame on sp (x19=locals base); op stack is x20 ──
     let curF = 0
+    let curFName = ""
+    let curDeclared = ""
     let frame = 0
     let curSlots = ""                 // per-function local-slot table (rebuilt at each FUNC)
     let strCursor = dataOff           // running offset into the string-literal data
@@ -1462,19 +1529,28 @@ just run {
     while i < nlines {
         let ln = getLine(ir, i)
         let op = opcode(ln)
+        if op == "PARAM" || op == "LOCAL" { curDeclared = curDeclared + "\n" + operand(ln) + " " }
         if op == "FUNC" {
             curF = i
-            curSlots = buildSlots(ir, i)
+            curFName = headName(ln)
+            curDeclared = ""
+            let isMain = "0"
+            if curFName == "__main__" { isMain = "1" }
+            curSlots = buildSlots(ir, i, globalTab, isMain)
             let argc = toInt(funcArgc(ln))
-            frame = toInt(countLocals(ir, i)) * 16
+            frame = toInt(countLocals(ir, i, globalTab, isMain)) * 16
             code = sbAppend(code, e_subi(31, 31, 16) + e_str0(19, 31) + e_str8(30, 31, 1))   // save x19, x30
             code = sbAppend(code, e_subi(31, 31, frame) + e_addi(19, 31, 0))                 // alloc locals, x19=sp
+            if isMain == "1" {
+                code = sbAppend(code, e_movz(9, opOff % 65536) + e_movk16(9, 32512 + opOff / 65536) + e_str8(19, 9, 11))  // GB+88 = main frame
+            }
             let p = 0
             while p < argc {                                                        // pop args -> param slots
                 code = sbAppend(code, e_ldr0(0, 20) + e_addi(20, 20, 16) + e_strIdx(0, 19, argc - 1 - p))
                 p = p + 1
             }
             off = off + (5 + 3 * argc) * 4
+            if isMain == "1" { off = off + 12 }
         }
         if op == "PUSH" {
             if isStrPush(ln) == "1" {
@@ -1491,8 +1567,22 @@ just run {
             code = sbAppend(code, e_movz(0, fpOff % 65536) + e_movk16(0, 32512 + fpOff / 65536) + c_push())
             off = off + 16
         }
-        if op == "STORE" { code = sbAppend(code, c_pop0() + e_strIdx(0, 19, toInt(tabLookup(curSlots, operand(ln)))))  off = off + 12 }
-        if op == "LOAD"  { code = sbAppend(code, e_ldrIdx(0, 19, toInt(tabLookup(curSlots, operand(ln)))) + c_push())   off = off + 12 }
+        if op == "STORE" {
+            let nm = operand(ln)
+            if curFName != "__main__" && tabHas(globalTab, nm) == "1" && indexOf(curDeclared, "\n" + nm + " ") < 0 {
+                let gs = toInt(tabLookup(globalTab, nm))
+                code = sbAppend(code, c_pop0() + e_movz(9, opOff % 65536) + e_movk16(9, 32512 + opOff / 65536) + e_ldr8(9, 9, 11) + e_strIdx(0, 9, gs))
+                off = off + 24
+            } else { code = sbAppend(code, c_pop0() + e_strIdx(0, 19, toInt(tabLookup(curSlots, nm))))  off = off + 12 }
+        }
+        if op == "LOAD" {
+            let nm = operand(ln)
+            if curFName != "__main__" && tabHas(globalTab, nm) == "1" && indexOf(curDeclared, "\n" + nm + " ") < 0 {
+                let gs = toInt(tabLookup(globalTab, nm))
+                code = sbAppend(code, e_movz(9, opOff % 65536) + e_movk16(9, 32512 + opOff / 65536) + e_ldr8(9, 9, 11) + e_ldrIdx(0, 9, gs) + c_push())
+                off = off + 24
+            } else { code = sbAppend(code, e_ldrIdx(0, 19, toInt(tabLookup(curSlots, nm))) + c_push())  off = off + 12 }
+        }
         if op == "ADD" { code = sbAppend(code, c_pop1() + c_pop0() + e_bl(plusOff - (off + 16)) + c_push())  off = off + 28 }  // polymorphic via kr_plus
         if op == "CAT" { code = sbAppend(code, c_pop1() + c_pop0() + e_bl(plusOff - (off + 16)) + c_push())  off = off + 28 }  // template-string concat via kr_plus
         if op == "SUB" { code = sbAppend(code, c_pop1() + c_pop0() + e_subr(0, 0, 1) + c_push())  off = off + 28 }
@@ -1519,6 +1609,7 @@ just run {
             fieldCursor = fieldCursor + (len(operand(ln)) + 1)
             off = off + 28
         }
+        if op == "STRUCTNEW" { code = sbAppend(code, e_movz(0, 0) + c_push())  off = off + 12 }
         if op == "POP" { code = sbAppend(code, e_addi(20, 20, 16))  off = off + 4 }
         if op == "LT"  { code = sbAppend(code, c_pop1() + c_pop0() + e_bl(cmpOff - (off + 16)) + e_cmpi0(0) + e_cset(0, 10) + c_push())  off = off + 36 }
         if op == "GT"  { code = sbAppend(code, c_pop1() + c_pop0() + e_bl(cmpOff - (off + 16)) + e_cmpi0(0) + e_cset(0, 13) + c_push())  off = off + 36 }
@@ -1527,9 +1618,9 @@ just run {
         if op == "NEQ" { code = sbAppend(code, c_pop1() + c_pop0() + e_bl(eqOff - (off + 16)) + e_cmpi0(0) + e_cset(0, 1) + c_push())   off = off + 36 }
         if op == "LTE" { code = sbAppend(code, c_pop1() + c_pop0() + e_bl(cmpOff - (off + 16)) + e_cmpi0(0) + e_cset(0, 12) + c_push())  off = off + 36 }
         if op == "GTE" { code = sbAppend(code, c_pop1() + c_pop0() + e_bl(cmpOff - (off + 16)) + e_cmpi0(0) + e_cset(0, 11) + c_push())  off = off + 36 }
-        if op == "JUMP" { code = sbAppend(code, e_b(toInt(labelAbsOffset(labelTab, operand(ln))) - off))  off = off + 4 }
-        if op == "JUMPIFNOT" { code = sbAppend(code, c_pop0() + e_bl(istruthyOff - (off + 8)) + e_cbz(0, toInt(labelAbsOffset(labelTab, operand(ln))) - (off + 12)))  off = off + 16 }
-        if op == "JUMPIF" { code = sbAppend(code, c_pop0() + e_bl(istruthyOff - (off + 8)) + e_cbnz(0, toInt(labelAbsOffset(labelTab, operand(ln))) - (off + 12)))  off = off + 16 }
+        if op == "JUMP" { code = sbAppend(code, e_b(toInt(labelAbsOffset(labelTab, curFName + ":" + operand(ln))) - off))  off = off + 4 }
+        if op == "JUMPIFNOT" { code = sbAppend(code, c_pop0() + e_bl(istruthyOff - (off + 8)) + e_cbz(0, toInt(labelAbsOffset(labelTab, curFName + ":" + operand(ln))) - (off + 12)))  off = off + 16 }
+        if op == "JUMPIF" { code = sbAppend(code, c_pop0() + e_bl(istruthyOff - (off + 8)) + e_cbnz(0, toInt(labelAbsOffset(labelTab, curFName + ":" + operand(ln))) - (off + 12)))  off = off + 16 }
         if op == "NOT" { code = sbAppend(code, c_pop0() + e_bl(istruthyOff - (off + 8)) + e_movz(1, 1) + e_eor(0, 0, 1) + c_push())  off = off + 28 }
         if op == "NEG" { code = sbAppend(code, c_pop0() + e_subr(0, 31, 0) + c_push())  off = off + 20 }
         if op == "CALL" {
@@ -1628,12 +1719,28 @@ just run {
             if startsWith(b, "sbAppend")   { code = sbAppend(code, c_pop0() + c_pop1() + e_bl(sbappendOff - (off + 16)) + c_push())  off = off + 28 }
             if startsWith(b, "sbToString") { code = sbAppend(code, c_pop0() + e_bl(sbtostringOff - (off + 8)) + c_push())  off = off + 20 }
             // exit(code): pop x0; SYS_exit(93); (push is dead, never reached). 24 bytes.
-            if startsWith(b, "exit")       { code = sbAppend(code, c_pop0() + e_movz(8, 93) + e_svc() + c_push())  off = off + 24 }
+            if startsWith(b, "exit")       { code = sbAppend(code, c_pop0() + e_bl(atoiOff - (off + 8)) + e_movz(8, 93) + e_svc() + c_push())  off = off + 28 }
             // bufNew(size): alloc(size) -> ptr. pop0->x0=size; bl alloc; push. 20 bytes.
             if startsWith(b, "bufNew ")    { code = sbAppend(code, c_pop0() + e_bl(allocOff - (off + 8)) + c_push())  off = off + 20 }
+            if startsWith(b, "bufSetQwordAt ") {
+                code = sbAppend(code, e_ldr0(2, 20) + e_addi(20, 20, 16) + e_ldr0(1, 20) + e_addi(20, 20, 16) + e_ldr0(0, 20) + e_addi(20, 20, 16))
+                code = sbAppend(code, e_addr(0, 0, 1) + e_str0(2, 0) + e_movr(0, 2) + c_push())
+                off = off + 44
+            }
+            if startsWith(b, "bufSetWordAt ") {
+                code = sbAppend(code, e_ldr0(2, 20) + e_addi(20, 20, 16) + e_ldr0(1, 20) + e_addi(20, 20, 16) + e_ldr0(0, 20) + e_addi(20, 20, 16))
+                code = sbAppend(code, e_addr(0, 0, 1) + e_strhR(2, 0, 31) + e_movr(0, 2) + c_push())
+                off = off + 44
+            }
+            if startsWith(b, "bufSetDwordAt ") {
+                code = sbAppend(code, e_ldr0(2, 20) + e_addi(20, 20, 16) + e_ldr0(1, 20) + e_addi(20, 20, 16) + e_ldr0(0, 20) + e_addi(20, 20, 16))
+                code = sbAppend(code, e_addr(0, 0, 1) + e_strw0(2, 0) + e_movr(0, 2) + c_push())
+                off = off + 44
+            }
             // bufSetByte(buf, off, val): 3-arg. pop val->x2, off->x1, buf->x0; strb w2,[x0,x1]; push buf. 36 bytes.
             if startsWith(b, "bufSetByte ") { code = sbAppend(code, e_ldr0(2, 20) + e_addi(20, 20, 16) + e_ldr0(1, 20) + e_addi(20, 20, 16) + e_ldr0(0, 20) + e_addi(20, 20, 16) + e_strbR(2, 0, 1) + c_push())  off = off + 36 }
             // bufGetByte(buf, off): pop0->x0=off, pop1->x1=buf; ldrb w0,[x1,x0]; push. 28 bytes.
+            if startsWith(b, "bufGetQwordAt ") { code = sbAppend(code, c_pop0() + c_pop1() + e_addr(0, 1, 0) + e_ldr0(0, 0) + c_push())  off = off + 32 }
             if startsWith(b, "bufGetByte ") { code = sbAppend(code, c_pop0() + c_pop1() + e_ldrbO(0, 1, 0) + c_push())  off = off + 28 }
             // bufGetWordAt(buf, off) -> u16 LE: ldrh w0,[buf+off] (ARM is little-endian). 28 bytes.
             if startsWith(b, "bufGetWordAt ") { code = sbAppend(code, c_pop0() + c_pop1() + e_ldrhO(0, 1, 0) + c_push())  off = off + 28 }
@@ -1676,6 +1783,8 @@ just run {
             if startsWith(b, "exec ")      { code = sbAppend(code, c_pop0() + e_bl(execOff - (off + 8)) + c_push())  off = off + 20 }
             if startsWith(b, "environ")    { code = sbAppend(code, c_pop0() + e_bl(environOff - (off + 8)) + c_push())  off = off + 20 }
             if startsWith(b, "readProc")   { code = sbAppend(code, c_pop0() + e_bl(readprocOff - (off + 8)) + c_push())  off = off + 20 }
+            if startsWith(b, "ptrToInt")   { code = sbAppend(code, c_pop0() + e_bl(strIntOff - (off + 8)) + c_push())  off = off + 20 }
+            if startsWith(b, "intToPtr")   { code = sbAppend(code, c_pop0() + e_bl(atoiOff - (off + 8)) + c_push())  off = off + 20 }
             if startsWith(b, "callPtr") {
                 let csp = toInt(indexOf(b, " "))
                 let cargc = toInt(substring(b, csp + 1, len(b)))
